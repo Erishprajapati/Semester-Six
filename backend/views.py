@@ -7,6 +7,7 @@ from .serializers import *
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
+from .utils import get_weather
 # Create your views here.
 
 def home(request):
@@ -28,3 +29,10 @@ def generated_fake_crowd_data():
         status = "High" if fake_count > 300 else "Medium" if fake_count > 100 else "Low"
 
         CrowdData.objects.create(place=place, crowd_count = fake_count, status = status, timestamp = now())
+
+def weather_view(request):
+    lat, lon = 27.7172, 85.3240
+    weather_data = get_weather(lat, lon)
+
+    return render(request, 'weather.html',{'weather': weather_data})
+
