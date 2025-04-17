@@ -9,6 +9,7 @@ class Place(models.Model):
     description = models.TextField()
     """Textfield is used because the information can be written more and more"""
     popular_for = models.TextField()
+    category = models.CharField(max_length=50, default='Travel')
 
     def __str__(self):
         return f"{self.name}"
@@ -37,4 +38,12 @@ class UserLocation(models.Model):
 
     def __str__(self):
         return f"{self.user} at {self.latitude},{self.longitude}"
+    
+class Tag(models.Model):
+    tag = models.CharField(max_length=255)
 
+    def __str__(self):
+        return f"{self.tag}"
+class UserPreference(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    tags = models.ManyToManyField(Tag)

@@ -17,8 +17,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from backend.views import *
+from backend import views
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', views.home),
     path('api/', include('backend.urls')), # it response as backend API
     path('api/crowd/<str:place_name>/', get_crowd_data, name='get_crowd_data'),
 ]
