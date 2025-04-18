@@ -34,7 +34,7 @@ class UserLocation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     latitude = models.FloatField()
     longitude = models.FloatField()
-    last_updated = models.DateTimeField(auto_now_add=True) #it will track the last activity
+    created_at = models.DateTimeField(auto_now_add=True) #it will track the last activity
 
     def __str__(self):
         return f"{self.user} at {self.latitude},{self.longitude}"

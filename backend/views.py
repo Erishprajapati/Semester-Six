@@ -1,13 +1,15 @@
 import random
+import json
 from django.utils.timezone import now
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from .models import Place, CrowdData, Tag
+from .models import *
 from .serializers import PlaceSerializer, CrowdDataSerializer, TagSerializer
 from .utils import get_weather
-
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 
@@ -74,3 +76,46 @@ def generate_fake_data(request):
 def place_list(request):
     places = Place.objects.all()
     return render(request, 'place_list.html', {'places': places})
+
+
+def show_map(request):
+    return render(request, 'Map.html')
+
+
+@csrf_exempt
+@login_required  # Ensure the user is authenticated
+def save_user_location(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            latitude = data.get('latitude')
+            longitude = data.get('longitude')
+
+            # Save the location data
+            user_location = UserLocation.objects.create(
+                user=request.user,
+                latitude=latitude,
+                longitude=longitude
+            )
+
+            return JsonResponse({"message": "Location saved successfully!"}, status=200)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+        
+@api_view(['GET'])
+@login_required  # Ensure the user is authenticated
+def get_user_location(request):
+    try:
+        # Get the most recent location saved by the logged-in user
+        user_location = UserLocation.objects.filter(user=request.user).last()
+
+        if user_location:
+            return JsonResponse({
+                'latitude': user_location.latitude,
+                'longitude': user_location.longitude
+            })
+        else:
+            return JsonResponse({"message": "No location found for the user."}, status=404)
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

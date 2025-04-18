@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Finder</title>
+
+    <!-- Include Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+        #location-form {
+            margin-top: 20px;
+        }
+        #location-info {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Find Your Location</h2>
+
+    <!-- Display Map -->
+    <div id="map"></div>
+
+    <!-- Location Form (Manual Entry) -->
+    <div id="location-form">
+        <h3>Enter Preferred Location</h3>
+        <label for="location-name">Location Name (e.g., bus stop, park):</label>
+        <input type="text" id="location-name" placeholder="Enter a location name"><br><br>
+        <button id="find-location">Find Location on Map</button>
+    </div>
+
+    <!-- Location Information -->
+    <div id="location-info"></div>
+
+    <!-- Include Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Initialize map
+        var map = L.map('map').setView([51.505, -0.09], 13);  // Default position (London)
+
+        // Set the tile layer for the map
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Function to get the current location
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, handleError);
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        // Function to show user position on the map
+        function showPosition(position) {
+            var lat = position.coords.latitude;
+            var lon = position.coords.longitude;
+
+            // Center map to user location
+            map.setView([lat, lon], 13);
+
+            // Add marker on user location
+            var marker = L.marker([lat, lon]).addTo(map);
+
+            // Display location info
+            document.getElementById('location-info').innerHTML = 
+                'Latitude: ' + lat + '<br>Longitude: ' + lon;
+
+            // Optional: Show popup on marker
+            marker.bindPopup("You are here!").openPopup();
+        }
+
+        // Handle error if geolocation fails
+        function handleError(error) {
+            if (error.code === error.PERMISSION_DENIED) {
+                alert("Please allow access to your location.");
+            } else {
+                alert("Unable to retrieve location.");
+            }
+        }
+
+        // Call the getLocation function on page load
+        getLocation();
+
+        // Function to find a location by name (e.g., "Central Park, New York")
+        function findLocationByName(locationName) {
+            var apiUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        var lat = data[0].lat;
+                        var lon = data[0].lon;
+
+                        // Center map to the new location
+                        map.setView([lat, lon], 13);
+
+                        // Add marker for the manually entered location
+                        var marker = L.marker([lat, lon]).addTo(map);
+                        marker.bindPopup("Location: " + locationName).openPopup();
+
+                        // Display location info
+                        document.getElementById('location-info').innerHTML = 
+                            'Latitude: ' + lat + '<br>Longitude: ' + lon;
+                    } else {
+                        alert("Location not found.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching location:", error);
+                    alert("Unable to find location.");
+                });
+        }
+
+        // Handle manual location search (e.g., user entering "bus stop")
+        document.getElementById('find-location').addEventListener('click', function() {
+            var locationName = document.getElementById('location-name').value;
+
+            if (locationName.trim() === "") {
+                alert("Please enter a valid location.");
+                return;
+            }
+
+            findLocationByName(locationName);
+        });
+    </script>
+</body>
+</html>
