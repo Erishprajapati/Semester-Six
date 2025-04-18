@@ -8,6 +8,7 @@ from .models import Place, CrowdData, Tag
 from .serializers import PlaceSerializer, CrowdDataSerializer, TagSerializer
 from .utils import get_weather
 
+
 # Create your views here.
 
 def home(request):
@@ -67,3 +68,9 @@ def recommend_places(request, place_name):
 def generate_fake_data(request):
     generated_fake_crowd_data()
     return Response({"message": "Fake data generated!"})
+
+
+"""List of places"""
+def place_list(request):
+    places = Place.objects.all()
+    return render(request, 'place_list.html', {'places': places})

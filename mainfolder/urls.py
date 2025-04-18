@@ -21,6 +21,8 @@ from backend import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.home),
-    path('api/', include('backend.urls')), # it response as backend API
+    path('api/', include('backend.urls')),
+    path('accounts/', include('accounts.urls')), # it response as backend API
     path('api/crowd/<str:place_name>/', get_crowd_data, name='get_crowd_data'),
+    
 ]
