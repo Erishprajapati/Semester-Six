@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Location Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    #map {
+      height: 500px;
+      width: 100%;
+      max-width: 1000px;
+      margin: 20px auto;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+    }
+
+    form, #location-permission, #manual-location-form {
+      margin-top: 20px;
+    }
+
+    input[type="text"], input[type="password"] {
+      padding: 8px;
+      margin: 5px;
+      width: 250px;
+      max-width: 100%;
+    }
+
+    button {
+      padding: 8px 16px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    #destination-section {
+      margin-top: 20px;
+      display: none;
+    }
+
+    @media screen and (max-width: 768px) {
+      #map {
+        height: 400px;
+      }
+
+      input[type="text"], input[type="password"] {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h2>User Location Tracker</h2>
+
+  <!-- Login Form -->
+  <div id="auth-form">
+    <form id="login-form">
+      <label>Username:</label><br>
+      <input type="text" id="username" required><br>
+      <label>Password:</label><br>
+      <input type="password" id="password" required><br>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+
+  <!-- Location Permission -->
+  <div id="location-permission" style="display:none;">
+    <h3>Allow location access?</h3>
+    <button id="allow-location">Yes</button>
+    <button id="deny-location">No</button>
+  </div>
+
+  <!-- Manual Location -->
+  <div id="manual-location-form" style="display:none;">
+    <h3>Enter your current location manually:</h3>
+    <input type="text" id="manual-location-input" placeholder="E.g. Kathmandu, Nepal" />
+    <button id="submit-manual-location">Set Current Location</button>
+  </div>
+
+  <!-- Destination Section -->
+  <div id="destination-section">
+    <h3>Search Destination:</h3>
+    <input type="text" id="destination-input" placeholder="Search for destination..." />
+    <button id="go-to-destination">Show Route</button>
+  </div>
+
+  <!-- Map Display -->
+  <div id="map-container" style="display:none;">
+    <div id="map"></div>
+  </div>
+
+  <!-- Leaflet JS & Routing Machine -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+  <script>
+    let map, userMarker, routingControl;
+    let userLatLng = null;
+
+    window.onload = () => {
+      // Login logic
+      document.getElementById("login-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        localStorage.setItem("userLoggedIn", "true");
+        document.getElementById("auth-form").style.display = "none";
+        document.getElementById("location-permission").style.display = "block";
+      });
+
+      if (localStorage.getItem("userLoggedIn") === "true") {
+        document.getElementById("auth-form").style.display = "none";
+        document.getElementById("location-permission").style.display = "block";
+      }
+
+      // Allow location
+      document.getElementById("allow-location").addEventListener("click", () => {
+        document.getElementById("location-permission").style.display = "none";
+        initializeMap();
+        getCurrentLocation();
+      });
+
+      // Deny location
+      document.getElementById("deny-location").addEventListener("click", () => {
+        document.getElementById("location-permission").style.display = "none";
+        document.getElementById("manual-location-form").style.display = "block";
+        initializeMap();
+      });
+
+      // Manual location set
+      document.getElementById("submit-manual-location").addEventListener("click", async () => {
+        const location = document.getElementById("manual-location-input").value;
+        if (!location) return alert("Enter location");
+
+        const coords = await geocode(location);
+        if (coords) {
+          userLatLng = coords;
+          showUserLocation(coords, "Manual Location Set");
+          document.getElementById("manual-location-form").style.display = "none";
+          document.getElementById("destination-section").style.display = "block";
+        }
+      });
+
+      // Handle destination search
+      document.getElementById("go-to-destination").addEventListener("click", async () => {
+        const dest = document.getElementById("destination-input").value;
+        if (!dest || !userLatLng) return alert("Set your current location first");
+
+        const destCoords = await geocode(dest);
+        if (destCoords) {
+          showRoute(userLatLng, destCoords);
+        } else {
+          alert("Destination not found");
+        }
+      });
+    };
+
+    function initializeMap() {
+      document.getElementById("map-container").style.display = "block";
+      map = L.map('map').setView([20, 80], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+    }
+
+    function getCurrentLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async pos => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          userLatLng = [lat, lon];
+          showUserLocation([lat, lon], "You are here!");
+          document.getElementById("destination-section").style.display = "block";
+        }, () => {
+          alert("Location access denied.");
+        });
+      } else {
+        alert("Geolocation not supported.");
+      }
+    }
+
+    function showUserLocation(coords, label) {
+      map.setView(coords, 13);
+      if (userMarker) map.removeLayer(userMarker);
+      userMarker = L.marker(coords).addTo(map).bindPopup(label).openPopup();
+    }
+
+    async function geocode(location) {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.length > 0) {
+        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+      }
+      return null;
+    }
+
+    function showRoute(startCoords, endCoords) {
+      if (routingControl) map.removeControl(routingControl);
+      routingControl = L.Routing.control({
+        waypoints: [
+          L.latLng(startCoords[0], startCoords[1]),
+          L.latLng(endCoords[0], endCoords[1])
+        ],
+        routeWhileDragging: false
+      }).addTo(map);
+    }
+  </script>
+</body>
+</html>

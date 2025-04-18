@@ -6,7 +6,6 @@ from django.contrib.auth.decorators import login_required
 import re
 
 # Create your views here.
-
 def register_user(request):
     if request.method == 'POST':
         username = request.POST['username']
@@ -97,5 +96,5 @@ def logout_user(request):
 
 # Dashboard (only accessible if logged in)
 @login_required(login_url='login')
-def dashboard(request):
-    return render(request, 'dashboard.html')
+def home(request):
+    return render(request, 'map.html')

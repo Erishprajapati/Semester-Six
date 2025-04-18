@@ -1,15 +1,24 @@
 from django.db import models
 from django.contrib.auth.models import User
 # Create your models here.
+
+class Tag(models.Model):
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.tag}"
 class Place(models.Model):
     name = models.CharField(max_length=255)
-    latitude = models.FloatField()
+    # latitude = models.FloatField()
     """float field is used because of ORM can store decimal values as (2.11, 29.01)"""
-    longitude = models.FloatField()
+    # longitude = models.FloatField()
     description = models.TextField()
     """Textfield is used because the information can be written more and more"""
     popular_for = models.TextField()
     category = models.CharField(max_length=50, default='Travel')
+    location = models.CharField(max_length=255, default="Unknown")
+    tags = models.ManyToManyField(Tag)   
+
 
     def __str__(self):
         return f"{self.name}"
@@ -39,11 +48,8 @@ class UserLocation(models.Model):
     def __str__(self):
         return f"{self.user} at {self.latitude},{self.longitude}"
     
-class Tag(models.Model):
-    tag = models.CharField(max_length=255)
 
-    def __str__(self):
-        return f"{self.tag}"
 class UserPreference(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     tags = models.ManyToManyField(Tag)
+

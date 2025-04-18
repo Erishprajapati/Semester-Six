@@ -78,10 +78,6 @@ def place_list(request):
     return render(request, 'place_list.html', {'places': places})
 
 
-def show_map(request):
-    return render(request, 'Map.html')
-
-
 @csrf_exempt
 @login_required  # Ensure the user is authenticated
 def save_user_location(request):
