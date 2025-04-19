@@ -130,3 +130,6 @@ def home(request):
         }
 
     return render(request, 'map.html', context)
+
+def graph_page(request):
+    return render(request, 'graph.html')
