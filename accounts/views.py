@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login,logout
 from django.contrib.auth.decorators import login_required
 import re
+from backend.models import *
 
 # Create your views here.
 def register_user(request):
@@ -94,7 +95,38 @@ def logout_user(request):
     return redirect('login')
 
 
-# Dashboard (only accessible if logged in)
 @login_required(login_url='login')
 def home(request):
-    return render(request, 'map.html')
+    query = request.GET.get('q', '')  # search query from input
+    places = Place.objects.all()
+
+    if query:
+        places = places.filter(name__icontains=query)
+
+    place_name = "Kathmandu"  # You can change this or make it dynamic
+    try:
+        place = Place.objects.get(name__iexact=place_name)
+        last_10 = CrowdData.objects.filter(place=place).order_by('-timestamp')[:10]
+        last_10 = list(reversed(last_10))
+
+        timestamps = [cd.timestamp.strftime('%H:%M') for cd in last_10]
+        crowd_levels = [cd.crowdlevel for cd in last_10]
+
+        context = {
+            'place_name': place.name,
+            'timestamps': timestamps,
+            'crowd_levels': crowd_levels,
+            'places': places,
+            'query': query,
+        }
+    except Place.DoesNotExist:
+        context = {
+            'place_name': '',
+            'timestamps': [],
+            'crowd_levels': [],
+            'places': [],
+            'query': query,
+            'error': f"{place_name} not found."
+        }
+
+    return render(request, 'map.html', context)

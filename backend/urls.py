@@ -11,4 +11,6 @@ urlpatterns = [
     path('places/', views.place_list, name='place_list'),
     path('save-location/', views.save_user_location, name='save_location'),
     path('get-user-location/', views.get_user_location, name='get_user_location'),
+    path('search/', views.search_places, name='search_places'),
+
 ]

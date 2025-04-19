@@ -10,6 +10,7 @@ from .serializers import PlaceSerializer, CrowdDataSerializer, TagSerializer
 from .utils import get_weather
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Max
 
 # Create your views here.
 
@@ -115,3 +116,44 @@ def get_user_location(request):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+    
+@api_view(['GET'])
+def search_places(request):
+    query = request.GET.get('q', '')  # Get the search query (place name)
+    
+    if not query:
+        return JsonResponse({'error': 'No search term provided.'}, status=400)
+
+    # Find places that match the search query (e.g., Kathmandu)
+    places = Place.objects.filter(name__icontains=query)
+    
+    if not places:
+        return JsonResponse({'error': 'No places found matching the query.'}, status=404)
+    
+    places_data = []
+    
+    # Iterate over the found places and gather the necessary data
+    for place in places:
+        # Get the latest crowd data for each place
+        latest_crowd_data = CrowdData.objects.filter(place=place).aggregate(max_timestamp=Max('timestamp'))
+        
+        # Get the crowd level using the most recent data
+        crowd_data = CrowdData.objects.filter(place=place, timestamp=latest_crowd_data['max_timestamp']).first()
+        
+        # Prepare the tags for this place
+        tags = list(place.tags.values_list('tag', flat=True))
+        
+        places_data.append({
+            'name': place.name,
+            # 'latitude': place.latitude,
+            # 'longitude': place.longitude,
+            'description': place.description,
+            'popular_for': place.popular_for,
+            'category': place.category,
+            'crowd_level': crowd_data.crowdlevel if crowd_data else 'N/A',
+            # 'status': crowd_data.status if crowd_data else 'N/A',
+            'tags': tags,
+        })
+    
+    # Return the data in JSON format
+    return JsonResponse({'places': places_data}, safe=False)

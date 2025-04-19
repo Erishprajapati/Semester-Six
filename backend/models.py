@@ -4,24 +4,22 @@ from django.contrib.auth.models import User
 
 class Tag(models.Model):
     name = models.CharField(max_length=255)
-
     def __str__(self):
-        return f"{self.tag}"
+        return self.name
+
 class Place(models.Model):
     name = models.CharField(max_length=255)
     # latitude = models.FloatField()
-    """float field is used because of ORM can store decimal values as (2.11, 29.01)"""
     # longitude = models.FloatField()
     description = models.TextField()
-    """Textfield is used because the information can be written more and more"""
     popular_for = models.TextField()
     category = models.CharField(max_length=50, default='Travel')
-    location = models.CharField(max_length=255, default="Unknown")
-    tags = models.ManyToManyField(Tag)   
-
+    tags = models.ManyToManyField('Tag', blank=True) 
+    location = models.TextField(default = "Unknown")
 
     def __str__(self):
         return f"{self.name}"
+
     
 
 class CrowdData(models.Model):
