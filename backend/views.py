@@ -28,11 +28,23 @@ def get_crowd_data(request,place_name):
 
 def generated_fake_crowd_data():
     places = Place.objects.all()
+    
     for place in places:
-        fake_count = random.randint(10, 500)
-        status = "High" if fake_count > 300 else "Medium" if fake_count > 100 else "Low"
+        crowd_level = random.randint(0, 100)
+        
+        if crowd_level > 70:
+            status = 'High'
+        elif crowd_level > 30:
+            status = 'Medium'
+        else:
+            status = 'Low'
 
-        CrowdData.objects.create(place=place, crowd_count = fake_count, status = status, timestamp = now())
+        CrowdData.objects.create(
+            place=place,
+            crowdlevel=crowd_level,
+            status=status,
+        )
+
 
 def weather_view(request):
     lat, lon = 27.7172, 85.3240
@@ -41,6 +53,7 @@ def weather_view(request):
     return render(request, 'weather.html',{'weather': weather_data})
 
 """Content based filtering algorithm"""
+
 @api_view(['GET'])
 def recommend_places(request, place_name):
     place = get_object_or_404(Place, name__iexact=place_name)
@@ -61,7 +74,12 @@ def recommend_places(request, place_name):
     # Sort based on score (descending)
     sorted_places = sorted(place_scores, key=lambda x: x[1], reverse=True)
 
-    top_places = [PlaceSerializer(p[0]).data for p in sorted_places[:5]]  # top 5 similar places
+    # Generate random number of visitors
+    top_places = []
+    for p, _ in sorted_places[:5]:  # top 5 similar places
+        place_data = PlaceSerializer(p).data
+        place_data['visitor_count'] = random.randint(50, 500)  # Random number of visitors
+        top_places.append(place_data)
 
     return Response({
         "base_place": PlaceSerializer(place).data,
@@ -157,3 +175,26 @@ def search_places(request):
     
     # Return the data in JSON format
     return JsonResponse({'places': places_data}, safe=False)
+
+@api_view(['GET'])
+def places_by_district(request, district_name):
+    # Fetch places matching the district
+    places = Place.objects.filter(district__iexact=district_name)
+    result = []
+
+    for place in places:
+        latest_crowd = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
+
+        result.append({
+            'name': place.name,
+            'description': place.description,
+            'popular_for': place.popular_for,
+            'category': place.category,
+            'crowdlevel': latest_crowd.crowdlevel if latest_crowd else 'N/A',
+            'status': latest_crowd.status if latest_crowd else 'N/A',
+            'tags': list(place.tags.values_list('name', flat=True)),
+            # 'lat': place.latitude,
+            # 'lng': place.longitude
+        })
+
+    return JsonResponse({'places': result})

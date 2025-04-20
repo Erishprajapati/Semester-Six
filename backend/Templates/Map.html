@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+{% block title %}Map Tracker{% endblock %}
+
+{% block content %}
+{% if not user.is_authenticated %}
+  <div id="login-section">
+    <form method="POST" action="{% url 'login' %}">
+      {% csrf_token %}
+      <label for="username">Username:</label><br>
+      <input type="text" name="username" required><br>
+      <label for="password">Password:</label><br>
+      <input type="password" name="password" required><br>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+{% else %}
+  <div id="location-access-prompt">
+    <h3>Allow location access?</h3>
+    <button id="grant-location-btn">Yes</button>
+    <button id="deny-location-btn">No</button>
+  </div>
+
+  <div id="manual-location-section" style="display:none;">
+    <h3>Enter Your Location Manually:</h3>
+    <input type="text" id="manual-location-input" placeholder="e.g., Kathmandu, Nepal" />
+    <button id="submit-manual-location">Submit</button>
+  </div>
+
+  <div id="city-search-section" style="display:none;">
+    <h3>Search a District to Explore</h3>
+    <input type="text" id="city-search-input" placeholder="e.g., Kaski" />
+    <button id="search-city-btn">Search</button>
+  </div>
+
+  <div id="search-history-section" style="display:none;">
+    <h4>Search History</h4>
+    <ul id="search-history-list"></ul>
+  </div>
+
+  <div id="map-wrapper" style="display:none;">
+    <div id="map" class="map-box"></div>
+  </div>
+
+  <div id="chart-wrapper" style="display:none;">
+    <h3>Popular Places in Selected District</h3>
+    <canvas id="bar-chart" width="600" height="300"></canvas>
+  </div>
+
+  <div id="place-info-box" style="display:none;" class="info-box">
+    <h4 id="place-title"></h4>
+    <p id="place-description"></p>
+    <p><strong>Popular For:</strong> <span id="place-popular"></span></p>
+    <p><strong>Category:</strong> <span id="place-category"></span></p>
+    <p><strong>Crowd Level:</strong> <span id="place-crowd"></span></p>
+    <p><strong>Status:</strong> <span id="place-status"></span></p>
+    <p><strong>Tags:</strong> <span id="place-tags"></span></p>
+  </div>
+
+{% endif %}
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Styles -->
+<style>
+  /* Center the location access prompt */
+  #location-access-prompt {
+    display: block;
+    width: 300px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 20px;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+  }
+
+  /* General input and button styling */
+  input, button {
+    margin-top: 10px;
+    padding: 10px 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    width: 80%;
+    box-sizing: border-box;
+  }
+
+  button {
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    font-weight: bold;
+  }
+
+  button:hover {
+    background-color: #45a049;
+  }
+
+  /* Map box styling */
+  .map-box {
+    height: 600px;
+    width: 90%;
+    margin: 20px auto;
+    border: 2px solid #ccc;
+    border-radius: 12px;
+  }
+
+  /* Info box styling */
+  .info-box {
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin-top: 20px;
+    border-radius: 10px;
+    max-width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #f9f9f9;
+  }
+
+  /* Form layout for manual location section */
+  #manual-location-section {
+    text-align: center;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 10px;
+  }
+
+  /* Search history section styling */
+  #search-history-section {
+    display: none;
+    margin-top: 20px;
+    text-align: center;
+  }
+
+  #search-history-list {
+    list-style-type: none;
+    padding: 0;
+  }
+
+  #search-history-list li {
+    background-color: #f1f1f1;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 5px;
+  }
+
+  /* Chart section */
+  #chart-wrapper {
+    display: block;
+    text-align: center;
+  }
+
+  #place-info-box {
+    display: none;
+    text-align: center;
+  }
+</style>
+
+{% if user.is_authenticated %}
+<script>
+  let map, userLatLng = null, userMarker;
+
+  window.onload = () => {
+    document.getElementById("location-access-prompt").style.display = "block";
+
+    document.getElementById("grant-location-btn").addEventListener("click", () => {
+      document.getElementById("location-access-prompt").style.display = "none";
+      initializeMap();
+      getCurrentLocation();
+    });
+
+    document.getElementById("deny-location-btn").addEventListener("click", () => {
+      document.getElementById("location-access-prompt").style.display = "none";
+      document.getElementById("manual-location-section").style.display = "block";
+      initializeMap();
+    });
+
+    document.getElementById("submit-manual-location").addEventListener("click", async () => {
+      const location = document.getElementById("manual-location-input").value;
+      const coords = await geocode(location);
+      if (coords) {
+        userLatLng = coords;
+        showUserLocation(coords, "Manual Location Set");
+        document.getElementById("manual-location-section").style.display = "none";
+        document.getElementById("city-search-section").style.display = "block";
+      }
+    });
+
+    document.getElementById("search-city-btn").addEventListener("click", async () => {
+      const district = document.getElementById("city-search-input").value.trim();
+      if (!district || !userLatLng) return alert("Please set your location and enter a district name.");
+      await fetchPlacesByDistrict(district);
+    });
+  };
+
+  function initializeMap() {
+    document.getElementById("map-wrapper").style.display = "block";
+    map = L.map('map').setView([27.7, 85.3], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+  }
+
+  function getCurrentLocation() {
+    navigator.geolocation.getCurrentPosition(pos => {
+      userLatLng = [pos.coords.latitude, pos.coords.longitude];
+      showUserLocation(userLatLng, "You are here!");
+      document.getElementById("city-search-section").style.display = "block";
+    }, () => {
+      alert("Location access denied.");
+    });
+  }
+
+  function showUserLocation(coords, label) {
+    map.setView(coords, 13);
+    if (userMarker) map.removeLayer(userMarker);
+    userMarker = L.marker(coords, { draggable: true }).addTo(map).bindPopup(label).openPopup();
+    userMarker.on('dragend', function (e) {
+      const newCoords = e.target.getLatLng();
+      userLatLng = [newCoords.lat, newCoords.lng];
+      userMarker.bindPopup("Updated Location").openPopup();
+    });
+  }
+
+  async function geocode(location) {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`);
+    const data = await res.json();
+    if (data.length > 0) {
+      return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+    }
+    return null;
+  }
+
+  async function fetchPlacesByDistrict(district) {
+    try {
+      const response = await fetch(`/places-by-district/${district}`);
+      const data = await response.json();
+
+      if (!data.places.length) {
+        alert("No places found for this district.");
+        return;
+      }
+
+      document.getElementById("chart-wrapper").style.display = "block";
+      renderBarChart(data.places);
+      displayPlacesOnMap(data.places);
+      addToSearchHistory(district);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to fetch places for this district.");
+    }
+  }
+
+  function renderBarChart(places) {
+    const ctx = document.getElementById("bar-chart").getContext("2d");
+    if (window.barChartInstance) window.barChartInstance.destroy();
+
+    window.barChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: places.map(p => p.name),
+        datasets: [{
+          label: 'Crowd Level',
+          data: places.map(p => p.crowdlevel !== 'N/A' ? parseInt(p.crowdlevel) : 0),
+          backgroundColor: 'rgba(75, 192, 192, 0.6)'
+        }]
+      },
+      options: {
+        onClick: (e, elements) => {
+          if (elements.length > 0) {
+            const i = elements[0].index;
+            showPlaceInfo(places[i]);
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Crowd Level'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function displayPlacesOnMap(places) {
+    places.forEach(place => {
+      const popupContent = `
+        <h3>${place.name}</h3>
+        <p><strong>Description:</strong> ${place.description}</p>
+        <p><strong>Popular For:</strong> ${place.popular_for}</p>
+        <p><strong>Category:</strong> ${place.category}</p>
+        <p><strong>Crowd Level:</strong> ${place.crowdlevel}</p>
+        <p><strong>Status:</strong> ${place.status}</p>
+        <p><strong>Tags:</strong> ${place.tags.join(", ")}</p>
+      `;
+      L.marker([place.lat, place.lng]).addTo(map).bindPopup(popupContent);
+    });
+  }
+
+  {% comment %} function showPlaceInfo(place) {
+    document.getElementById("place-info-box").style.display = "block";
+    document.getElementById("place-title").innerText = place.name;
+    document.getElementById("place-description").innerText = place.description || "No description.";
+    document.getElementById("place-popular").innerText = place.popular_for || "N/A";
+    document.getElementById("place-category").innerText = place.category;
+    document.getElementById("place-crowd").innerText = place.crowdlevel;
+    document.getElementById("place-status").innerText = place.status;
+    document.getElementById("place-tags").innerText = place.tags.join(", ");
+  } {% endcomment %}
+  {% comment %} function showPlaceInfo(place) {
+    document.getElementById("place-info-box").style.display = "block";
+    document.getElementById("place-title").textContent = place.name;
+    document.getElementById("place-description").textContent = place.description;
+    document.getElementById("place-popular").textContent = place.popular_for;
+    document.getElementById("place-category").textContent = place.category;
+    document.getElementById("place-crowd").textContent = place.crowdlevel;
+    document.getElementById("place-status").textContent = place.status;
+    document.getElementById("place-tags").textContent = place.tags.join(", ");
+  } {% endcomment %}
+
+  function showPlaceInfo(place) {
+    document.getElementById("place-info-box").style.display = "block";
+    document.getElementById("place-title").textContent = place.name;
+    document.getElementById("place-description").textContent = place.description;
+    document.getElementById("place-popular").textContent = place.popular_for;
+    document.getElementById("place-category").textContent = place.category;
+    document.getElementById("place-crowd").textContent = place.crowdlevel;
+    document.getElementById("place-status").textContent = place.status;
+    document.getElementById("place-tags").textContent = place.tags.join(", ");
+  }
+
+  {% comment %} function addToSearchHistory(district) {
+    const historyList = document.getElementById("search-history-list");
+    const historyItem = document.createElement("li");
+    historyItem.textContent = district;
+    historyList.appendChild(historyItem);
+    document.getElementById("search-history-section").style.display = "block";
+  } {% endcomment %}
+  function addToSearchHistory(district) {
+    const historySection = document.getElementById("search-history-section");
+    const historyList = document.getElementById("search-history-list");
+
+    historySection.style.display = "block";
+    const li = document.createElement("li");
+    li.textContent = district;
+    historyList.appendChild(li);
+  }
+
+
+</script>
+{% endif %}
+{% endblock %}

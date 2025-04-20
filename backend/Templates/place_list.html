@@ -2,10 +2,11 @@
 <ul>
     {% for place in places %}
         <li>
-            <h2>{{ place.name }}</h2>
+            <h3>{{ place.name }}</h3>
             <p>{{ place.description }}</p>
             <p>Category: {{ place.category }}</p>
-            <p>Location: {{ place.latitude }}, {{ place.longitude }}</p>
+            <p>Location: {{ place.location }}, {{ place.district }}</p>
+
         </li>
     {% endfor %}
 </ul>

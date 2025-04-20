@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Location Tracker{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Styles & Libraries -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+
+  <style>
+    /* Base Styling */
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f4;
+      color: #111827;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* Navbar */
+    #navbar {
+      background-color: #3b82f6;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      flex-wrap: wrap;
+    }
+
+    .nav-brand {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    /* Profile Dropdown */
+    .profile-dropdown {
+      position: relative;
+    }
+
+    .profile-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid white;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      right: 0;
+      background-color: white;
+      color: #111827;
+      min-width: 150px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 10px;
+      border-radius: 6px;
+      z-index: 1;
+    }
+
+    .dropdown-content p {
+      margin: 0 0 8px;
+      font-weight: 600;
+      color: #3b82f6;
+    }
+
+    .dropdown-content a {
+      display: block;
+      padding: 6px 0;
+      font-size: 14px;
+      color: #111827;
+    }
+
+    .dropdown-content a:hover {
+      color: #3b82f6;
+    }
+
+    .profile-dropdown:hover .dropdown-content {
+      display: block;
+    }
+
+    .nav-links a {
+      color: white;
+      font-weight: 500;
+      font-size: 15px;
+    }
+
+    /* Main content */
+    main {
+      padding: 2rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* Responsive for smaller screens */
+    @media (max-width: 600px) {
+      #navbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .nav-right {
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav id="navbar">
+    <div class="nav-brand">Peak Times</div>
+
+    <div class="nav-right">
+      {% if user.is_authenticated %}
+        <div class="profile-dropdown">
+          <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Profile" class="profile-icon" />
+          <div class="dropdown-content">
+            <p>{{ user.username }}</p>
+            <a href="#">Profile</a>
+            <a href="{% url 'logout' %}">Logout</a>
+          </div>
+        </div>
+      {% else %}
+        <div class="nav-links">
+          <a href="{% url 'login' %}">Login</a>
+        </div>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+</body>
+</html>
