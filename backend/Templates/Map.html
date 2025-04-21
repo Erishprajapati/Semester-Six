@@ -234,7 +234,6 @@
   }
 
   async function fetchPlacesByDistrict(district) {
-    try {
       const response = await fetch(`/places-by-district/${district}`);
       const data = await response.json();
 
@@ -247,10 +246,7 @@
       renderBarChart(data.places);
       displayPlacesOnMap(data.places);
       addToSearchHistory(district);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to fetch places for this district.");
-    }
+  
   }
 
   function renderBarChart(places) {
@@ -350,7 +346,6 @@
     li.textContent = district;
     historyList.appendChild(li);
   }
-
 
 </script>
 {% endif %}

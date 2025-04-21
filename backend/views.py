@@ -15,7 +15,7 @@ from django.db.models import Max
 # Create your views here.
 
 def home(request):
-    return JsonResponse({"message" : "Welcome to System"})
+    return render(request, 'register.html')
     """it will act as key pair value"""
 
 @api_view(['GET'])

@@ -1,0 +1,40 @@
+<!-- templates/home.html -->
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<style>
+    .home-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    .home-container h1 {
+        font-size: 32px;
+        margin-bottom: 20px;
+    }
+
+    .home-container a {
+        text-decoration: none;
+        color: white;
+        background-color: #1a73e8;
+        padding: 12px 24px;
+        border-radius: 5px;
+        font-weight: 500;
+        transition: background-color 0.2s;
+    }
+
+    .home-container a:hover {
+        background-color: #1669c1;
+    }
+</style>
+
+<div class="home-container">
+    {% comment %} <h1>Welcome</h1>
+    <a href="{% url 'register' %}">Go to Register Form</a> {% endcomment %}
+</div>
+{% endblock %}
