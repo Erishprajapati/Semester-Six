@@ -135,7 +135,7 @@
           <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Profile" class="profile-icon" />
           <div class="dropdown-content">
             <p>{{ user.username }}</p>
-            <a href="#">Profile</a>
+            <a href="{% url 'profile_view' %}">Profile</a>
             <a href="{% url 'logout' %}">Logout</a>
           </div>
         </div>

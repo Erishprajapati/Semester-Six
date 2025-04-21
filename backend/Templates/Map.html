@@ -27,14 +27,9 @@
   </div>
 
   <div id="city-search-section" style="display:none;">
-    <h3>Search a District to Explore</h3>
-    <input type="text" id="city-search-input" placeholder="e.g., Kaski" />
+    <h3>Explore here:</h3>
+    <input type="text" id="city-search-input" placeholder=" e.g. Lalitpur" />
     <button id="search-city-btn">Search</button>
-  </div>
-
-  <div id="search-history-section" style="display:none;">
-    <h4>Search History</h4>
-    <ul id="search-history-list"></ul>
   </div>
 
   <div id="map-wrapper" style="display:none;">
@@ -55,7 +50,6 @@
     <p><strong>Status:</strong> <span id="place-status"></span></p>
     <p><strong>Tags:</strong> <span id="place-tags"></span></p>
   </div>
-
 {% endif %}
 
 <!-- Scripts -->
@@ -127,25 +121,6 @@
     border-radius: 10px;
   }
 
-  /* Search history section styling */
-  #search-history-section {
-    display: none;
-    margin-top: 20px;
-    text-align: center;
-  }
-
-  #search-history-list {
-    list-style-type: none;
-    padding: 0;
-  }
-
-  #search-history-list li {
-    background-color: #f1f1f1;
-    padding: 10px;
-    margin: 5px 0;
-    border-radius: 5px;
-  }
-
   /* Chart section */
   #chart-wrapper {
     display: block;
@@ -215,15 +190,32 @@
 
   function showUserLocation(coords, label) {
     map.setView(coords, 13);
+    
     if (userMarker) map.removeLayer(userMarker);
+  
     userMarker = L.marker(coords, { draggable: true }).addTo(map).bindPopup(label).openPopup();
+  
     userMarker.on('dragend', function (e) {
       const newCoords = e.target.getLatLng();
       userLatLng = [newCoords.lat, newCoords.lng];
-      userMarker.bindPopup("Updated Location").openPopup();
+  
+      // Show loading while fetching
+      userMarker.bindPopup("Loading location name...").openPopup();
+  
+      // Reverse geocode using Nominatim
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${newCoords.lat}&lon=${newCoords.lng}&format=json`)
+        .then(response => response.json())
+        .then(data => {
+          const locationName = data.display_name || "Unknown location";
+          userMarker.bindPopup(locationName).openPopup();
+        })
+        .catch(err => {
+          console.error("Reverse geocoding failed:", err);
+          userMarker.bindPopup("Location name not found").openPopup();
+        });
     });
   }
-
+  
   async function geocode(location) {
     const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`);
     const data = await res.json();
@@ -234,10 +226,13 @@
   }
 
   async function fetchPlacesByDistrict(district) {
+    try {
+      console.log("Fetching places for district:", district);
       const response = await fetch(`/places-by-district/${district}`);
       const data = await response.json();
+      console.log("Fetched data:", data);
 
-      if (!data.places.length) {
+      if (!data.places || !data.places.length) {
         alert("No places found for this district.");
         return;
       }
@@ -245,108 +240,163 @@
       document.getElementById("chart-wrapper").style.display = "block";
       renderBarChart(data.places);
       displayPlacesOnMap(data.places);
-      addToSearchHistory(district);
-  
+    } catch (error) {
+      console.error("Error fetching places by district:", error);
+    }
   }
+  async function fetchPlacesByTag(tag) {
+    try {
+      console.log("Fetching places for tag:", tag);
+      const response = await fetch(`/places-by-tag/${tag}`);
+      const data = await response.json();
+      console.log("Fetched data for tag:", data);
+  
+      if (!data.places || !data.places.length) {
+        alert("No places found with this tag.");
+        return;
+      }
+  
+      document.getElementById("chart-wrapper").style.display = "block";
+      renderBarChart(data.places);
+      displayPlacesOnMap(data.places);
+    } catch (error) {
+      console.error("Error fetching places by tag:", error);
+    }
+  }
+  
 
+  function displayPlacesOnMap(places) {
+    places.forEach(place => {
+      if (place.latitude && place.longitude) {
+        const marker = L.marker([place.latitude, place.longitude]).addTo(map);
+        marker.bindPopup(`<strong>${place.name}</strong><br>${place.description}`).openPopup();
+      }
+    });
+  }
   function renderBarChart(places) {
-    const ctx = document.getElementById("bar-chart").getContext("2d");
-    if (window.barChartInstance) window.barChartInstance.destroy();
-
-    window.barChartInstance = new Chart(ctx, {
+    console.log('Places Data:', places);
+  
+    places.sort((a, b) => b.crowdlevel - a.crowdlevel);
+  
+    const ctx = document.getElementById('bar-chart').getContext('2d');
+  
+    if (window.barChart) {
+      window.barChart.destroy();
+    }
+  
+    const chartData = places.map(place => place.crowdlevel);
+    const labels = places.map(place => place.name);
+  
+    const getColor = (crowdLevel) => {
+      if (crowdLevel >= 75) return '#FF0000';
+      else if (crowdLevel >= 50) return '#FFEB3B';
+      else return '#4CAF50';
+    };
+  
+    const backgroundColors = places.map(place => getColor(place.crowdlevel));
+  
+    window.barChart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: places.map(p => p.name),
+        labels: labels,
         datasets: [{
-          label: 'Crowd Level',
-          data: places.map(p => p.crowdlevel !== 'N/A' ? parseInt(p.crowdlevel) : 0),
-          backgroundColor: 'rgba(75, 192, 192, 0.6)'
+          label: 'Popularity',
+          data: chartData,
+          backgroundColor: backgroundColors,
+          borderColor: '#388E3C',
+          borderWidth: 1
         }]
       },
       options: {
-        onClick: (e, elements) => {
+        onClick: function (evt, elements) {
           if (elements.length > 0) {
-            const i = elements[0].index;
-            showPlaceInfo(places[i]);
+            const index = elements[0].index;
+            const selectedPlace = places[index];
+            if (selectedPlace && selectedPlace.id) {
+              window.location.href = `/placedetails/${selectedPlace.id}/`;
+            }
           }
         },
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Crowd Level'
-            }
+        responsive: true,
+        plugins: {
+          legend: {
+            display: false
           }
         }
       }
     });
   }
+  
+  
+// Function to handle location search
+function handleLocationSearch(location) {
+  fetchNearbyPlaces(location).then(places => {
+    renderBarChart(places);
+  });
+}
+
+// Event listener for search button
+document.getElementById('search-button')?.addEventListener('click', () => {
+  const input = document.getElementById('location-input')?.value.trim();
+
+  if (!input) {
+    alert('Please enter a location or hashtag.');
+    return;
+  }
+
+  if (input.startsWith('#')) {
+    const tag = input.slice(1); // Remove '#'
+    fetchPlacesByTag(tag);
+  } else {
+    handleLocationSearch(input);
+  }
+});
+
+  {% comment %} function handleLocationSearch(location) {
+    fetchNearbyPlaces(location).then(places => {
+      renderBarChart(places);
+    });
+  }
+  
+  // Assuming you have an input field for the user to search for a location (like "Kathmandu")
+  {% comment %} document.getElementById('search-button').addEventListener('click', () => {
+    const location = document.getElementById('location-input').value; // Get the location from input
+    handleLocationSearch(location); // Render the chart for that location
+  });
+   {% endcomment %} 
+
 
   function displayPlacesOnMap(places) {
     places.forEach(place => {
-      const popupContent = `
-        <h3>${place.name}</h3>
-        <p><strong>Description:</strong> ${place.description}</p>
-        <p><strong>Popular For:</strong> ${place.popular_for}</p>
-        <p><strong>Category:</strong> ${place.category}</p>
-        <p><strong>Crowd Level:</strong> ${place.crowdlevel}</p>
-        <p><strong>Status:</strong> ${place.status}</p>
-        <p><strong>Tags:</strong> ${place.tags.join(", ")}</p>
-      `;
-      L.marker([place.lat, place.lng]).addTo(map).bindPopup(popupContent);
+      if (place.latitude && place.longitude) {
+        const marker = L.marker([place.latitude, place.longitude]).addTo(map)
+          .bindPopup(`<b>${place.name}</b><br>${place.description || "No description"}`);
+        
+        marker.on('click', () => showPlaceInfo(place));
+      }
     });
   }
 
-  {% comment %} function showPlaceInfo(place) {
-    document.getElementById("place-info-box").style.display = "block";
-    document.getElementById("place-title").innerText = place.name;
-    document.getElementById("place-description").innerText = place.description || "No description.";
-    document.getElementById("place-popular").innerText = place.popular_for || "N/A";
-    document.getElementById("place-category").innerText = place.category;
-    document.getElementById("place-crowd").innerText = place.crowdlevel;
-    document.getElementById("place-status").innerText = place.status;
-    document.getElementById("place-tags").innerText = place.tags.join(", ");
-  } {% endcomment %}
-  {% comment %} function showPlaceInfo(place) {
-    document.getElementById("place-info-box").style.display = "block";
-    document.getElementById("place-title").textContent = place.name;
-    document.getElementById("place-description").textContent = place.description;
-    document.getElementById("place-popular").textContent = place.popular_for;
-    document.getElementById("place-category").textContent = place.category;
-    document.getElementById("place-crowd").textContent = place.crowdlevel;
-    document.getElementById("place-status").textContent = place.status;
-    document.getElementById("place-tags").textContent = place.tags.join(", ");
-  } {% endcomment %}
-
   function showPlaceInfo(place) {
-    document.getElementById("place-info-box").style.display = "block";
+    const infoBox = document.getElementById("place-info-box");
+    infoBox.style.display = "block";
     document.getElementById("place-title").textContent = place.name;
-    document.getElementById("place-description").textContent = place.description;
-    document.getElementById("place-popular").textContent = place.popular_for;
-    document.getElementById("place-category").textContent = place.category;
-    document.getElementById("place-crowd").textContent = place.crowdlevel;
-    document.getElementById("place-status").textContent = place.status;
-    document.getElementById("place-tags").textContent = place.tags.join(", ");
+    document.getElementById("place-description").textContent = place.description || "No description available.";
+    document.getElementById("place-popular").textContent = place.popularfor || "N/A";
+    document.getElementById("place-category").textContent = place.category || "N/A";
+    document.getElementById("place-crowd").textContent = place.crowdlevel || "N/A";
+    document.getElementById("place-status").textContent = place.status || "N/A";
+    document.getElementById("place-tags").textContent = place.tags?.join(', ') || "N/A";
   }
 
-  {% comment %} function addToSearchHistory(district) {
-    const historyList = document.getElementById("search-history-list");
-    const historyItem = document.createElement("li");
-    historyItem.textContent = district;
-    historyList.appendChild(historyItem);
-    document.getElementById("search-history-section").style.display = "block";
-  } {% endcomment %}
   function addToSearchHistory(district) {
     const historySection = document.getElementById("search-history-section");
-    const historyList = document.getElementById("search-history-list");
-
+    const list = document.getElementById("search-history-list");
+    const item = document.createElement("li");
+    item.textContent = district;
+    list.appendChild(item);
     historySection.style.display = "block";
-    const li = document.createElement("li");
-    li.textContent = district;
-    historyList.appendChild(li);
   }
-
 </script>
 {% endif %}
 {% endblock %}

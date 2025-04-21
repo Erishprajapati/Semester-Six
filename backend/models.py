@@ -15,6 +15,11 @@ class Place(models.Model):
     tags = models.ManyToManyField('Tag', blank=True)
     location = models.TextField(default="Unknown")
     district = models.CharField(max_length=100, default="Unknown")  # NEW FIELD
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = ('name', 'district')
 
     def __str__(self):
         return f"{self.name}"

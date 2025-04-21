@@ -1,7 +1,7 @@
 import random
 import json
 from django.utils.timezone import now
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404,redirect
 from django.http import JsonResponse
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -11,12 +11,71 @@ from .utils import get_weather
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Max
+from django.contrib import messages
+from django.db.models import Q, Subquery, OuterRef
+
 
 # Create your views here.
 
 def home(request):
     return render(request, 'register.html')
     """it will act as key pair value"""
+@login_required
+def profile_view(request):
+    if request.method == "POST":
+        user = request.user
+        username = request.POST.get("username")
+        email = request.POST.get("email")
+        new_password = request.POST.get("new_password")
+        confirm_password = request.POST.get("confirm_password")
+
+        # Update username and email
+        user.username = username
+        user.email = email
+
+        # Password update
+        if new_password:
+            if new_password == confirm_password:
+                user.set_password(new_password)
+                messages.success(request, "Password updated.")
+            else:
+                messages.error(request, "Passwords do not match.")
+                return redirect('profile')
+
+        user.save()
+        messages.success(request, "Profile updated successfully.")
+        return redirect('profile.html')
+
+    return render(request, "profile.html")
+
+def places_by_tag(request, tag):
+    tag_cleaned = tag.replace('#', '').lower()
+
+    # Subquery: Get latest crowdlevel for each place
+    latest_crowd = CrowdData.objects.filter(
+        place=OuterRef('pk')
+    ).order_by('-timestamp')
+
+    places = Place.objects.filter(
+        Q(category__icontains=tag_cleaned) | Q(tags__name__icontains=tag_cleaned)
+    ).distinct().annotate(
+        latest_crowdlevel=Subquery(latest_crowd.values('crowdlevel')[:1]),
+        latest_status=Subquery(latest_crowd.values('status')[:1])
+    ).order_by('-latest_crowdlevel')
+
+    places_data = [{
+        'id': p.id,
+        'name': p.name,
+        'latitude': p.latitude,
+        'longitude': p.longitude,
+        'description': p.description,
+        'category': p.category,
+        'crowdlevel': p.latest_crowdlevel or 0,
+        'status': p.latest_status or 'Unknown',
+        'tags': [tag.name for tag in p.tags.all()],
+    } for p in places]
+
+    return JsonResponse({'places': places_data})
 
 @api_view(['GET'])
 def get_crowd_data(request,place_name):
@@ -91,6 +150,16 @@ def generate_fake_data(request):
     return Response({"message": "Fake data generated!"})
 
 
+def place_details(request, place_id):
+    place = get_object_or_404(Place, id=place_id)
+    # Fetch other related data like crowd data if needed
+    crowd_data = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
+    
+    return render(request, 'placeDetails.html', {
+        'place': place,
+        'crowd_data': crowd_data
+    })
+
 """List of places"""
 def place_list(request):
     places = Place.objects.all()
@@ -142,7 +211,6 @@ def search_places(request):
     if not query:
         return JsonResponse({'error': 'No search term provided.'}, status=400)
 
-    # Find places that match the search query (e.g., Kathmandu)
     places = Place.objects.filter(name__icontains=query)
     
     if not places:
@@ -150,30 +218,22 @@ def search_places(request):
     
     places_data = []
     
-    # Iterate over the found places and gather the necessary data
     for place in places:
-        # Get the latest crowd data for each place
         latest_crowd_data = CrowdData.objects.filter(place=place).aggregate(max_timestamp=Max('timestamp'))
-        
-        # Get the crowd level using the most recent data
         crowd_data = CrowdData.objects.filter(place=place, timestamp=latest_crowd_data['max_timestamp']).first()
-        
-        # Prepare the tags for this place
         tags = list(place.tags.values_list('tag', flat=True))
-        
+
         places_data.append({
             'name': place.name,
-            # 'latitude': place.latitude,
-            # 'longitude': place.longitude,
+            'latitude': place.latitude,           # ✅ now included
+            'longitude': place.longitude,         # ✅ now included
             'description': place.description,
             'popular_for': place.popular_for,
             'category': place.category,
             'crowd_level': crowd_data.crowdlevel if crowd_data else 'N/A',
-            # 'status': crowd_data.status if crowd_data else 'N/A',
             'tags': tags,
         })
     
-    # Return the data in JSON format
     return JsonResponse({'places': places_data}, safe=False)
 
 @api_view(['GET'])
@@ -193,8 +253,44 @@ def places_by_district(request, district_name):
             'crowdlevel': latest_crowd.crowdlevel if latest_crowd else 'N/A',
             'status': latest_crowd.status if latest_crowd else 'N/A',
             'tags': list(place.tags.values_list('name', flat=True)),
-            # 'lat': place.latitude,
-            # 'lng': place.longitude
+            'lat': place.latitude,             # ✅ now included
+            'lng': place.longitude             # ✅ now included
         })
 
     return JsonResponse({'places': result})
+@api_view(['POST'])
+@csrf_exempt
+def add_place(request):
+    data = request.data
+    name = data.get("name")
+    description = data.get("description", "")
+    popular_for = data.get("popular_for", "")
+    category = data.get("category", "Travel")
+    tags = data.get("tags", [])  # Expecting list of tag names
+    location = data.get("location", "Unknown")
+    district = data.get("district", "Unknown")
+    latitude = data.get("latitude", None)
+    longitude = data.get("longitude", None)
+
+    # 🔍 Check if the place already exists
+    if Place.objects.filter(name__iexact=name, district__iexact=district).exists():
+        return Response({"message": "Place already exists."}, status=409)
+
+    # ✅ Create Place
+    place = Place.objects.create(
+        name=name,
+        description=description,
+        popular_for=popular_for,
+        category=category,
+        location=location,
+        district=district,
+        latitude=latitude,
+        longitude=longitude
+    )
+
+    # ✅ Check and Create Tags
+    for tag_name in tags:
+        tag_obj, created = Tag.objects.get_or_create(name=tag_name)
+        place.tags.add(tag_obj)
+
+    return Response({"message": "Place created successfully.", "place": PlaceSerializer(place).data})

@@ -25,6 +25,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')), # it response as backend API
     path('api/crowd/<str:place_name>/', get_crowd_data, name='get_crowd_data'),
     path('places-by-district/<str:district_name>/', places_by_district, name='places_by_district'),
+    path('place-details/<int:place_id>/', views.place_details, name='place_details'),
 
 
     

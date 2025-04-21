@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <header>
+        <h1>{{ place.name }}</h1>
+        <p><strong>Category:</strong> {{ place.category }}</p>
+        <p><strong>Description:</strong> {{ place.description }}</p>
+        <p><strong>Popular For:</strong> {{ place.popular_for }}</p>
+        <p><strong>Tags:</strong> {{ place.tags.all|join:", " }}</p>
+    </header>
+
+    <section>
+        <h2>Crowd Level</h2>
+        {% if crowd_data %}
+            <p><strong>Crowd Level:</strong> {{ crowd_data.crowdlevel }}</p>
+            <p><strong>Status:</strong> {{ crowd_data.status }}</p>
+            <p><strong>Last Updated:</strong> {{ crowd_data.timestamp }}</p>
+        {% else %}
+            <p>No crowd data available.</p>
+        {% endif %}
+    </section>
+
+    <section>
+        <h2>Location</h2>
+        <p><strong>Place Name:</strong> {{ place.name }}</p>
+        <!-- Hiding Latitude and Longitude from user -->
+    </section>
+{% endblock %}

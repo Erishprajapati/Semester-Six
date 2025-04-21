@@ -16,4 +16,10 @@ urlpatterns = [
     path('save-location/', views.save_user_location, name='save_location'),
     path('get-user-location/', views.get_user_location, name='get_user_location'),
     path('search/', views.search_places, name='search_places'),
+    path('profile/',views.profile_view, name = 'profile_view' ),
+    path('placedetails/<int:pk>/', views.place_details, name='place_details'),
+    path('places-by-tag/<str:tag>/', views.places_by_tag, name='places_by_tag'),
+
+    # path('place/<int:place_id>/', views.place_details, name='place_details'),
+    
 ]
