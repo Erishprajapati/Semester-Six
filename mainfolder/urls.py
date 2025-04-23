@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from backend.views import *
+from django.conf import settings
+from django.conf.urls.static import static
 from backend import views
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,8 +27,11 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')), # it response as backend API
     path('api/crowd/<str:place_name>/', get_crowd_data, name='get_crowd_data'),
     path('places-by-district/<str:district_name>/', places_by_district, name='places_by_district'),
+    path('places-by-category/<str:category>', views.places_by_category, name='places-by-category'),
     path('place-details/<int:place_id>/', views.place_details, name='place_details'),
 
 
     
-]
+] 
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

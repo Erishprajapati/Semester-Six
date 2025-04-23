@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 
 class Tag(models.Model):
     name = models.CharField(max_length=255)
@@ -14,15 +15,21 @@ class Place(models.Model):
     category = models.CharField(max_length=50, default='Travel')
     tags = models.ManyToManyField('Tag', blank=True)
     location = models.TextField(default="Unknown")
-    district = models.CharField(max_length=100, default="Unknown")  # NEW FIELD
+    district = models.CharField(max_length=100, default="Unknown")
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
-    
+    image = models.ImageField(upload_to='place_images/', null=True, blank=True)  # ✅ New field
+
     class Meta:
         unique_together = ('name', 'district')
 
     def __str__(self):
         return f"{self.name}"
+
+    def clean(self):
+        super().clean()  # Good practice to call parent clean
+        if self.pk and self.tags.count() > 4:
+            raise ValidationError("A place can have at most 4 tags.")
 
 
 class CrowdData(models.Model):
@@ -56,3 +63,5 @@ class UserPreference(models.Model):
 
     def __str__(self):
         return f"{self.user} Preferences"
+    
+    

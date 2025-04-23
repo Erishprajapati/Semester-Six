@@ -1,28 +1,77 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <header>
-        <h1>{{ place.name }}</h1>
-        <p><strong>Category:</strong> {{ place.category }}</p>
-        <p><strong>Description:</strong> {{ place.description }}</p>
-        <p><strong>Popular For:</strong> {{ place.popular_for }}</p>
-        <p><strong>Tags:</strong> {{ place.tags.all|join:", " }}</p>
-    </header>
+<div class="container mt-5">
+    <div class="row">
+        <!-- Left side: Selected place details -->
+        <div class="col-md-8">
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <h1 class="card-title">{{ place.name }}</h1>
+                    <h6 class="text-muted mb-3">Category: {{ place.category }}</h6>
 
-    <section>
-        <h2>Crowd Level</h2>
-        {% if crowd_data %}
-            <p><strong>Crowd Level:</strong> {{ crowd_data.crowdlevel }}</p>
-            <p><strong>Status:</strong> {{ crowd_data.status }}</p>
-            <p><strong>Last Updated:</strong> {{ crowd_data.timestamp }}</p>
-        {% else %}
-            <p>No crowd data available.</p>
-        {% endif %}
-    </section>
+                    {% if place.image %}
+                        <img src="{{ place.image.url }}" alt="{{ place.name }}" class="img-fluid mb-4 rounded">
+                    {% endif %}
 
-    <section>
-        <h2>Location</h2>
-        <p><strong>Place Name:</strong> {{ place.name }}</p>
-        <!-- Hiding Latitude and Longitude from user -->
-    </section>
+                    <p><strong>Description:</strong> {{ place.description }}</p>
+                    <p><strong>Popular For:</strong> {{ place.popular_for }}</p>
+                    <p><strong>District:</strong> {{ place.district }}</p>
+                    <p><strong>Location:</strong> {{ place.location }}</p>
+
+                    <p><strong>Tags:</strong>
+                        {% for tag in place.tags.all %}
+                            <span class="badge bg-secondary">{{ tag.name }}</span>
+                        {% empty %}
+                            <span>No tags available.</span>
+                        {% endfor %}
+                    </p>
+
+                    <hr>
+                    <h4 class="mt-4">Crowd Level</h4>
+                    {% if crowd_data %}
+                        <p><strong>Crowd Level:</strong> {{ crowd_data.crowdlevel }}</p>
+                        <p><strong>Status:</strong> {{ crowd_data.status }}</p>
+                        <p><strong>Last Updated:</strong> {{ crowd_data.timestamp|date:"F j, Y, g:i a" }}</p>
+                    {% else %}
+                        <p>No crowd data available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right side: Recommended places -->
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <h4 class="card-title">Similar Places</h4>
+                    <div id="recommendations">
+                        <!-- JavaScript will load recommended places here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    fetch(`/api/recommend_places/{{ place.name }}`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById("recommendations");
+            data.recommended.forEach(place => {
+                const card = `
+                    <div class="mb-3">
+                        <h5><a href="/place-details/${place.id}/">${place.name}</a></h5>
+                        <p class="text-muted">${place.category}</p>
+                        <p><strong>Visitors:</strong> ${place.visitor_count}</p>
+                    </div>
+                    <hr>
+                `;
+                container.innerHTML += card;
+            });
+        });
+});
+</script>
 {% endblock %}

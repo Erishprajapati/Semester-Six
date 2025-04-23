@@ -28,14 +28,18 @@
 
   <div id="city-search-section" style="display:none;">
     <h3>Explore here:</h3>
-    <input type="text" id="city-search-input" placeholder=" e.g. Lalitpur" />
-    <button id="search-city-btn">Search</button>
+    <input id="location-input" type="text" placeholder="Enter district or #category" />
+    <button id="search-button">Search</button>
+
   </div>
 
   <div id="map-wrapper" style="display:none;">
     <div id="map" class="map-box"></div>
   </div>
-
+  <div id="distances">
+  <!-- Distances will be dynamically added here by JavaScript -->
+</div>
+  
   <div id="chart-wrapper" style="display:none;">
     <h3>Popular Places in Selected District</h3>
     <canvas id="bar-chart" width="600" height="300"></canvas>
@@ -225,7 +229,7 @@
     return null;
   }
 
-  async function fetchPlacesByDistrict(district) {
+  {% comment %} async function fetchPlacesByDistrict(district) {
     try {
       console.log("Fetching places for district:", district);
       const response = await fetch(`/places-by-district/${district}`);
@@ -244,15 +248,15 @@
       console.error("Error fetching places by district:", error);
     }
   }
-  async function fetchPlacesByTag(tag) {
+  async function fetchPlacesByCategory(category) {
     try {
-      console.log("Fetching places for tag:", tag);
-      const response = await fetch(`/places-by-tag/${tag}`);
+      console.log("Fetching places for category:", category);
+      const response = await fetch(`/places-by-category/${category}`);
       const data = await response.json();
-      console.log("Fetched data for tag:", data);
+      console.log("Fetched data for category:", data);
   
       if (!data.places || !data.places.length) {
-        alert("No places found with this tag.");
+        alert("No places found in this category.");
         return;
       }
   
@@ -260,11 +264,50 @@
       renderBarChart(data.places);
       displayPlacesOnMap(data.places);
     } catch (error) {
-      console.error("Error fetching places by tag:", error);
+      console.error("Error fetching places by category:", error);
+    }
+  } {% endcomment %}
+
+{% comment %} 
+  async function fetchPlacesByCategory(category) {
+    try {
+      const encodedCategory = encodeURIComponent(category); // Encode the category
+      console.log("Fetching places for category:", category);
+  
+      const response = await fetch(`/places-by-category/${encodedCategory}`);  // Use the encoded value in the URL
+      const data = await response.json();
+      console.log("Fetched data for category:", data);
+  
+      if (!data.places || !data.places.length) {
+        alert("No places found in this category.");
+        return;
+      }
+  
+      // Example of displaying the category and place names on the UI
+      const placesContainer = document.getElementById("places-container");
+      placesContainer.innerHTML = "";  // Clear any previous results
+  
+      data.places.forEach(place => {
+        const placeElement = document.createElement("div");
+        placeElement.classList.add("place-item");
+        placeElement.innerHTML = `
+          <h3>${place.name}</h3>
+          <p><strong>Category:</strong> ${place.category}</p>
+          <p><strong>Description:</strong> ${place.description}</p>
+          <p><strong>Crowd Level:</strong> ${place.crowdlevel}</p>
+          <p><strong>Location:</strong> ${place.location}</p>
+        `;
+        placesContainer.appendChild(placeElement);
+      });
+  
+      document.getElementById("chart-wrapper").style.display = "block";
+      renderBarChart(data.places);
+      displayPlacesOnMap(data.places);
+    } catch (error) {
+      console.error("Error fetching places by category:", error);
     }
   }
-  
-
+   {% endcomment %}
   function displayPlacesOnMap(places) {
     places.forEach(place => {
       if (place.latitude && place.longitude) {
@@ -273,34 +316,35 @@
       }
     });
   }
-  function renderBarChart(places) {
+  {% comment %} function renderBarChart(places) {
     console.log('Places Data:', places);
-  
+
+    // Sort places by crowd level
     places.sort((a, b) => b.crowdlevel - a.crowdlevel);
-  
+
     const ctx = document.getElementById('bar-chart').getContext('2d');
-  
+
     if (window.barChart) {
       window.barChart.destroy();
     }
-  
+
     const chartData = places.map(place => place.crowdlevel);
     const labels = places.map(place => place.name);
-  
+
     const getColor = (crowdLevel) => {
-      if (crowdLevel >= 75) return '#FF0000';
-      else if (crowdLevel >= 50) return '#FFEB3B';
-      else return '#4CAF50';
+      if (crowdLevel >= 75) return '#FF0000'; // High crowd
+      else if (crowdLevel >= 50) return '#FFEB3B'; // Medium crowd
+      else return '#4CAF50'; // Low crowd
     };
-  
+
     const backgroundColors = places.map(place => getColor(place.crowdlevel));
-  
+
     window.barChart = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: labels,
         datasets: [{
-          label: 'Popularity',
+          label: 'Crowd Level',
           data: chartData,
           backgroundColor: backgroundColors,
           borderColor: '#388E3C',
@@ -308,7 +352,8 @@
         }]
       },
       options: {
-        onClick: function (evt, elements) {
+        onClick: function (evt, activeEls, chart) {
+          const elements = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
           if (elements.length > 0) {
             const index = elements[0].index;
             const selectedPlace = places[index];
@@ -325,45 +370,127 @@
         }
       }
     });
+}   {% endcomment %}
+
+
+// Function to fetch places by district
+// Function to fetch places by district
+async function fetchPlacesByDistrict(district) {
+  try {
+    console.log("Fetching places for district:", district);
+    const response = await fetch(`/places-by-district/${district}/`);
+    const data = await response.json();
+    console.log("Fetched data:", data);
+
+    if (!data.places || !data.places.length) {
+      alert("No places found for this district.");
+      return;
+    }
+
+    // Display the chart and map wrapper
+    document.getElementById("chart-wrapper").style.display = "block";
+    
+    // Render the bar chart with the fetched data
+    renderBarChart(data.places);
+    
+    // Display places on the map
+    displayPlacesOnMap(data.places);
+
+  } catch (error) {
+    console.error("Error fetching places by district:", error);
   }
-  
-  
-// Function to handle location search
-function handleLocationSearch(location) {
-  fetchNearbyPlaces(location).then(places => {
-    renderBarChart(places);
-  });
+} 
+
+{% comment %} 
+async function fetchPlacesByDistrict(district) {
+  try {
+    console.log("Fetching places for category:", district);
+    const response = await fetch(`/places-by-district/${district}/`);
+    const data = await response.json();
+    console.log("Fetched data for districtss:", data);
+
+    if (!data.places || !data.places.length) {
+      alert("No places found in this districtss.");
+      return;
+    }
+
+    // Display the chart and map wrapper
+    document.getElementById("chart-wrapper").style.display = "block";
+    
+    // Render the bar chart with the fetched data
+    renderBarChart(data.places);
+    
+    // Display places on the map
+    displayPlacesOnMap(data.places);
+
+  } catch (error) {
+    console.error("Error fetching places by category:", error);
+  }
+} {% endcomment %}
+
+// Function to fetch places by category (hashtag)
+async function fetchPlacesByCategory(category) {
+  try {
+    console.log("Fetching places for category:", category);
+    const response = await fetch(`/places-by-category/${category}`);
+    const data = await response.json();
+    console.log("Fetched data for category:", data);
+
+    if (!data.places || !data.places.length) {
+      alert("No places found in this category.");
+      return;
+    }
+
+    // Display the chart and map wrapper
+    document.getElementById("chart-wrapper").style.display = "block";
+    
+    // Render the bar chart with the fetched data
+    renderBarChart(data.places);
+    
+    // Display places on the map
+    displayPlacesOnMap(data.places);
+
+  } catch (error) {
+    console.error("Error fetching places by category:", error);
+  }
 }
 
-// Event listener for search button
-document.getElementById('search-button')?.addEventListener('click', () => {
-  const input = document.getElementById('location-input')?.value.trim();
+// Function to display places on map
+function displayPlacesOnMap(places) {
+  clearMarkers(); // Clear existing Leaflet markers
 
-  if (!input) {
-    alert('Please enter a location or hashtag.');
-    return;
-  }
+  places.forEach(place => {
+    if (place.latitude && place.longitude) {
+      const marker = L.marker([place.latitude, place.longitude])
+        .addTo(map)
+        .bindPopup(`<b>${place.name}</b><br>${place.description || "No description"}`);
 
-  if (input.startsWith('#')) {
-    const tag = input.slice(1); // Remove '#'
-    fetchPlacesByTag(tag);
-  } else {
-    handleLocationSearch(input);
+      marker.on('click', () => showPlaceInfo(place));
+      mapMarkers.push(marker);
+    }
+  });
+
+  // Center and zoom to the first valid place
+  const firstPlace = places.find(p => p.latitude && p.longitude);
+  if (firstPlace) {
+    map.setView([firstPlace.latitude, firstPlace.longitude], 12);
   }
-});
+}
+
+
+
 
   {% comment %} function handleLocationSearch(location) {
     fetchNearbyPlaces(location).then(places => {
       renderBarChart(places);
     });
   }
-  
-  // Assuming you have an input field for the user to search for a location (like "Kathmandu")
-  {% comment %} document.getElementById('search-button').addEventListener('click', () => {
+   {% endcomment %}
+ // Assuming you have an input field for the user to search for a location (like "Kathmandu")
+    {% comment %} document.getElementById('search-button').addEventListener('click', () => {
     const location = document.getElementById('location-input').value; // Get the location from input
     handleLocationSearch(location); // Render the chart for that location
-  });
-   {% endcomment %} 
+  }); {% endcomment %}
 
 
   function displayPlacesOnMap(places) {
@@ -376,7 +503,19 @@ document.getElementById('search-button')?.addEventListener('click', () => {
       }
     });
   }
-
+  function displayPlaceDetails(place) {
+    const detailsContainer = document.getElementById('place-details');
+    detailsContainer.innerHTML = `
+      <h2>${place.name}</h2>
+      <p>${place.description}</p>
+      <p><strong>Popular For:</strong> ${place.popular_for}</p>
+      <p><strong>Location:</strong> ${place.lat}, ${place.lng}</p>
+      <p><strong>Crowd Level:</strong> ${place.crowdlevel}</p>
+      <!-- Add other details as needed -->
+    `;
+    detailsContainer.style.display = 'block'; // Show the details
+  } 
+  
   function showPlaceInfo(place) {
     const infoBox = document.getElementById("place-info-box");
     infoBox.style.display = "block";
@@ -387,7 +526,7 @@ document.getElementById('search-button')?.addEventListener('click', () => {
     document.getElementById("place-crowd").textContent = place.crowdlevel || "N/A";
     document.getElementById("place-status").textContent = place.status || "N/A";
     document.getElementById("place-tags").textContent = place.tags?.join(', ') || "N/A";
-  }
+  } 
 
   function addToSearchHistory(district) {
     const historySection = document.getElementById("search-history-section");
