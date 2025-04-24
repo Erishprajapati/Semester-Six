@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% comment %} {% extends "base.html" %} {% endcomment %}
 
 {% block content %}
 <style>
@@ -73,16 +73,15 @@
         {% endfor %}
     {% endif %}
 
-    <form method="POST">
+    <form method="POST" action="{% url 'update_profile' %}">
         {% csrf_token %}
-        <input type="text" name="username" value="{{ user.username }}" placeholder="Username" required>
-        <input type="email" name="email" value="{{ user.email }}" placeholder="Email" required>
-
-        <input type="password" name="new_password" placeholder="New Password (leave blank to keep old)">
+        <input type="text" name="username" value="{{ user.username }}" required>
+        <input type="email" name="email" value="{{ user.email }}" required>
+        <input type="password" name="new_password" placeholder="New Password (optional)">
         <input type="password" name="confirm_password" placeholder="Confirm New Password">
-
         <button type="submit">Update Profile</button>
     </form>
+    
 
     <div class="logout-link">
         <a href="{% url 'logout' %}">Logout</a>

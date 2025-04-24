@@ -29,9 +29,6 @@ urlpatterns = [
     path('places-by-district/<str:district_name>/', places_by_district, name='places_by_district'),
     path('places-by-category/<str:category>', views.places_by_category, name='places-by-category'),
     path('place-details/<int:place_id>/', views.place_details, name='place_details'),
-
-
-    
 ] 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

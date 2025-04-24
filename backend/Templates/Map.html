@@ -168,11 +168,58 @@
     });
 
     document.getElementById("search-button").addEventListener("click", async () => {
-      const district = document.getElementById("location-input").value.trim();
-      if (!district || !userLatLng) return alert("Please set your location and enter a district name.");
-      await fetchPlacesByDistrict(district);
-    });
-  };
+      const input = document.getElementById("location-input").value.trim();
+      if (!input || !userLatLng) return alert("Please set your location and enter a district name or #category.");
+    
+      if (input.startsWith("#")) {
+        const category = input.slice(1);
+        await fetchPlacesByCategory(category);
+      } else {
+        await fetchPlacesByDistrict(input);
+      }
+    });   
+  }
+  document.getElementById("submit-manual-location").addEventListener("click", async () => {
+    const locationInput = document.getElementById("manual-location-input").value.trim();
+  
+    if (!locationInput) {
+      alert("Please enter a location.");
+      return;
+    }
+  
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationInput)}`);
+      const data = await response.json();
+  
+      if (data.length === 0) {
+        alert("Location not found. Reloading page...");
+        window.location.reload(); // 👈 reload if location not found
+        return;
+      }
+  
+      const result = data[0];
+      const displayName = result.display_name.toLowerCase();
+  
+      if (!displayName.includes("nepal")) {
+        alert("Only locations within Nepal are supported. Reloading page...");
+        window.location.reload(); // 👈 reload if location is outside Nepal
+        return;
+      }
+  
+      const lat = parseFloat(result.lat);
+      const lon = parseFloat(result.lon);
+      userLatLng = [lat, lon];
+  
+      alert(`Location set to: ${result.display_name}`);
+      map.setView(userLatLng, 13);
+  
+    } catch (error) {
+      console.error("Error validating location:", error);
+      alert("Something went wrong. Reloading page...");
+      window.location.reload(); // 👈 reload on error
+    }
+  });
+  
 
   function initializeMap() {
     document.getElementById("map-wrapper").style.display = "block";
@@ -316,29 +363,37 @@
       }
     });
   }
-function renderBarChart(places) {
+  function renderBarChart(places) {
     console.log('Places Data:', places);
-
-    // Sort places by crowd level
+  
+    // Sort by crowdlevel descending
     places.sort((a, b) => b.crowdlevel - a.crowdlevel);
-
+  
+    // Filter places by crowd level
+    const highCrowd = places.filter(p => p.crowdlevel >= 75).slice(0, 3);
+    const mediumCrowd = places.filter(p => p.crowdlevel >= 50 && p.crowdlevel < 75).slice(0, 2);
+    const lowCrowd = places.filter(p => p.crowdlevel < 50).slice(0, 2);
+  
+    // Combine them
+    const selectedPlaces = [...highCrowd, ...mediumCrowd, ...lowCrowd];
+  
     const ctx = document.getElementById('bar-chart').getContext('2d');
-
+  
     if (window.barChart) {
       window.barChart.destroy();
     }
-
-    const chartData = places.map(place => place.crowdlevel);
-    const labels = places.map(place => place.name);
-
+  
+    const chartData = selectedPlaces.map(place => place.crowdlevel);
+    const labels = selectedPlaces.map(place => place.name);
+  
     const getColor = (crowdLevel) => {
       if (crowdLevel >= 75) return '#FF0000'; // High crowd
       else if (crowdLevel >= 50) return '#FFEB3B'; // Medium crowd
       else return '#4CAF50'; // Low crowd
     };
-
-    const backgroundColors = places.map(place => getColor(place.crowdlevel));
-
+  
+    const backgroundColors = selectedPlaces.map(place => getColor(place.crowdlevel));
+  
     window.barChart = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -356,7 +411,7 @@ function renderBarChart(places) {
           const elements = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
           if (elements.length > 0) {
             const index = elements[0].index;
-            const selectedPlace = places[index];
+            const selectedPlace = selectedPlaces[index];
             if (selectedPlace && selectedPlace.id) {
               window.location.href = `/place-details/${selectedPlace.id}/`;
             }
@@ -370,9 +425,8 @@ function renderBarChart(places) {
         }
       }
     });
-}  
-
-
+  }
+  
 // Function to fetch places by district
 // Function to fetch places by district
 async function fetchPlacesByDistrict(district) {
@@ -400,6 +454,32 @@ async function fetchPlacesByDistrict(district) {
     console.error("Error fetching places by district:", error);
   }
 } 
+{% comment %} async function fetchPlacesByCategory(category){
+  try{
+    console response = await fetch('/places-by-category/${category}/');
+    const data = await response.json();
+    console.log("Fetched data:", data);
+
+    if (!data.places || !data.places.length) {
+      alert("No places found for this category.");
+      return;
+    }
+
+    // Display the chart and map wrapper
+    document.getElementById("chart-wrapper").style.display = "block";
+    
+    // Render the bar chart with the fetched data
+    renderBarChart(data.places);
+    
+    // Display places on the map
+    displayPlacesOnMap(data.places);
+
+  } catch (error) {
+    console.error("Error fetching places by district:", error);
+  }
+} 
+ {% endcomment %}
+
 
 {% comment %} 
 async function fetchPlacesByDistrict(district) {
@@ -432,13 +512,12 @@ async function fetchPlacesByDistrict(district) {
 async function fetchPlacesByCategory(category) {
   try {
     console.log("Fetching places for category:", category);
-    const response = await fetch(`/places-by-tag/${category}`);
+    const response = await fetch(`/places-by-category/${category}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
 
-if (!response.ok) {
-  throw new Error(`HTTP error! Status: ${response.status}`);
-}
-
-const data = await response.json();
+    const data = await response.json();
 
     console.log("Fetched data for category:", data);
 
@@ -458,6 +537,7 @@ const data = await response.json();
 
   } catch (error) {
     console.error("Error fetching places by category:", error);
+    alert("An error occurred while fetching places. Please try again.");
   }
 }
 
@@ -466,15 +546,16 @@ function displayPlacesOnMap(places) {
   clearMarkers(); // Clear existing Leaflet markers
 
   places.forEach(place => {
-    if (place.latitude && place.longitude) {
-      const marker = L.marker([place.latitude, place.longitude])
+    if (place.lat && place.lng) {
+      const marker = L.marker([place.lat, place.lng])
         .addTo(map)
         .bindPopup(`<b>${place.name}</b><br>${place.description || "No description"}`);
-
+  
       marker.on('click', () => showPlaceInfo(place));
       mapMarkers.push(marker);
     }
   });
+  
 
   // Center and zoom to the first valid place
   const firstPlace = places.find(p => p.latitude && p.longitude);
@@ -482,21 +563,58 @@ function displayPlacesOnMap(places) {
     map.setView([firstPlace.latitude, firstPlace.longitude], 12);
   }
 }
+function showPlacesOnMap(places) {
+  // Remove existing place markers or polylines if needed
+  if (window.placeMarkers) {
+    window.placeMarkers.forEach(marker => map.removeLayer(marker));
+  }
+  if (window.placePaths) {
+    window.placePaths.forEach(path => map.removeLayer(path));
+  }
+
+  window.placeMarkers = [];
+  window.placePaths = [];
+
+  places.forEach(place => {
+    const coords = [place.latitude, place.longitude]; // Ensure your API returns these
+
+    // Create marker for each place
+    const marker = L.marker(coords).addTo(map).bindPopup(place.name);
+    window.placeMarkers.push(marker);
+
+    // Draw line from user location to this place
+    if (userLatLng) {
+      const path = L.polyline([userLatLng, coords], {
+        color: 'blue',
+        weight: 2,
+        dashArray: '4'
+      }).addTo(map);
+      window.placePaths.push(path);
+    }
+  });
+
+  // Zoom out to fit all markers and user location
+  const bounds = L.latLngBounds([
+    ...places.map(p => [p.latitude, p.longitude]),
+    userLatLng
+  ]);
+  map.fitBounds(bounds, { padding: [50, 50] });
+}
 
 
 
 
-  {% comment %} function handleLocationSearch(location) {
+{% comment %} function handleLocationSearch(location) {
     fetchNearbyPlaces(location).then(places => {
       renderBarChart(places);
     });
   }
-   {% endcomment %}
+   
  // Assuming you have an input field for the user to search for a location (like "Kathmandu")
-    {% comment %} document.getElementById('search-button').addEventListener('click', () => {
+    document.getElementById('search-button').addEventListener('click', () => {
     const location = document.getElementById('location-input').value; // Get the location from input
     handleLocationSearch(location); // Render the chart for that location
-  }); {% endcomment %}
+  });  {% endcomment %}
 
 
   function displayPlacesOnMap(places) {

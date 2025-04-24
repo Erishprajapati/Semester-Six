@@ -134,3 +134,27 @@ def home(request):
 def graph(request):
     return render(request, 'graph.html')
 
+@login_required
+def update_profile(request):
+    if request.method == 'POST':
+        user = request.user
+        username = request.POST['username']
+        email = request.POST['email']
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        user.username = username
+        user.email = email
+
+        if new_password:
+            if new_password == confirm_password:
+                user.set_password(new_password)
+            else:
+                messages.error(request, "Passwords do not match.")
+                return redirect('update_profile')  # Or re-render the form with error
+
+        user.save()
+        messages.success(request, "Profile updated.")
+        return redirect('login')  # Redirect to login page
+
+    return render(request, 'accounts/profile.html')

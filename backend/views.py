@@ -144,65 +144,53 @@ def weather_view(request):
 """Content based filtering algorithm"""
 
 TAG_WEIGHTS = {
-    'hiking': 3,
-    'nature': 2,
-    'picnic': 1,
-    'religious': 2,
-    'wildlife': 2,
-    'adventure': 3,
-    # Add more if needed
+    'spiritual': 1.5,
+    'heritage': 1.2,
+    'temple': 1.3,
+    'nature': 1.1,
+    # Add more tags and weights as needed
 }
-
 @api_view(['GET'])
 def recommend_places(request, place_name):
     place = get_object_or_404(Place, name__iexact=place_name)
     selected_tags = place.tags.all()
     selected_tag_names = set(selected_tags.values_list('name', flat=True))
 
-    # Get user preferences if logged in
     user = request.user if request.user.is_authenticated else None
     user_preference_tags = set()
     if user and hasattr(user, 'userpreference'):
         user_preference_tags = set(user.userpreference.tags.values_list('name', flat=True))
 
-    # Find all other places with similar tags
+    # 🔍 Start with tag-based recommendation
     related_places = Place.objects.filter(tags__in=selected_tags).exclude(id=place.id).distinct()
+
+    # 🔁 Fallback: if less than 3 related by tags, fallback to same category
+    if related_places.count() < 3:
+        related_places = Place.objects.filter(category=place.category).exclude(id=place.id)
 
     place_scores = []
     for p in related_places:
         other_tag_names = set(p.tags.values_list('name', flat=True))
-
-        # Calculate tag intersection
         shared_tags = selected_tag_names.intersection(other_tag_names)
-
-        # Weighted score
         weighted_score = sum(TAG_WEIGHTS.get(tag, 1) for tag in shared_tags)
-
-        # Normalize
         normalized_score = weighted_score / max(sum(TAG_WEIGHTS.get(tag, 1) for tag in selected_tag_names), 1)
-
-        # User preference boost
         preference_boost = len(other_tag_names.intersection(user_preference_tags)) * 0.1
-
         final_score = normalized_score + preference_boost
 
-        place_scores.append((p, final_score))
-
-    # Sort by final score
-    sorted_places = sorted(place_scores, key=lambda x: x[1], reverse=True)
-
-    # Top 5
-    top_places = []
-    for p, score in sorted_places[:5]:
         place_data = PlaceSerializer(p).data
         place_data['visitor_count'] = random.randint(50, 500)
-        place_data['score'] = round(score, 2)
-        top_places.append(place_data)
+        place_data['score'] = round(final_score, 2)
+        place_scores.append((place_data, final_score))
+
+    sorted_places = sorted(place_scores, key=lambda x: x[1], reverse=True)
+    top_places = [data for data, score in sorted_places[:5]]
 
     return Response({
         "base_place": PlaceSerializer(place).data,
         "recommended": top_places
     })
+
+
 @api_view(['GET'])
 def generate_fake_data(request):
     generated_fake_crowd_data()
@@ -304,7 +292,7 @@ def places_by_district(request, district_name):
         latest_crowd = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
 
         result.append({
-            'id' : place.id,
+            'id': place.id,
             'name': place.name,
             'description': place.description,
             'popular_for': place.popular_for,
@@ -312,12 +300,12 @@ def places_by_district(request, district_name):
             'crowdlevel': latest_crowd.crowdlevel if latest_crowd else None,  # Use None if no data
             'status': latest_crowd.status if latest_crowd else None,  # Use None if no data
             'tags': list(place.tags.values_list('name', flat=True)),
-            'lat': place.latitude,             
-            'lng': place.longitude             
+            'latitude': place.latitude,  # Changed from 'lat' to 'latitude'
+            'longitude': place.longitude  # Changed from 'lng' to 'longitude'
         })
 
-
     return JsonResponse({'places': result})
+
 
 @api_view(['GET'])
 def places_by_tag(request, tag_name):
@@ -408,3 +396,28 @@ def add_place(request):
             "message": "Place created successfully.",
             "place": PlaceSerializer(place).data
         })
+
+@login_required
+def update_profile(request):
+    if request.method == 'POST':
+        user = request.user
+        username = request.POST['username']
+        email = request.POST['email']
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        user.username = username
+        user.email = email
+
+        if new_password:
+            if new_password == confirm_password:
+                user.set_password(new_password)
+            else:
+                messages.error(request, "Passwords do not match.")
+                return redirect('update_profile')  # Or re-render the form with error
+
+        user.save()
+        messages.success(request, "Profile updated.")
+        return redirect('login')  # Redirect to login page
+
+    return render(request, 'profile.html')

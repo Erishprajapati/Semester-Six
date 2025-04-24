@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>{% block title %}Location Tracker{% endblock %}</title>
+  <title>{% block title %}Peak Times{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Styles & Libraries -->
@@ -127,7 +127,11 @@
 
   <!-- Navbar -->
   <nav id="navbar">
-    <div class="nav-brand">Peak Times</div>
+    <a href="/accounts/dashboard/" style="text-decoration: none; color: inherit;">
+      Peak Times
+    </a>
+    
+  </title>
 
     <div class="nav-right">
       {% if user.is_authenticated %}
