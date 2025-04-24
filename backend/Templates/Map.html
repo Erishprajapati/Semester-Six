@@ -228,7 +228,6 @@
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
   }
-
   function getCurrentLocation() {
     navigator.geolocation.getCurrentPosition(pos => {
       userLatLng = [pos.coords.latitude, pos.coords.longitude];
@@ -238,6 +237,7 @@
       alert("Location access denied.");
     });
   }
+  
 
   function showUserLocation(coords, label) {
     map.setView(coords, 13);
@@ -542,7 +542,7 @@ async function fetchPlacesByCategory(category) {
 }
 
 // Function to display places on map
-function displayPlacesOnMap(places) {
+{% comment %} function displayPlacesOnMap(places) {
   clearMarkers(); // Clear existing Leaflet markers
 
   places.forEach(place => {
@@ -562,7 +562,7 @@ function displayPlacesOnMap(places) {
   if (firstPlace) {
     map.setView([firstPlace.latitude, firstPlace.longitude], 12);
   }
-}
+} {% endcomment %}
 function showPlacesOnMap(places) {
   // Remove existing place markers or polylines if needed
   if (window.placeMarkers) {
@@ -617,16 +617,32 @@ function showPlacesOnMap(places) {
   });  {% endcomment %}
 
 
-  function displayPlacesOnMap(places) {
-    places.forEach(place => {
-      if (place.latitude && place.longitude) {
-        const marker = L.marker([place.latitude, place.longitude]).addTo(map)
-          .bindPopup(`<b>${place.name}</b><br>${place.description || "No description"}`);
-        
-        marker.on('click', () => showPlaceInfo(place));
-      }
-    });
-  }
+  // Function to display places and show the route from user location to the searched place
+function displayPlacesOnMap(places) {
+  places.forEach(place => {
+    if (place.latitude && place.longitude) {
+      const marker = L.marker([place.latitude, place.longitude]).addTo(map)
+        .bindPopup(`<b>${place.name}</b><br>${place.description || "No description"}`);
+
+      marker.on('click', () => {
+        showPlaceInfo(place);
+
+        // Fetch the user's current location
+        if (userLatLng) {
+          const userLocation = L.latLng(userLatLng[0], userLatLng[1]);
+          const placeLocation = L.latLng(place.latitude, place.longitude);
+          
+          // Add the route from the user's current location to the clicked place
+          L.Routing.control({
+            waypoints: [userLocation, placeLocation],
+            routeWhileDragging: true
+          }).addTo(map);
+        }
+      });
+    }
+  });
+}
+
   function displayPlaceDetails(place) {
     const detailsContainer = document.getElementById('place-details');
     detailsContainer.innerHTML = `
