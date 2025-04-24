@@ -167,8 +167,8 @@
       }
     });
 
-    document.getElementById("search-city-btn").addEventListener("click", async () => {
-      const district = document.getElementById("city-search-input").value.trim();
+    document.getElementById("search-button").addEventListener("click", async () => {
+      const district = document.getElementById("location-input").value.trim();
       if (!district || !userLatLng) return alert("Please set your location and enter a district name.");
       await fetchPlacesByDistrict(district);
     });
@@ -316,7 +316,7 @@
       }
     });
   }
-  {% comment %} function renderBarChart(places) {
+function renderBarChart(places) {
     console.log('Places Data:', places);
 
     // Sort places by crowd level
@@ -358,7 +358,7 @@
             const index = elements[0].index;
             const selectedPlace = places[index];
             if (selectedPlace && selectedPlace.id) {
-              window.location.href = `/placedetails/${selectedPlace.id}/`;
+              window.location.href = `/place-details/${selectedPlace.id}/`;
             }
           }
         },
@@ -370,7 +370,7 @@
         }
       }
     });
-}   {% endcomment %}
+}  
 
 
 // Function to fetch places by district
@@ -432,8 +432,14 @@ async function fetchPlacesByDistrict(district) {
 async function fetchPlacesByCategory(category) {
   try {
     console.log("Fetching places for category:", category);
-    const response = await fetch(`/places-by-category/${category}`);
-    const data = await response.json();
+    const response = await fetch(`/places-by-tag/${category}`);
+
+if (!response.ok) {
+  throw new Error(`HTTP error! Status: ${response.status}`);
+}
+
+const data = await response.json();
+
     console.log("Fetched data for category:", data);
 
     if (!data.places || !data.places.length) {

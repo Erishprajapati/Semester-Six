@@ -329,6 +329,7 @@ def places_by_tag(request, tag_name):
         latest_crowd = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
 
         result.append({
+            'id': place.id,
             'name': place.name,
             'description': place.description,
             'popular_for': place.popular_for,
