@@ -143,6 +143,7 @@ def weather_view(request):
 
 """Content based filtering algorithm"""
 
+
 TAG_WEIGHTS = {
     'spiritual': 1.5,
     'heritage': 1.2,
@@ -421,3 +422,7 @@ def update_profile(request):
         return redirect('login')  # Redirect to login page
 
     return render(request, 'profile.html')
+
+@login_required
+def add_place_form(request):
+    return render(request, 'addplace.html')

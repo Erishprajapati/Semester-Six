@@ -1,0 +1,82 @@
+<!-- templates/add_place.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Add a New Place</h2>
+
+<form id="place-form" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label>Name:</label>
+    <input type="text" name="name" required><br><br>
+
+    <label>Description:</label><br>
+    <textarea name="description" required></textarea><br><br>
+
+    <label>Popular For:</label><br>
+    <textarea name="popular_for" required></textarea><br><br>
+
+    <label>Category:</label>
+    <input type="text" name="category" value="Travel"><br><br>
+
+    <label>Location:</label>
+    <input type="text" name="location"><br><br>
+
+    <label>District:</label>
+    <input type="text" name="district" required><br><br>
+
+    <label>Latitude:</label>
+    <input type="number" name="latitude" step="any"><br><br>
+
+    <label>Longitude:</label>
+    <input type="number" name="longitude" step="any"><br><br>
+
+    <label>Tags (comma-separated):</label>
+    <input type="text" name="tags"><br><br>
+
+    <label>Image:</label>
+    <input type="file" name="image"><br><br>
+
+    <button type="submit">Add Place</button>
+</form>
+
+<div id="response-message"></div>
+{% endblock %}
+
+{% block script %}
+<script>
+    const form = document.getElementById('place-form');
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+
+        // Convert comma-separated tags to array
+        const tagsStr = formData.get('tags');
+        const tags = tagsStr.split(',').map(tag => tag.trim());
+        formData.delete('tags'); // remove original
+        tags.forEach(tag => formData.append('tags', tag));
+
+        fetch('/api/add-place/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            const resDiv = document.getElementById("response-message");
+            if (data.error) {
+                resDiv.innerHTML = `<p style="color:red;">${data.error}</p>`;
+            } else {
+                resDiv.innerHTML = `<p style="color:green;">${data.message}</p>`;
+                form.reset();
+            }
+        })
+        .catch(err => {
+            console.error("Error:", err);
+        });
+    });
+</script>
+{% endblock %}

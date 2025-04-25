@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "jazzmin",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -128,6 +129,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -135,3 +137,28 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+JAZZMIN_SETTINGS = {
+    "site_title": "Admin Dashboard",
+    "site_header": "Admin Panel",
+    "site_brand": "Peak Times",
+    # "site_logo": "media/place_images",  # Path to your static logo
+    "welcome_sign": "Welcome to Map Tracker Admin",
+
+    "topmenu_links": [
+        {"name": "Home",  "url": "/", "permissions": ["auth.view_user"]},
+        {"model": "auth.User"},
+        {"app": "your_app_name"},
+    ],
+
+    "show_sidebar": True,
+    "navigation_expanded": True,
+
+    "icons": {
+        "auth": "fas fa-users",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users-cog",
+    },
+
+    "changeform_format": "collapsible",  # or "horizontal_tabs", "vertical_tabs"
+}
