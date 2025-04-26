@@ -39,5 +39,4 @@ class CrowdDataAdmin(admin.ModelAdmin):
     search_fields = ('place',)
     list_editable = ('status',)
     list_display_links = ('place',)
-
 admin.site.register(CrowdData, CrowdDataAdmin)
