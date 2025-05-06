@@ -116,7 +116,7 @@
             {% endfor %}
         {% endif %}
 
-        <form method="POST">
+        <form method="POST" action="{% url 'register' %}">
             {% csrf_token %}
             <input type="text" name="username" placeholder="Username" required pattern="[A-Za-z0-9]{3,}">
             <input type="email" name="email" placeholder="Email" required>
