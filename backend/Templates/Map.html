@@ -63,6 +63,191 @@
 
 <!-- Styles -->
 <style>
+  /* Login Section Styling */
+  #login-section {
+    width: 90%;
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: var(--card-background);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+  }
+
+  #login-section form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  #login-section label {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  #login-section input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  #login-section input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  #login-section button {
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  #login-section button:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+  }
+
+  /* Loading States */
+  .loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+  }
+
+  .loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
+    border: 2px solid var(--primary-color);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Error Messages */
+  .error-message {
+    color: #dc2626;
+    background-color: #fee2e2;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin: 1rem 0;
+    font-size: 0.875rem;
+  }
+
+  /* Success Messages */
+  .success-message {
+    color: #059669;
+    background-color: #d1fae5;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin: 1rem 0;
+    font-size: 0.875rem;
+  }
+
+  /* Map Controls */
+  .map-controls {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    background: white;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-md);
+  }
+
+  .map-controls button {
+    display: block;
+    width: 100%;
+    margin: 0.25rem 0;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 0.25rem;
+    background: var(--primary-color);
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .map-controls button:hover {
+    background: var(--primary-hover);
+  }
+
+  /* Place Info Box Improvements */
+  #place-info-box {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 90%;
+    max-width: 400px;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: var(--shadow-lg);
+    padding: 1.5rem;
+    z-index: 1000;
+    transform: translateY(0);
+    transition: transform 0.3s ease;
+  }
+
+  #place-info-box.hidden {
+    transform: translateY(150%);
+  }
+
+  #place-info-box h4 {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  #place-info-box p {
+    margin: 0.5rem 0;
+    color: var(--text-secondary);
+  }
+
+  #place-info-box strong {
+    color: var(--text-primary);
+  }
+
+  /* Close button for info box */
+  .close-info {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.25rem;
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+
+  .close-info:hover {
+    color: var(--text-primary);
+  }
+
   /* Center the location access prompt */
   #location-access-prompt {
     display: block;
@@ -162,6 +347,31 @@
     shadowSize: [41, 41]
   });
 
+  // Utility functions
+  function showLoading(element) {
+    element.classList.add('loading');
+  }
+
+  function hideLoading(element) {
+    element.classList.remove('loading');
+  }
+
+  function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.textContent = message;
+    document.body.appendChild(errorDiv);
+    setTimeout(() => errorDiv.remove(), 5000);
+  }
+
+  function showSuccess(message) {
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success-message';
+    successDiv.textContent = message;
+    document.body.appendChild(successDiv);
+    setTimeout(() => successDiv.remove(), 5000);
+  }
+
   window.onload = () => {
     document.getElementById("location-access-prompt").style.display = "block";
 
@@ -221,34 +431,105 @@
     });
 
     document.getElementById("search-button").addEventListener("click", async () => {
+      const searchButton = document.getElementById("search-button");
       const input = document.getElementById("location-input").value.trim();
-      if (!input || !userLatLng) return alert("Please set your location and enter a district name or #category.");
+      
+      if (!input || !userLatLng) {
+        showError("Please set your location and enter a district name or #category.");
+        return;
+      }
 
-      if (input.startsWith("#")) {
-        const category = input.slice(1);
-        await fetchPlacesByCategory(category);
-      } else {
-        await fetchPlacesByDistrict(input);
+      showLoading(searchButton);
+      try {
+        if (input.startsWith("#")) {
+          const category = input.slice(1);
+          await fetchPlacesByCategory(category);
+        } else {
+          await fetchPlacesByDistrict(input);
+        }
+        showSuccess('Search completed successfully');
+      } catch (error) {
+        console.error('Search error:', error);
+        showError('Failed to complete search. Please try again.');
+      } finally {
+        hideLoading(searchButton);
+      }
+    });
+
+    // Add keyboard support for search
+    document.getElementById("location-input").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        document.getElementById("search-button").click();
       }
     });
   };
 
+  // Initialize map with better error handling
   function initializeMap() {
-    document.getElementById("map-wrapper").style.display = "block";
-    map = L.map('map').setView([27.7, 85.3], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+    try {
+      document.getElementById("map-wrapper").style.display = "block";
+      map = L.map('map').setView([27.7, 85.3], 13);
+      
+      // Add different map layers
+      const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      });
+
+      const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri'
+      });
+
+      const baseMaps = {
+        "Street": osmLayer,
+        "Satellite": satelliteLayer
+      };
+
+      L.control.layers(baseMaps).addTo(map);
+      osmLayer.addTo(map);
+
+      // Add zoom control
+      L.control.zoom({
+        position: 'bottomright'
+      }).addTo(map);
+
+      // Add scale control
+      L.control.scale({
+        imperial: false,
+        position: 'bottomleft'
+      }).addTo(map);
+
+      showSuccess('Map initialized successfully');
+    } catch (error) {
+      console.error('Error initializing map:', error);
+      showError('Failed to initialize map. Please refresh the page.');
+    }
   }
 
+  // Improved location handling
   function getCurrentLocation() {
-    navigator.geolocation.getCurrentPosition(pos => {
-      userLatLng = [pos.coords.latitude, pos.coords.longitude];
-      showUserLocation(userLatLng, "You are here!");
-      document.getElementById("city-search-section").style.display = "block";
-    }, () => {
-      alert("Location access denied.");
-    });
+    const locationPrompt = document.getElementById("location-access-prompt");
+    showLoading(locationPrompt);
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        hideLoading(locationPrompt);
+        userLatLng = [pos.coords.latitude, pos.coords.longitude];
+        showUserLocation(userLatLng, "You are here!");
+        document.getElementById("city-search-section").style.display = "block";
+        showSuccess('Location accessed successfully');
+      },
+      error => {
+        hideLoading(locationPrompt);
+        console.error('Geolocation error:', error);
+        showError('Location access denied. Please enable location services or use manual location.');
+        document.getElementById("manual-location-section").style.display = "block";
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      }
+    );
   }
 
   function showUserLocation(coords, label) {
@@ -696,14 +977,42 @@ function displayPlacesOnMap(places) {
   function showPlaceInfo(place) {
     const infoBox = document.getElementById("place-info-box");
     infoBox.style.display = "block";
+    infoBox.classList.remove('hidden');
+
+    // Add close button if not exists
+    if (!document.querySelector('.close-info')) {
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'close-info';
+      closeBtn.innerHTML = '×';
+      closeBtn.onclick = () => {
+        infoBox.classList.add('hidden');
+        setTimeout(() => {
+          infoBox.style.display = "none";
+        }, 300);
+      };
+      infoBox.appendChild(closeBtn);
+    }
+
+    // Update content with better formatting
     document.getElementById("place-title").textContent = place.name;
     document.getElementById("place-description").textContent = place.description || "No description available.";
     document.getElementById("place-popular").textContent = place.popularfor || "N/A";
     document.getElementById("place-category").textContent = place.category || "N/A";
-    document.getElementById("place-crowd").textContent = place.crowdlevel || "N/A";
+    document.getElementById("place-crowd").textContent = `${place.crowdlevel || "N/A"}%`;
     document.getElementById("place-status").textContent = place.status || "N/A";
     document.getElementById("place-tags").textContent = place.tags?.join(', ') || "N/A";
-  } 
+
+    // Add distance if available
+    if (userLatLng && place.latitude && place.longitude) {
+      const distance = calculateDistance(
+        userLatLng[0], userLatLng[1],
+        place.latitude, place.longitude
+      );
+      const distanceElement = document.createElement('p');
+      distanceElement.innerHTML = `<strong>Distance:</strong> ${distance.toFixed(2)} km`;
+      infoBox.insertBefore(distanceElement, infoBox.firstChild.nextSibling);
+    }
+  }  
 
   function addToSearchHistory(district) {
     const historySection = document.getElementById("search-history-section");
@@ -712,6 +1021,19 @@ function displayPlacesOnMap(places) {
     item.textContent = district;
     list.appendChild(item);
     historySection.style.display = "block";
+  }
+
+  // Calculate distance between two points
+  function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
   }
 </script>
 {% endif %}

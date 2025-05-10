@@ -79,7 +79,7 @@ def profile_view(request):
 
 @api_view(['GET'])
 def places_by_category(request, category):
-    # Clean input to remove # and convert to lowercase
+
     category_cleaned = category.replace('#', '').lower()
 
     latest_crowd = CrowdData.objects.filter(
@@ -149,7 +149,6 @@ TAG_WEIGHTS = {
     'heritage': 1.2,
     'temple': 1.3,
     'nature': 1.1,
-    # Add more tags and weights as needed
 }
 @api_view(['GET'])
 def recommend_places(request, place_name):
@@ -162,10 +161,9 @@ def recommend_places(request, place_name):
     if user and hasattr(user, 'userpreference'):
         user_preference_tags = set(user.userpreference.tags.values_list('name', flat=True))
 
-    # 🔍 Start with tag-based recommendation
+    
     related_places = Place.objects.filter(tags__in=selected_tags).exclude(id=place.id).distinct()
 
-    # 🔁 Fallback: if less than 3 related by tags, fallback to same category
     if related_places.count() < 3:
         related_places = Place.objects.filter(category=place.category).exclude(id=place.id)
 
