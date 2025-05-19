@@ -17,9 +17,9 @@ urlpatterns = [
     path('search/', views.search_places, name='search_places'),
     path('profile/',views.profile_view, name = 'profile_view' ),
     # path('placedetails/<int:place_id>/', views.place_details, name='place_details'),
-    path('placedetails/<int:place_id>', views.place_details, name='place_details'),
+    path('place-details/<int:place_id>/', views.place_details, name='place_details'),
     # path('places_by_category/<str:category>', views.places_by_category, name='places_by_category'),
-    path('add_place', views.add_place, name= "add_place"),
+    path('add-place/', views.add_place, name='add_place'),
     path('add-place-form/', views.add_place_form, name='add_place_form'),
     path('update-profile/', views.update_profile, name='update_profile'),
 
