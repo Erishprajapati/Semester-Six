@@ -18,6 +18,7 @@ class Place(models.Model):
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     image = models.ImageField(upload_to='place_images/', null=True, blank=True)  # ✅ New field
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     class Meta:
         unique_together = ('name', 'district')

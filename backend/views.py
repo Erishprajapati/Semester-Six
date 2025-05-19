@@ -330,71 +330,70 @@ def places_by_tag(request, tag_name):
 
     return JsonResponse({'places': result})
 
-@api_view(['POST'])
-@csrf_exempt
+@login_required
 def add_place(request):
-    data = request.data
+    if request.method == 'POST':
+        try:
+            # Get form data
+            name = request.POST.get('name')
+            description = request.POST.get('description')
+            popular_for = request.POST.get('popular_for')
+            category = request.POST.get('category')
+            district = request.POST.get('district')
+            location = request.POST.get('location')
+            latitude = request.POST.get('latitude')
+            longitude = request.POST.get('longitude')
+            image = request.FILES.get('image')
+            tags = request.POST.get('tags', '').split(',')
 
-    # ✅ Normalize name and district (lowercase for comparison)
-    name = data.get("name", "").strip().lower()
-    district = data.get("district", "").strip().lower()
+            # Debug print
+            print(f"Received data: {request.POST}")
+            print(f"Received files: {request.FILES}")
 
-    description = data.get("description", "")
-    popular_for = data.get("popular_for", "")
-    category = data.get("category", "Travel")
-    tags = data.get("tags", [])  # Expecting list of tag names
-    location = data.get("location", "Unknown")
-    latitude = data.get("latitude", None)
-    longitude = data.get("longitude", None)
+            # Validate required fields
+            if not all([name, description, popular_for, category, district, location, latitude, longitude, image]):
+                missing_fields = []
+                if not name: missing_fields.append('name')
+                if not description: missing_fields.append('description')
+                if not popular_for: missing_fields.append('popular_for')
+                if not category: missing_fields.append('category')
+                if not district: missing_fields.append('district')
+                if not location: missing_fields.append('location')
+                if not latitude: missing_fields.append('latitude')
+                if not longitude: missing_fields.append('longitude')
+                if not image: missing_fields.append('image')
+                
+                messages.error(request, f'Missing required fields: {", ".join(missing_fields)}')
+                return redirect('add_place')
 
-    # ✅ Check if the place already exists
-    existing_place = Place.objects.filter(name__iexact=name, district__iexact=district).first()
+            # Create new place
+            place = Place.objects.create(
+                name=name,
+                description=description,
+                popular_for=popular_for,
+                category=category,
+                district=district,
+                location=location,
+                latitude=latitude,
+                longitude=longitude,
+                image=image
+            )
 
-    if existing_place:
-        # ✅ If exists, update the existing place
-        existing_place.description = description
-        existing_place.popular_for = popular_for
-        existing_place.category = category
-        existing_place.location = location
-        existing_place.latitude = latitude
-        existing_place.longitude = longitude
-        
-        # Optionally, update or add crowdlevel if required
-        existing_place.save()
+            # Add tags
+            for tag_name in tags:
+                tag_name = tag_name.strip()
+                if tag_name:
+                    tag, created = Tag.objects.get_or_create(name=tag_name)
+                    place.tags.add(tag)
 
-        # ✅ Update tags if needed (clear current tags and add new ones)
-        existing_place.tags.clear()  # Clear old tags
-        for tag_name in tags:
-            tag_obj, created = Tag.objects.get_or_create(name=tag_name.strip())
-            existing_place.tags.add(tag_obj)
-
-        return Response({
-            "message": "Place updated successfully.",
-            "place": PlaceSerializer(existing_place).data
-        })
-
-    else:
-        # ✅ If doesn't exist, create a new place
-        place = Place.objects.create(
-            name=data.get("name", "").strip(),  # Keep original format for display
-            description=description,
-            popular_for=popular_for,
-            category=category,
-            location=location,
-            district=data.get("district", "").strip(),
-            latitude=latitude,
-            longitude=longitude
-        )
-
-        # ✅ Create Tags
-        for tag_name in tags:
-            tag_obj, created = Tag.objects.get_or_create(name=tag_name.strip())
-            place.tags.add(tag_obj)
-
-        return Response({
-            "message": "Place created successfully.",
-            "place": PlaceSerializer(place).data
-        })
+            messages.success(request, 'Place added successfully!')
+            return redirect('place_details', place_id=place.id)
+        except Exception as e:
+            print(f"Error adding place: {str(e)}")  # Debug print
+            messages.error(request, f'Error adding place: {str(e)}')
+            return redirect('add_place')
+    
+    return render(request, 'addplace.html')
 
 @login_required
 def update_profile(request):

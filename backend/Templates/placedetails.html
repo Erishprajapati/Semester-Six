@@ -459,9 +459,25 @@
         // Initialize map
         map = L.map('leaflet-map').setView([placeLat, placeLng], 13);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Add OpenStreetMap layer
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+        });
+
+        // Add Google Satellite layer
+        const satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            attribution: '&copy; Google'
+        });
+
+        // Add default layer
+        osmLayer.addTo(map);
+
+        // Add layer control
+        const baseMaps = {
+            "Street View": osmLayer,
+            "Satellite View": satelliteLayer
+        };
+        L.control.layers(baseMaps).addTo(map);
 
         // Blue icon for the place
         const blueIcon = L.icon({
