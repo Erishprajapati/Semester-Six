@@ -2,88 +2,146 @@
 {% block content %}
 
 <!-- Styles -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
+    :root {
+        --primary-color: #2563eb;
+        --primary-hover: #1d4ed8;
+        --text-primary: #1f2937;
+        --text-secondary: #4b5563;
+        --border-color: #e5e7eb;
+        --card-background: #ffffff;
+        --background: #f8fafc;
+    }
+
     body {
-        background: #f4f6f9;
-        font-family: 'Inter', sans-serif;
-        color: #2c3e50;
+        background: var(--background);
+        font-family: 'Poppins', sans-serif;
+        color: var(--text-primary);
+        line-height: 1.6;
     }
 
     .container-fluid {
-        padding: 3rem;
-    }
-
-    .row {
-        gap: 2.5rem;
-    }
-
-    .big-left-card {
-        background: #fff;
-        border-radius: 1.5rem;
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        overflow: hidden;
-        padding: 1.5rem;
-    }
-
-    .big-left-card:hover {
-        transform: scale(1.02);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-    }
-
-    .place-hero-img {
-        height: 400px;
-        width: 100%;
-        background-size: cover;
-        background-position: center;
-        border-top-left-radius: 1.5rem;
-        border-top-right-radius: 1.5rem;
-    }
-
-    .p-5 {
-        padding: 2.5rem;
-    }
-
-    .tag-badge {
-        background-color: #10ac84;
-        color: #fff;
-        padding: 0.5rem 1rem;
-        border-radius: 1.5rem;
-        font-size: 0.9rem;
-        margin-right: 0.5rem;
-        display: inline-block;
-    }
-
-    .tag-badge:hover {
-        background-color: #0b7d61;
-    }
-
-    #leaflet-map {
-        height: 450px;
-        margin-top: 2.5rem;
-        border-radius: 1.5rem;
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-    }
-
-    .right-side-card {
-        background: #fff;
-        border-radius: 1.5rem;
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        height: 100%;
+        max-width: 1400px;
+        margin: 0 auto;
         padding: 2rem;
     }
 
-    .right-side-card h4 {
+    .main-row {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: nowrap;
+    }
+
+    .main-left {
+        flex: 0 0 70%;
+        max-width: 70%;
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .main-right {
+        flex: 0 0 30%;
+        max-width: 30%;
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    /* Main Content Card */
+    .big-left-card {
+        background: var(--card-background);
+        border-radius: 1.25rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .big-left-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .place-hero-img {
+        height: 450px;
+        width: 100%;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+    }
+
+    .place-hero-img::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 50%;
+        background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+    }
+
+    .place-content {
+        padding: 2rem;
+    }
+
+    .place-title {
+        font-size: 2.5rem;
+        font-weight: 700;
         color: var(--text-primary);
+        margin-bottom: 1rem;
+    }
+
+    .place-description {
+        font-size: 1.1rem;
+        color: var(--text-secondary);
+        margin-bottom: 2rem;
+        line-height: 1.8;
+    }
+
+    /* Tags */
+    .tag-badge {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 0.5rem 1.25rem;
+        border-radius: 2rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin: 0.5rem 0.5rem 0.5rem 0;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+
+    .tag-badge:hover {
+        background-color: var(--primary-hover);
+        transform: translateY(-2px);
+    }
+
+    /* Map */
+    #leaflet-map {
+        height: 400px;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-top: 2rem;
+    }
+
+    /* Right Side Card */
+    .right-side-card {
+        background: var(--card-background);
+        border-radius: 1.25rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        height: 100%;
+    }
+
+    .right-side-card h4 {
         font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
         margin-bottom: 1.5rem;
-        padding-bottom: 0.75rem;
+        padding-bottom: 1rem;
         border-bottom: 2px solid var(--border-color);
         position: relative;
     }
@@ -93,73 +151,39 @@
         position: absolute;
         bottom: -2px;
         left: 0;
-        width: 50px;
+        width: 60px;
         height: 2px;
         background-color: var(--primary-color);
     }
 
+    /* Recommendations */
     #recommendations {
-        flex-grow: 1;
-        overflow-y: auto;
+        display: grid;
+        gap: 1.5rem;
         padding-right: 1rem;
-        margin-right: -1rem;
-    }
-
-    #recommendations::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    #recommendations::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 3px;
-    }
-
-    #recommendations::-webkit-scrollbar-thumb {
-        background: var(--primary-color);
-        border-radius: 3px;
-    }
-
-    #recommendations::-webkit-scrollbar-thumb:hover {
-        background: var(--primary-hover);
     }
 
     #recommendations .card {
         display: flex;
         align-items: center;
-        background: #fff;
+        background: var(--card-background);
         border-radius: 1rem;
-        margin-bottom: 1.5rem;
-        padding: 1rem;
+        padding: 1.25rem;
         border: 1px solid var(--border-color);
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
     }
 
-    #recommendations .card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 4px;
-        height: 100%;
-        background-color: var(--primary-color);
-        transform: scaleY(0);
-        transition: transform 0.3s ease;
-    }
-
     #recommendations .card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    }
-
-    #recommendations .card:hover::before {
-        transform: scaleY(1);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        border-color: var(--primary-color);
     }
 
     #recommendations img {
-        height: 100px;
-        width: 100px;
+        width: 120px;
+        height: 120px;
         object-fit: cover;
         border-radius: 0.75rem;
         margin-right: 1.5rem;
@@ -175,8 +199,9 @@
     }
 
     #recommendations h6 {
+        font-size: 1.2rem;
+        font-weight: 600;
         margin: 0 0 0.5rem 0;
-        font-size: 1.1rem;
         color: var(--text-primary);
     }
 
@@ -192,106 +217,212 @@
 
     #recommendations .category {
         color: var(--text-secondary);
-        font-size: 0.9rem;
-        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+        margin-bottom: 0.75rem;
         display: flex;
         align-items: center;
+        gap: 0.5rem;
     }
 
     #recommendations .category i {
-        margin-right: 0.5rem;
         color: var(--primary-color);
     }
 
-    #recommendations .visitor-count {
+    /* Stats Section */
+    .stats-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+
+    .stat-card {
+        background: var(--card-background);
+        padding: 1.5rem;
+        border-radius: 1rem;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 992px) {
+        .main-row {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .main-left, .main-right {
+            max-width: 100%;
+            flex: 1 1 100%;
+        }
+        #nearby-restaurants {
+            margin-top: 1rem;
+            max-height: none;
+        }
+    }
+
+    /* Add these styles for restaurant markers and info */
+    .restaurant-marker {
+        background: #ff4757;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         display: flex;
         align-items: center;
-        color: var(--text-secondary);
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 14px;
+        width: 28px;
+        height: 28px;
+    }
+
+    .restaurant-popup {
+        max-width: 200px;
+    }
+
+    .restaurant-popup h6 {
+        margin: 0 0 5px 0;
+        color: #2d3436;
+    }
+
+    .restaurant-popup p {
+        margin: 0;
         font-size: 0.9rem;
+        color: #636e72;
     }
 
-    #recommendations .visitor-count i {
-        margin-right: 0.5rem;
+    .restaurant-popup .rating {
+        color: #fdcb6e;
+        margin: 5px 0;
+    }
+
+    #nearby-restaurants {
+        background: var(--card-background);
+        border-radius: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        padding: 1.5rem;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .restaurant-list {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .restaurant-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        background: white;
+        border-radius: 0.75rem;
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+    }
+
+    .restaurant-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-color: var(--primary-color);
+    }
+
+    .restaurant-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        color: white;
+        font-size: 1.2rem;
+    }
+
+    .restaurant-info {
+        flex: 1;
+    }
+
+    .restaurant-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 0.25rem 0;
+    }
+
+    .restaurant-details {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    .restaurant-distance {
+        font-size: 0.85rem;
         color: var(--primary-color);
+        font-weight: 500;
     }
 
-    #recommendations .no-results {
-        text-align: center;
-        padding: 2rem;
-        color: var(--text-secondary);
+    .restaurant-number {
+        font-weight: bold;
+        color: var(--primary-color);
+        margin-right: 0.5rem;
     }
-
-    #recommendations .no-results i {
-        font-size: 2rem;
-        color: var(--text-secondary);
-        margin-bottom: 1rem;
-        display: block;
-    }
-
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    #recommendations .card {
-        animation: fadeInUp 0.5s ease forwards;
-        opacity: 0;
-    }
-
-    #recommendations .card:nth-child(1) { animation-delay: 0.1s; }
-    #recommendations .card:nth-child(2) { animation-delay: 0.2s; }
-    #recommendations .card:nth-child(3) { animation-delay: 0.3s; }
-    #recommendations .card:nth-child(4) { animation-delay: 0.4s; }
-    #recommendations .card:nth-child(5) { animation-delay: 0.5s; }
 </style>
 
 <!-- Main content -->
 <div class="container-fluid my-5">
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="big-left-card">
-                {% if place.image %}
-                    <div class="place-hero-img" style="background-image: url('{{ place.image.url }}');"></div>
-                {% endif %}
-                <div class="p-5">
-                    <h2>{{ place.name }}</h2>
-                    <p class="text-muted"><i class="bi bi-tag"></i> {{ place.category }}</p>
-                    <p><strong>Description:</strong> {{ place.description }}</p>
-                    <p><strong>Popular For:</strong> {{ place.popular_for }}</p>
-                    <p><strong>District:</strong> {{ place.district }}</p>
-                    <p><strong>Location:</strong> {{ place.location }}</p>
-                    <div class="mt-3">
-                        <strong>Tags:</strong>
-                        {% for tag in place.tags.all %}
-                            <span class="badge tag-badge">{{ tag.name }}</span>
-                        {% empty %}
-                            <span>No tags available.</span>
-                        {% endfor %}
-                        <div class="mt-4" id="weather-info">
-                            <h5><i class="bi bi-cloud-sun-fill me-2"></i> Current Weather</h5>
-                            <p class="text-muted">Fetching weather data...</p>
-                        </div>
-                        
+    <div class="main-center">
+        <div class="big-left-card">
+            {% if place.image %}
+                <div class="place-hero-img" style="background-image: url('{{ place.image.url }}');"></div>
+            {% endif %}
+            <div class="p-5">
+                <h2>{{ place.name }}</h2>
+                <p class="text-muted"><i class="bi bi-tag"></i> {{ place.category }}</p>
+                <p><strong>Description:</strong> {{ place.description }}</p>
+                <p><strong>Popular For:</strong> {{ place.popular_for }}</p>
+                <p><strong>District:</strong> {{ place.district }}</p>
+                <p><strong>Location:</strong> {{ place.location }}</p>
+                <div class="mt-3">
+                    <strong>Tags:</strong>
+                    {% for tag in place.tags.all %}
+                        <span class="badge tag-badge">{{ tag.name }}</span>
+                    {% empty %}
+                        <span>No tags available.</span>
+                    {% endfor %}
+                    <div class="mt-4" id="weather-info">
+                        <h5><i class="bi bi-cloud-sun-fill me-2"></i> Current Weather</h5>
+                        <p class="text-muted">Fetching weather data...</p>
                     </div>
-                    <div id="leaflet-map"></div>
-                    <div id="distance-info" class="mt-3"></div>
+                    
                 </div>
+                <div id="leaflet-map"></div>
+                <div id="distance-info" class="mt-3"></div>
             </div>
         </div>
-
-        <div class="col-lg-4">
-            <div class="right-side-card p-4">
-                <h4>Similar Places</h4>
-                <div id="recommendations">
-                    <!-- You can loop through similar places here if you want -->
-                </div>
-            </div>
+        <div class="right-side-card p-4 mt-4">
+            <h4>Similar Places</h4>
+            <div id="recommendations"></div>
+        </div>
+        <div id="nearby-restaurants" class="mt-4">
+            <h5><i class="bi bi-utensils me-2"></i>Nearby Restaurants</h5>
+            <div class="restaurant-list" id="restaurant-list"></div>
         </div>
     </div>
 </div>
@@ -300,38 +431,74 @@
 <script src="https://cdn.jsdelivr.net/npm/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const lat = {{ place.latitude|default:"0" }};
-        const lng = {{ place.longitude|default:"0" }};
+    // Global variables
+    let map;
+    let userLat, userLng;
+    let placeLat = {{ place.latitude|default:"0" }};
+    let placeLng = {{ place.longitude|default:"0" }};
 
-        const map = L.map('leaflet-map').setView([lat, lng], 13);
+    // Move calculateDistance function to global scope
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Radius of the earth in km
+        const dLat = deg2rad(lat2 - lat1);
+        const dLon = deg2rad(lon2 - lon1);
+        const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2); 
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+        const distance = R * c; // Distance in km
+        return distance;
+    }
+
+    function deg2rad(deg) {
+        return deg * (Math.PI/180);
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // Initialize map
+        map = L.map('leaflet-map').setView([placeLat, placeLng], 13);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // Marker for the place
-        L.marker([lat, lng]).addTo(map)
-            .bindPopup("{{ place.name }}")
-            .openPopup();
-
-        // Red icon for current user location
-        const redIcon = L.icon({
-            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+        // Blue icon for the place
+        const blueIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
             iconSize: [25, 41],
             iconAnchor: [12, 41],
             popupAnchor: [1, -34],
             shadowSize: [41, 41]
         });
 
-        // Get user location
+        // Red icon for current user location (move this outside the geolocation block for clarity)
+        const redIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        // Marker for the place with blue icon
+        L.marker([placeLat, placeLng], { icon: blueIcon }).addTo(map)
+            .bindPopup("{{ place.name }}")
+            .openPopup();
+
+        // Fetch nearby restaurants using place location
+        fetchNearbyRestaurants(placeLat, placeLng);
+
+        // Get user location only for routing
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 function (position) {
-                    const userLat = position.coords.latitude;
-                    const userLng = position.coords.longitude;
+                    userLat = position.coords.latitude;
+                    userLng = position.coords.longitude;
 
+                    // Always use red icon for user marker
                     L.marker([userLat, userLng], { icon: redIcon })
                         .addTo(map)
                         .bindPopup("You are here!")
@@ -341,7 +508,7 @@
                     const routingControl = L.Routing.control({
                         waypoints: [
                             L.latLng(userLat, userLng),
-                            L.latLng(lat, lng)
+                            L.latLng(placeLat, placeLng)
                         ],
                         routeWhileDragging: false,
                         draggableWaypoints: false,
@@ -366,61 +533,261 @@
                     console.warn("Geolocation error:", error.message);
                 }
             );
-        } else {
-            alert("Geolocation is not supported by your browser.");
         }
     });
+
+    // Restaurant fetching function
+    function fetchNearbyRestaurants(lat, lng) {
+        const radius = 1000; // 1km radius
+        const query = `
+            [out:json][timeout:25];
+            (
+              node["amenity"="restaurant"](around:${radius},${lat},${lng});
+              node["amenity"="cafe"](around:${radius},${lat},${lng});
+              node["amenity"="fast_food"](around:${radius},${lat},${lng});
+            );
+            out body;
+            >;
+            out skel qt;
+        `;
+
+        fetch('https://overpass-api.de/api/interpreter', {
+            method: 'POST',
+            body: query
+        })
+        .then(response => response.json())
+        .then(data => {
+            const restaurantList = document.getElementById('restaurant-list');
+            restaurantList.innerHTML = '';
+
+            if (data.elements && data.elements.length > 0) {
+                // Sort restaurants by distance from the place
+                const restaurants = data.elements.map(restaurant => {
+                    const distance = calculateDistance(
+                        placeLat, placeLng, // Use place coordinates for distance calculation
+                        restaurant.lat, restaurant.lon
+                    );
+                    return { ...restaurant, distance };
+                }).sort((a, b) => a.distance - b.distance)
+                .slice(0, 10); // Only take the 10 nearest restaurants
+
+                // Add markers to map
+                restaurants.forEach((restaurant, index) => {
+                    // Create custom restaurant marker with number
+                    const markerHtml = `
+                        <div class="restaurant-marker">
+                            ${index + 1}
+                        </div>
+                    `;
+                    
+                    const restaurantIcon = L.divIcon({
+                        html: markerHtml,
+                        className: 'custom-restaurant-marker',
+                        iconSize: [28, 28]
+                    });
+
+                    // Add marker to map
+                    const marker = L.marker([restaurant.lat, restaurant.lon], {
+                        icon: restaurantIcon
+                    }).addTo(map);
+
+                    // Create popup content
+                    const popupContent = `
+                        <div class="restaurant-popup">
+                            <h6><span class="restaurant-number">${index + 1}.</span>${restaurant.tags.name || 'Unnamed Restaurant'}</h6>
+                            <p>${restaurant.tags.cuisine || 'Various cuisines'}</p>
+                            <div class="rating">
+                                ${restaurant.tags.rating ? 
+                                    '★'.repeat(Math.floor(restaurant.tags.rating)) + 
+                                    '☆'.repeat(5 - Math.floor(restaurant.tags.rating)) : 
+                                    'No ratings yet'}
+                            </div>
+                            <p class="mb-0">${(restaurant.distance * 1000).toFixed(0)}m from {{ place.name }}</p>
+                        </div>
+                    `;
+                    marker.bindPopup(popupContent);
+
+                    // Add to list
+                    const restaurantItem = `
+                        <div class="restaurant-item">
+                            <div class="restaurant-icon">
+                                ${index + 1}
+                            </div>
+                            <div class="restaurant-info">
+                                <h6 class="restaurant-name">
+                                    <span class="restaurant-number">${index + 1}.</span>
+                                    ${restaurant.tags.name || 'Unnamed Restaurant'}
+                                </h6>
+                                <div class="restaurant-details">
+                                    ${restaurant.tags.cuisine || 'Various cuisines'}
+                                </div>
+                                <div class="restaurant-distance">
+                                    ${(restaurant.distance * 1000).toFixed(0)}m from {{ place.name }}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    restaurantList.innerHTML += restaurantItem;
+                });
+            } else {
+                restaurantList.innerHTML = `
+                    <div class="text-center py-3">
+                        <i class="bi bi-emoji-frown display-4 text-muted"></i>
+                        <p class="mt-2 text-muted">No restaurants found near {{ place.name }}</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching restaurants:', error);
+            document.getElementById('restaurant-list').innerHTML = `
+                <div class="text-center py-3">
+                    <i class="bi bi-exclamation-triangle display-4 text-danger"></i>
+                    <p class="mt-2 text-danger">Failed to load restaurants</p>
+                </div>
+            `;
+        });
+    }
 </script>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        fetch(`/api/recommend/{{ place.name }}`)
-            .then(response => response.json())
-            .then(data => {
-                const container = document.getElementById("recommendations");
-                container.innerHTML = ''; // Clear existing content
-                
-                if(data.recommended && data.recommended.length > 0) {
-                    data.recommended.forEach(place => {
-                        const card = `
-                            <div class="card">
-                                <img src="${place.image || 'https://via.placeholder.com/180'}" alt="${place.name}" class="img-fluid">
-                                <div class="card-content">
-                                    <h6>
-                                        <a href="/place-details/${place.id}/">${place.name}</a>
-                                    </h6>
-                                    <div class="category">
-                                        <i class="bi bi-tag"></i>
-                                        ${place.category}
+        // First get user's location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+
+                    // Then fetch recommendations
+                    fetch(`/api/recommend/{{ place.name }}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            const container = document.getElementById("recommendations");
+                            container.innerHTML = ''; // Clear existing content
+                            
+                            if(data.recommended && data.recommended.length > 0) {
+                                // Calculate distance for each place and sort
+                                const placesWithDistance = data.recommended.map(place => {
+                                    const distance = calculateDistance(
+                                        userLat, 
+                                        userLng, 
+                                        place.latitude, 
+                                        place.longitude
+                                    );
+                                    return { ...place, distance };
+                                });
+
+                                // Sort places by distance
+                                placesWithDistance.sort((a, b) => a.distance - b.distance);
+
+                                // Display sorted places
+                                placesWithDistance.forEach(place => {
+                                    const card = `
+                                        <div class="card">
+                                            <img src="${place.image || 'https://via.placeholder.com/180'}" alt="${place.name}" class="img-fluid">
+                                            <div class="card-content">
+                                                <h6>
+                                                    <a href="/place-details/${place.id}/">${place.name}</a>
+                                                </h6>
+                                                <div class="category">
+                                                    <i class="bi bi-tag"></i>
+                                                    ${place.category}
+                                                </div>
+                                                <div class="visitor-count">
+                                                    <i class="bi bi-people"></i>
+                                                    ${place.visitor_count} visitors
+                                                </div>
+                                                <div class="distance">
+                                                    <i class="bi bi-geo-alt"></i>
+                                                    ${place.distance.toFixed(1)} km away
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                    container.innerHTML += card;
+                                });
+                            } else {
+                                container.innerHTML = `
+                                    <div class="no-results">
+                                        <i class="bi bi-emoji-frown"></i>
+                                        <p>No similar places found.</p>
                                     </div>
-                                    <div class="visitor-count">
-                                        <i class="bi bi-people"></i>
-                                        ${place.visitor_count} visitors
+                                `;
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error fetching recommendations:", error);
+                            const container = document.getElementById("recommendations");
+                            container.innerHTML = `
+                                <div class="no-results">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <p>Failed to load recommendations.</p>
+                                </div>
+                            `;
+                        });
+                },
+                function (error) {
+                    console.warn("Geolocation error:", error.message);
+                    // If geolocation fails, show recommendations without sorting
+                    fetchRecommendationsWithoutLocation();
+                }
+            );
+        } else {
+            // If geolocation is not supported, show recommendations without sorting
+            fetchRecommendationsWithoutLocation();
+        }
+
+        // Function to fetch recommendations without location sorting
+        function fetchRecommendationsWithoutLocation() {
+            fetch(`/api/recommend/{{ place.name }}`)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById("recommendations");
+                    container.innerHTML = '';
+                    
+                    if(data.recommended && data.recommended.length > 0) {
+                        data.recommended.forEach(place => {
+                            const card = `
+                                <div class="card">
+                                    <img src="${place.image || 'https://via.placeholder.com/180'}" alt="${place.name}" class="img-fluid">
+                                    <div class="card-content">
+                                        <h6>
+                                            <a href="/place-details/${place.id}/">${place.name}</a>
+                                        </h6>
+                                        <div class="category">
+                                            <i class="bi bi-tag"></i>
+                                            ${place.category}
+                                        </div>
+                                        <div class="visitor-count">
+                                            <i class="bi bi-people"></i>
+                                            ${place.visitor_count} visitors
+                                        </div>
                                     </div>
                                 </div>
+                            `;
+                            container.innerHTML += card;
+                        });
+                    } else {
+                        container.innerHTML = `
+                            <div class="no-results">
+                                <i class="bi bi-emoji-frown"></i>
+                                <p>No similar places found.</p>
                             </div>
                         `;
-                        container.innerHTML += card;
-                    });
-                } else {
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching recommendations:", error);
+                    const container = document.getElementById("recommendations");
                     container.innerHTML = `
                         <div class="no-results">
-                            <i class="bi bi-emoji-frown"></i>
-                            <p>No similar places found.</p>
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <p>Failed to load recommendations.</p>
                         </div>
                     `;
-                }
-            })
-            .catch(error => {
-                console.error("Error fetching recommendations:", error);
-                const container = document.getElementById("recommendations");
-                container.innerHTML = `
-                    <div class="no-results">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <p>Failed to load recommendations.</p>
-                    </div>
-                `;
-            });
+                });
+        }
     });
 </script>
 <script>
