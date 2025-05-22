@@ -345,13 +345,15 @@ def add_place(request):
             longitude = request.POST.get('longitude')
             image = request.FILES.get('image')
             tags = request.POST.get('tags', '').split(',')
+            crowdlevel = request.POST.get('crowdlevel')
+            status = request.POST.get('status')
 
             # Debug print
             print(f"Received data: {request.POST}")
             print(f"Received files: {request.FILES}")
 
             # Validate required fields
-            if not all([name, description, popular_for, category, district, location, latitude, longitude, image]):
+            if not all([name, description, popular_for, category, district, location, latitude, longitude, image, crowdlevel, status]):
                 missing_fields = []
                 if not name: missing_fields.append('name')
                 if not description: missing_fields.append('description')
@@ -362,6 +364,8 @@ def add_place(request):
                 if not latitude: missing_fields.append('latitude')
                 if not longitude: missing_fields.append('longitude')
                 if not image: missing_fields.append('image')
+                if not crowdlevel: missing_fields.append('crowdlevel')
+                if not status: missing_fields.append('status')
                 
                 messages.error(request, f'Missing required fields: {", ".join(missing_fields)}')
                 return redirect('add_place')
@@ -376,7 +380,8 @@ def add_place(request):
                 location=location,
                 latitude=latitude,
                 longitude=longitude,
-                image=image
+                image=image,
+                added_by=request.user
             )
 
             # Add tags
@@ -385,6 +390,13 @@ def add_place(request):
                 if tag_name:
                     tag, created = Tag.objects.get_or_create(name=tag_name)
                     place.tags.add(tag)
+
+            # Create crowd data
+            CrowdData.objects.create(
+                place=place,
+                crowdlevel=int(crowdlevel),
+                status=status
+            )
 
             messages.success(request, 'Place added successfully!')
             return redirect('place_details', place_id=place.id)
