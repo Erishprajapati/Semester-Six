@@ -44,9 +44,14 @@ def profile_view(request):
 
         user.save()
         messages.success(request, "Profile updated successfully.")
-        return redirect('profile.html')
+        return redirect('profile')
 
-    return render(request, "profile.html")
+    # Get user's search history
+    search_history = SearchHistory.objects.filter(user=request.user)[:10]  # Get last 10 searches
+    
+    return render(request, "profile.html", {
+        'search_history': search_history
+    })
 
 # def places_by_category(request, category):
 #     category_cleaned = category.replace('#', '').lower()
@@ -79,6 +84,13 @@ def profile_view(request):
 
 @api_view(['GET'])
 def places_by_category(request, category):
+    # Record search history if user is authenticated
+    if request.user.is_authenticated:
+        SearchHistory.objects.create(
+            user=request.user,
+            search_query=category,
+            search_type='category'
+        )
 
     category_cleaned = category.replace('#', '').lower()
 
@@ -256,26 +268,27 @@ def search_places(request):
     if not query:
         return JsonResponse({'error': 'No search term provided.'}, status=400)
 
-    # Search for places matching the query
+    # Record search history if user is authenticated
+    if request.user.is_authenticated:
+        SearchHistory.objects.create(
+            user=request.user,
+            search_query=query,
+            search_type='place'
+        )
+
     places = Place.objects.filter(name__icontains=query)
     
     if not places:
         return JsonResponse({'error': 'No places found matching the query.'}, status=404)
     
     places_data = []
-    related_places_data = []
     
     for place in places:
-        # Get latest crowd data
         latest_crowd_data = CrowdData.objects.filter(place=place).aggregate(max_timestamp=Max('timestamp'))
         crowd_data = CrowdData.objects.filter(place=place, timestamp=latest_crowd_data['max_timestamp']).first()
-        
-        # Get place tags
         tags = list(place.tags.values_list('name', flat=True))
-        
-        # Add main place data
+
         places_data.append({
-            'id': place.id,
             'name': place.name,
             'latitude': place.latitude,
             'longitude': place.longitude,
@@ -285,43 +298,19 @@ def search_places(request):
             'crowd_level': crowd_data.crowdlevel if crowd_data else 'N/A',
             'tags': tags,
         })
-        
-        # Get related places based on tags
-        related_places = Place.objects.filter(tags__name__in=tags).exclude(id=place.id).distinct()
-        
-        for related_place in related_places:
-            latest_related_crowd = CrowdData.objects.filter(place=related_place).order_by('-timestamp').first()
-            related_tags = list(related_place.tags.values_list('name', flat=True))
-            
-            related_places_data.append({
-                'id': related_place.id,
-                'name': related_place.name,
-                'category': related_place.category,
-                'crowd_level': latest_related_crowd.crowdlevel if latest_related_crowd else 'N/A',
-                'tags': related_tags,
-                'shared_tags': list(set(tags).intersection(set(related_tags))),
-            })
     
-    # Prepare data for bar graph
-    tag_counts = {}
-    for place in related_places_data:
-        for tag in place['shared_tags']:
-            tag_counts[tag] = tag_counts.get(tag, 0) + 1
-    
-    # Sort tags by count for the bar graph
-    sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
-    
-    return JsonResponse({
-        'places': places_data,
-        'related_places': related_places_data,
-        'tag_statistics': {
-            'labels': [tag for tag, _ in sorted_tags],
-            'counts': [count for _, count in sorted_tags]
-        }
-    }, safe=False)
+    return JsonResponse({'places': places_data}, safe=False)
 
 @api_view(['GET'])
 def places_by_district(request, district_name):
+    # Record search history if user is authenticated
+    if request.user.is_authenticated:
+        SearchHistory.objects.create(
+            user=request.user,
+            search_query=district_name,
+            search_type='district'
+        )
+
     # Fetch places matching the district
     places = Place.objects.filter(district__iexact=district_name)
     result = []
@@ -335,11 +324,11 @@ def places_by_district(request, district_name):
             'description': place.description,
             'popular_for': place.popular_for,
             'category': place.category,
-            'crowdlevel': latest_crowd.crowdlevel if latest_crowd else None,  # Use None if no data
-            'status': latest_crowd.status if latest_crowd else None,  # Use None if no data
+            'crowdlevel': latest_crowd.crowdlevel if latest_crowd else None,
+            'status': latest_crowd.status if latest_crowd else None,
             'tags': list(place.tags.values_list('name', flat=True)),
-            'latitude': place.latitude,  # Changed from 'lat' to 'latitude'
-            'longitude': place.longitude  # Changed from 'lng' to 'longitude'
+            'latitude': place.latitude,
+            'longitude': place.longitude
         })
 
     return JsonResponse({'places': result})
@@ -474,3 +463,15 @@ def update_profile(request):
 @login_required
 def add_place_form(request):
     return render(request, 'addplace.html')
+
+@api_view(['GET'])
+@login_required
+def get_search_history(request):
+    search_history = SearchHistory.objects.filter(user=request.user).order_by('-timestamp')[:10]
+    searches = [{
+        'search_query': search.search_query,
+        'search_type': search.search_type,
+        'timestamp': search.timestamp.isoformat()
+    } for search in search_history]
+    
+    return JsonResponse({'searches': searches})

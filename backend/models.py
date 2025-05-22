@@ -63,5 +63,18 @@ class UserPreference(models.Model):
 
     def __str__(self):
         return f"{self.user} Preferences"
+
+class SearchHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    search_query = models.CharField(max_length=255)
+    search_type = models.CharField(max_length=50)  # 'place', 'district', or 'category'
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name_plural = 'Search Histories'
+    
+    def __str__(self):
+        return f"{self.user.username} searched for {self.search_query} at {self.timestamp}"
     
     
