@@ -142,7 +142,8 @@
           <div class="dropdown-content">
             <p>{{ user.username }}</p>
             <a href="{% url 'profile_view' %}">Profile</a>
-            <a href="{% url 'add_place' %}">Add Place</a>
+            <a href="{% url 'add_place_form' %}">Add Place</a>
+            <a href="#" id="searchHistoryBtn">Search History</a>
             <a href="{% url 'logout' %}">Logout</a>
           </div>
         </div>
@@ -154,10 +155,79 @@
     </div>
   </nav>
 
+  <!-- Search History Modal -->
+  <div id="searchHistoryModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background-color: white; margin: 15% auto; padding: 20px; border-radius: 8px; width: 80%; max-width: 500px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0;">Search History</h3>
+        <span class="close" style="cursor: pointer; font-size: 24px;">&times;</span>
+      </div>
+      <div id="searchHistoryList" style="max-height: 300px; overflow-y: auto;">
+        <!-- Search history items will be loaded here -->
+      </div>
+    </div>
+  </div>
+
   <!-- Main Content -->
   <main>
     {% block content %}{% endblock %}
   </main>
+
+  <script>
+    // Get modal elements
+    const modal = document.getElementById('searchHistoryModal');
+    const btn = document.getElementById('searchHistoryBtn');
+    const span = document.getElementsByClassName('close')[0];
+
+    // Open modal when clicking the search history button
+    btn.onclick = function() {
+      modal.style.display = 'block';
+      loadSearchHistory();
+    }
+
+    // Close modal when clicking the X
+    span.onclick = function() {
+      modal.style.display = 'none';
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      if (event.target == modal) {
+        modal.style.display = 'none';
+      }
+    }
+
+    // Function to load search history
+    function loadSearchHistory() {
+      fetch('{% url "get_search_history" %}')
+        .then(response => response.json())
+        .then(data => {
+          const historyList = document.getElementById('searchHistoryList');
+          if (data.searches && data.searches.length > 0) {
+            historyList.innerHTML = data.searches.map(search => `
+              <div style="padding: 10px; border-bottom: 1px solid #eee;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong>${search.search_query}</strong>
+                    <span style="background-color: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 8px;">
+                      ${search.search_type}
+                    </span>
+                  </div>
+                  <small style="color: #666;">${new Date(search.timestamp).toLocaleString()}</small>
+                </div>
+              </div>
+            `).join('');
+          } else {
+            historyList.innerHTML = '<p style="text-align: center; color: #666;">No search history available.</p>';
+          }
+        })
+        .catch(error => {
+          console.error('Error loading search history:', error);
+          document.getElementById('searchHistoryList').innerHTML = 
+            '<p style="text-align: center; color: #666;">Error loading search history.</p>';
+        });
+    }
+  </script>
 
 </body>
 </html>
