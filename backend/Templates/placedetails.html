@@ -491,7 +491,7 @@
 
         // Red icon for current user location (move this outside the geolocation block for clarity)
         const redIcon = L.icon({
-            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
             shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
             iconSize: [25, 41],
             iconAnchor: [12, 41],
@@ -514,10 +514,14 @@
                     userLat = position.coords.latitude;
                     userLng = position.coords.longitude;
 
-                    // Always use red icon for user marker
-                    L.marker([userLat, userLng], { icon: redIcon })
-                        .addTo(map)
-                        .bindPopup("You are here!")
+                    // Create user marker with red icon
+                    const userMarker = L.marker([userLat, userLng], { 
+                        icon: redIcon,
+                        zIndexOffset: 1000 // Ensure user marker appears above other markers
+                    }).addTo(map);
+
+                    // Add popup to user marker
+                    userMarker.bindPopup("You are here!")
                         .openPopup();
 
                     // Routing from user to the place
@@ -547,8 +551,13 @@
                 },
                 function (error) {
                     console.warn("Geolocation error:", error.message);
+                    document.getElementById('distance-info').innerHTML =
+                        `<p class="text-danger">Unable to get your location. Please enable location services.</p>`;
                 }
             );
+        } else {
+            document.getElementById('distance-info').innerHTML =
+                `<p class="text-danger">Geolocation is not supported by your browser.</p>`;
         }
     });
 

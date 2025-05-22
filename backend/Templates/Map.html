@@ -54,6 +54,10 @@
       <p><strong>Crowd Level:</strong> <span id="place-crowd"></span></p>
       <p><strong>Status:</strong> <span id="place-status"></span></p>
       <p><strong>Tags:</strong> <span id="place-tags"></span></p>
+      <div id="related-places" class="mt-4">
+        <h5>Related Places</h5>
+        <div id="related-places-list"></div>
+      </div>
     </div>
   {% endif %}
 </div>
@@ -358,6 +362,74 @@
     animation: highlight 1.5s ease-in-out;
   }
   
+  /* Related Places Styling */
+  #related-places {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  #related-places h5 {
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .related-place-card {
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .related-place-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .related-place-card h6 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+  }
+
+  .related-place-card p {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .related-place-card .badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
+  }
+
+  .spinner-border {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin: 1rem auto;
+  }
+
+  .alert {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+  }
+
+  .alert-info {
+    background-color: #e3f2fd;
+    border-color: #bbdefb;
+    color: #0d47a1;
+  }
+
+  .alert-danger {
+    background-color: #ffebee;
+    border-color: #ffcdd2;
+    color: #b71c1c;
+  }
 </style>
 
 {% if user.is_authenticated %}
@@ -1094,6 +1166,26 @@ function displayPlacesOnMap(places) {
     document.getElementById("place-status").textContent = place.status || "N/A";
     document.getElementById("place-tags").textContent = place.tags?.join(', ') || "N/A";
 
+    // Fetch and display related places based on tags
+    if (place.tags && place.tags.length > 0) {
+      const relatedPlacesList = document.getElementById("related-places-list");
+      relatedPlacesList.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div></div>';
+
+      // If only one tag, fetch all places with that tag
+      if (place.tags.length === 1) {
+        fetchPlacesByTag(place.tags[0], 10);
+      } else {
+        // For multiple tags, fetch 2-3 places per tag
+        const promises = place.tags.map(tag => fetchPlacesByTag(tag, 3));
+        Promise.all(promises).then(() => {
+          // All places have been fetched and displayed
+        }).catch(error => {
+          console.error('Error fetching related places:', error);
+          relatedPlacesList.innerHTML = '<div class="alert alert-danger">Failed to load related places</div>';
+        });
+      }
+    }
+
     // Show the info box with animation
     infoBox.classList.add('visible');
   }  
@@ -1118,6 +1210,62 @@ function displayPlacesOnMap(places) {
       Math.sin(dLon/2) * Math.sin(dLon/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
+  }
+
+  async function fetchPlacesByTag(tag, limit) {
+    try {
+        const response = await fetch(`/places-by-tag/${tag}/`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const relatedPlacesList = document.getElementById("related-places-list");
+
+        if (!data.places || data.places.length === 0) {
+            if (relatedPlacesList.innerHTML.includes('spinner-border')) {
+                relatedPlacesList.innerHTML = '<div class="alert alert-info">No related places found</div>';
+            }
+            return;
+        }
+
+        // Limit the number of places to display
+        const placesToShow = data.places.slice(0, limit);
+
+        // Create HTML for the places
+        const placesHTML = placesToShow.map(place => `
+            <div class="related-place-card">
+                <h6>${place.name}</h6>
+                <p class="small text-muted">${place.description.substring(0, 100)}...</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-primary">${place.category}</span>
+                    <span class="badge ${getCrowdLevelBadgeClass(place.crowdlevel)}">
+                        ${place.crowdlevel}% Crowd
+                    </span>
+                </div>
+            </div>
+        `).join('');
+
+        // Update the related places list
+        if (relatedPlacesList.innerHTML.includes('spinner-border')) {
+            relatedPlacesList.innerHTML = placesHTML;
+        } else {
+            relatedPlacesList.innerHTML += placesHTML;
+        }
+
+    } catch (error) {
+        console.error(`Error fetching places for tag ${tag}:`, error);
+        const relatedPlacesList = document.getElementById("related-places-list");
+        if (relatedPlacesList.innerHTML.includes('spinner-border')) {
+            relatedPlacesList.innerHTML = '<div class="alert alert-danger">Failed to load related places</div>';
+        }
+    }
+  }
+
+  function getCrowdLevelBadgeClass(crowdLevel) {
+    if (crowdLevel >= 75) return 'bg-danger';
+    if (crowdLevel >= 50) return 'bg-warning';
+    return 'bg-success';
   }
 </script>
 {% endif %}
