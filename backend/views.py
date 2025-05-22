@@ -256,30 +256,69 @@ def search_places(request):
     if not query:
         return JsonResponse({'error': 'No search term provided.'}, status=400)
 
+    # Search for places matching the query
     places = Place.objects.filter(name__icontains=query)
     
     if not places:
         return JsonResponse({'error': 'No places found matching the query.'}, status=404)
     
     places_data = []
+    related_places_data = []
     
     for place in places:
+        # Get latest crowd data
         latest_crowd_data = CrowdData.objects.filter(place=place).aggregate(max_timestamp=Max('timestamp'))
         crowd_data = CrowdData.objects.filter(place=place, timestamp=latest_crowd_data['max_timestamp']).first()
-        tags = list(place.tags.values_list('tag', flat=True))
-
+        
+        # Get place tags
+        tags = list(place.tags.values_list('name', flat=True))
+        
+        # Add main place data
         places_data.append({
+            'id': place.id,
             'name': place.name,
-            'latitude': place.latitude,           # ✅ now included
-            'longitude': place.longitude,         # ✅ now included
+            'latitude': place.latitude,
+            'longitude': place.longitude,
             'description': place.description,
             'popular_for': place.popular_for,
             'category': place.category,
             'crowd_level': crowd_data.crowdlevel if crowd_data else 'N/A',
             'tags': tags,
         })
+        
+        # Get related places based on tags
+        related_places = Place.objects.filter(tags__name__in=tags).exclude(id=place.id).distinct()
+        
+        for related_place in related_places:
+            latest_related_crowd = CrowdData.objects.filter(place=related_place).order_by('-timestamp').first()
+            related_tags = list(related_place.tags.values_list('name', flat=True))
+            
+            related_places_data.append({
+                'id': related_place.id,
+                'name': related_place.name,
+                'category': related_place.category,
+                'crowd_level': latest_related_crowd.crowdlevel if latest_related_crowd else 'N/A',
+                'tags': related_tags,
+                'shared_tags': list(set(tags).intersection(set(related_tags))),
+            })
     
-    return JsonResponse({'places': places_data}, safe=False)
+    # Prepare data for bar graph
+    tag_counts = {}
+    for place in related_places_data:
+        for tag in place['shared_tags']:
+            tag_counts[tag] = tag_counts.get(tag, 0) + 1
+    
+    # Sort tags by count for the bar graph
+    sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
+    
+    return JsonResponse({
+        'places': places_data,
+        'related_places': related_places_data,
+        'tag_statistics': {
+            'labels': [tag for tag, _ in sorted_tags],
+            'counts': [count for _, count in sorted_tags]
+        }
+    }, safe=False)
 
 @api_view(['GET'])
 def places_by_district(request, district_name):
