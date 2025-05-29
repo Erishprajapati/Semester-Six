@@ -2,73 +2,58 @@
 {% block title %}Map Tracker{% endblock %}
 
 {% block content %}
-<div id="main-map-container">
-  {% if not user.is_authenticated %}
-    <div id="login-section">
-      <form method="POST" action="{% url 'login' %}">
-        {% csrf_token %}
-        <label for="username">Username:</label><br>
-        <input type="text" name="username" required><br>
-        <label for="password">Password:</label><br>
-        <input type="password" name="password" required><br>
-        <button type="submit">Login</button>
-      </form>
-    </div>
-  {% else %}
-    <div id="location-access-prompt">
-      <h3>Allow location access?</h3>
-      <button id="grant-location-btn">Yes</button>
-      <button id="deny-location-btn">No</button>
-    </div>
-
-    <div id="manual-location-section" style="display:none;">
-      <h3>Enter Your Location Manually:</h3>
-      <input type="text" id="manual-location-input" placeholder="e.g., Kathmandu, Nepal" />
-      <button id="submit-manual-location">Submit</button>
-    </div>
-
-    <div id="city-search-section" style="display:none;">
-      <h3>Explore here:</h3>
-      <input id="location-input" type="text" placeholder="Enter district or #category" />
-      <button id="search-button">Search</button>
-
-    </div>
-
-    <div id="map-wrapper" style="display:none;">
-      <div id="map" class="map-box"></div>
-    </div>
-    <div id="distances">
-    <!-- Distances will be dynamically added here by JavaScript -->
-    </div>
-    
-    <div id="chart-wrapper" style="display:none;">
-      <h3>Popular Places in Selected District</h3>
-      <canvas id="bar-chart" width="600" height="300"></canvas>
-    </div>
-
-    <div id="place-info-box" style="display:none;" class="info-box">
-      <h4 id="place-title"></h4>
-      <p id="place-description"></p>
-      <p><strong>Popular For:</strong> <span id="place-popular"></span></p>
-      <p><strong>Category:</strong> <span id="place-category"></span></p>
-      <p><strong>Crowd Level:</strong> <span id="place-crowd"></span></p>
-      <p><strong>Status:</strong> <span id="place-status"></span></p>
-      <p><strong>Tags:</strong> <span id="place-tags"></span></p>
-      <div id="related-places" class="mt-4">
-        <h5>Related Places</h5>
-        <div id="related-places-list"></div>
-      </div>
-    </div>
-  {% endif %}
-</div>
-
-<!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<!-- Styles -->
 <style>
+  /* Move all styles to the top of the file */
+  #location-access-prompt {
+    display: none; /* Initially hidden */
+    width: 300px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 20px;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  #location-access-prompt h3 {
+    margin-bottom: 15px;
+    color: #333;
+  }
+
+  #location-access-prompt button {
+    margin: 5px;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+
+  #grant-location-btn {
+    background-color: #4CAF50;
+    color: white;
+  }
+
+  #grant-location-btn:hover {
+    background-color: #45a049;
+  }
+
+  #deny-location-btn {
+    background-color: #f44336;
+    color: white;
+  }
+
+  #deny-location-btn:hover {
+    background-color: #da190b;
+  }
+
   /* Login Section Styling */
   #login-section {
     width: 90%;
@@ -278,18 +263,6 @@
     display: none !important;
   }
 
-  /* Center the location access prompt */
-  #location-access-prompt {
-    display: block;
-    width: 300px;
-    margin: 0 auto;
-    text-align: center;
-    padding: 20px;
-    border: 2px solid #ccc;
-    border-radius: 10px;
-    background-color: #f9f9f9;
-  }
-
   /* General input and button styling */
   input, button {
     margin-top: 10px;
@@ -432,7 +405,71 @@
   }
 </style>
 
-{% if user.is_authenticated %}
+<div id="main-map-container">
+  {% if not user.is_authenticated %}
+    <div id="login-section">
+      <form method="POST" action="{% url 'login' %}">
+        {% csrf_token %}
+        <label for="username">Username:</label><br>
+        <input type="text" name="username" required><br>
+        <label for="password">Password:</label><br>
+        <input type="password" name="password" required><br>
+        <button type="submit">Login</button>
+      </form>
+    </div>
+  {% else %}
+    <div id="location-access-prompt">
+      <h3>Allow location access?</h3>
+      <button id="grant-location-btn">Yes</button>
+      <button id="deny-location-btn">No</button>
+    </div>
+
+    <div id="manual-location-section" style="display:none;">
+      <h3>Enter Your Location Manually:</h3>
+      <input type="text" id="manual-location-input" placeholder="e.g., Kathmandu, Nepal" />
+      <button id="submit-manual-location">Submit</button>
+    </div>
+
+    <div id="city-search-section" style="display:none;">
+      <h3>Explore here:</h3>
+      <input id="location-input" type="text" placeholder="Enter district or #category" />
+      <button id="search-button">Search</button>
+
+    </div>
+
+    <div id="map-wrapper" style="display:none;">
+      <div id="map" class="map-box"></div>
+    </div>
+    <div id="distances">
+    <!-- Distances will be dynamically added here by JavaScript -->
+    </div>
+    
+    <div id="chart-wrapper" style="display:none;">
+      <h3>Popular Places in Selected District</h3>
+      <canvas id="bar-chart" width="600" height="300"></canvas>
+    </div>
+
+    <div id="place-info-box" style="display:none;" class="info-box">
+      <h4 id="place-title"></h4>
+      <p id="place-description"></p>
+      <p><strong>Popular For:</strong> <span id="place-popular"></span></p>
+      <p><strong>Category:</strong> <span id="place-category"></span></p>
+      <p><strong>Crowd Level:</strong> <span id="place-crowd"></span></p>
+      <p><strong>Status:</strong> <span id="place-status"></span></p>
+      <p><strong>Tags:</strong> <span id="place-tags"></span></p>
+      <div id="related-places" class="mt-4">
+        <h5>Related Places</h5>
+        <div id="related-places-list"></div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
   let map, userLatLng = null, userMarker, routePolyline = null;
 
@@ -462,8 +499,12 @@
     console.log(message);
   }
 
-  window.onload = () => {
-    document.getElementById("location-access-prompt").style.display = "block";
+  // Wait for DOM and styles to be fully loaded
+  document.addEventListener('DOMContentLoaded', function() {
+    // Show the location prompt after a small delay to ensure styles are applied
+    setTimeout(() => {
+      document.getElementById("location-access-prompt").style.display = "block";
+    }, 100);
 
     document.getElementById("grant-location-btn").addEventListener("click", () => {
       document.getElementById("location-access-prompt").style.display = "none";
@@ -552,7 +593,7 @@
         document.getElementById("search-button").click();
       }
     });
-  };
+  });
 
   // Initialize map with better error handling
   function initializeMap() {
@@ -1268,5 +1309,4 @@ function displayPlacesOnMap(places) {
     return 'bg-success';
   }
 </script>
-{% endif %}
 {% endblock %}
