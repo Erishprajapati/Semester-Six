@@ -755,6 +755,12 @@
           // Remove previous routing and number markers
           if (routingControl) {
             map.removeControl(routingControl);
+            routingControl = null;
+          }
+          // Remove any previous blue lines
+          if (window.activeRouteLine) {
+            map.removeLayer(window.activeRouteLine);
+            window.activeRouteLine = null;
           }
           routeClicks.forEach(m => map.removeLayer(m));
           routeClicks = [];
@@ -798,7 +804,11 @@
             }).addTo(map);
 
             routingControl.on('routesfound', function(e) {
-              const line = L.polyline(e.routes[0].coordinates, { color: 'blue' }).addTo(map);
+              // Remove previous blue line if exists
+              if (window.activeRouteLine) {
+                map.removeLayer(window.activeRouteLine);
+              }
+              window.activeRouteLine = L.polyline(e.routes[0].coordinates, { color: 'blue' }).addTo(map);
             });
           }
         });
@@ -1094,6 +1104,12 @@ function displayPlacesOnMap(places) {
         // Remove previous routing and number markers
         if (routingControl) {
           map.removeControl(routingControl);
+          routingControl = null;
+        }
+        // Remove any previous blue lines
+        if (window.activeRouteLine) {
+          map.removeLayer(window.activeRouteLine);
+          window.activeRouteLine = null;
         }
         routeClicks.forEach(m => map.removeLayer(m));
         routeClicks = [];
@@ -1106,7 +1122,7 @@ function displayPlacesOnMap(places) {
           routingControl = L.Routing.control({
             waypoints: [userLocation, placeLocation],
             draggableWaypoints: true,
-            routeWhileDragging: false, // ❌ Don't auto update
+            routeWhileDragging: false,
             createMarker: function(i, wp) {
               if (i === 0) {
                 // Remove old marker
@@ -1147,23 +1163,11 @@ function displayPlacesOnMap(places) {
 
           // After route is created, draw line and allow number markers on click
           routingControl.on('routesfound', function(e) {
-            const line = L.polyline(e.routes[0].coordinates, { color: 'blue' }).addTo(map);
-
-            line.on('click', function(ev) {
-              const point = ev.latlng;
-
-              const numberMarker = L.marker(point, {
-                icon: L.divIcon({
-                  className: 'custom-number-icon',
-                  html: `<div style="background: #ffcc00; border-radius: 50%; width: 26px; height: 26px; text-align: center; font-weight: bold; line-height: 26px;">${routeClickCount}</div>`,
-                  iconSize: [26, 26]
-                })
-              }).addTo(map);
-
-              numberMarker.bindPopup(`Marked Point ${routeClickCount}`);
-              routeClicks.push(numberMarker);
-              routeClickCount++;
-            });
+            // Remove previous blue line if exists
+            if (window.activeRouteLine) {
+              map.removeLayer(window.activeRouteLine);
+            }
+            window.activeRouteLine = L.polyline(e.routes[0].coordinates, { color: 'blue' }).addTo(map);
           });
         }
       });
