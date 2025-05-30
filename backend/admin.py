@@ -5,9 +5,9 @@ from django import forms
 from django.utils.html import format_html
 from django.contrib.admin import AdminSite
 
-admin.site.site_header = 'Tourism Management System'
-admin.site.site_title = 'Tourism Admin Portal'
-admin.site.index_title = 'Welcome to Tourism Management Portal'
+admin.site.site_header = 'Peak Times'
+admin.site.site_title = 'Admin Portal'
+admin.site.index_title = 'Peak Times'
 
 class TagAdmin(admin.ModelAdmin):
     list_display = ('name', 'get_place_count')
@@ -113,11 +113,11 @@ class CrowdDataAdmin(admin.ModelAdmin):
     get_status_color.short_description = 'Status'
 
     def save_model(self, request, obj, form, change):
-        # Automatically set status based on crowdlevel
+        # Automatically set status based on crowdlevel with new thresholds
         if obj.crowdlevel is not None:
             if obj.crowdlevel > 70:
                 obj.status = 'High'
-            elif obj.crowdlevel > 30:
+            elif obj.crowdlevel >= 30:
                 obj.status = 'Medium'
             else:
                 obj.status = 'Low'
