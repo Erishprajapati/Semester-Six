@@ -564,19 +564,25 @@
     document.getElementById("search-button").addEventListener("click", async () => {
       const searchButton = document.getElementById("search-button");
       const input = document.getElementById("location-input").value.trim();
-      
       if (!input || !userLatLng) {
-        showError("Please set your location and enter a district name or #category.");
+        showError("Please set your location and enter a district name, place name, or #category.");
         return;
       }
-
       showLoading(searchButton);
       try {
         if (input.startsWith("#")) {
           const category = input.slice(1);
           await fetchPlacesByCategory(category);
         } else {
-          await fetchPlacesByDistrict(input);
+          // Try district first
+          let districtResponse = await fetch(`/places-by-district/${input}/`);
+          let districtData = await districtResponse.json();
+          if (districtData.places && districtData.places.length > 0) {
+            await fetchPlacesByDistrict(input);
+          } else {
+            // If not found as district, try as place name
+            await fetchPlaceByName(input);
+          }
         }
         showSuccess('Search completed successfully');
       } catch (error) {
@@ -1307,6 +1313,29 @@ function displayPlacesOnMap(places) {
     if (crowdLevel >= 75) return 'bg-danger';
     if (crowdLevel >= 50) return 'bg-warning';
     return 'bg-success';
+  }
+
+  // Add this function to fetch place by name and redirect
+  async function fetchPlaceByName(placeName) {
+    try {
+      // Call the backend search API for place name
+      const response = await fetch(`/api/search/?q=${encodeURIComponent(placeName)}`);
+      const data = await response.json();
+      if (data.places && data.places.length > 0) {
+        // Redirect to placedetails of the first matching place
+        const place = data.places[0];
+        if (place.id) {
+          window.location.href = `/place-details/${place.id}/`;
+        } else {
+          alert('No place ID found for that name.');
+        }
+      } else {
+        alert('No place found with that name.');
+      }
+    } catch (error) {
+      alert('Error searching for place.');
+      console.error(error);
+    }
   }
 </script>
 {% endblock %}
