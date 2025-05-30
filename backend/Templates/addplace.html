@@ -184,7 +184,7 @@
     </div>
     {% endif %}
 
-    <form method="POST" enctype="multipart/form-data" id="addPlaceForm">
+    <form method="POST" enctype="multipart/form-data" id="addPlaceForm" action="{% url 'add_place' %}">
         {% csrf_token %}
         <div class="form-row">
             <div class="form-col">

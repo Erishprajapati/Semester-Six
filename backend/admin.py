@@ -112,6 +112,17 @@ class CrowdDataAdmin(admin.ModelAdmin):
         )
     get_status_color.short_description = 'Status'
 
+    def save_model(self, request, obj, form, change):
+        # Automatically set status based on crowdlevel
+        if obj.crowdlevel is not None:
+            if obj.crowdlevel > 70:
+                obj.status = 'High'
+            elif obj.crowdlevel > 30:
+                obj.status = 'Medium'
+            else:
+                obj.status = 'Low'
+        super().save_model(request, obj, form, change)
+
 # Register models with their admin classes
 admin.site.register(Tag, TagAdmin)
 admin.site.register(UserLocation, UserLocationAdmin)
