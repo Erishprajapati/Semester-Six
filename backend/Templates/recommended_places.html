@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Recommended Places Near You{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h3>Recommended Places Near You</h3>
+    <ul class="list-group">
+        {% for place, distance in places_with_distance %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <a href="{% url 'place_details' place.id %}"><strong>{{ place.name }}</strong></a>
+                    <br>
+                    <span class="text-muted">{{ place.category }}</span>
+                </div>
+                <span class="badge bg-primary">{{ distance|floatformat:2 }} km away</span>
+            </li>
+        {% empty %}
+            <li class="list-group-item">No matching places found near your location.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

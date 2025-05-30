@@ -123,6 +123,12 @@
         width: 100%;
       }
     }
+
+    .navbar-title {
+      font-weight: bold;
+      font-size: 1.5rem;
+      letter-spacing: 1px;
+    }
   </style>
 </head>
 <body>
@@ -130,7 +136,7 @@
   <!-- Navbar -->
   <nav id="navbar">
     <a href="/accounts/dashboard/" style="text-decoration: none; color: inherit;">
-      Peak Times
+      <span class="navbar-title">Peak Times</span>
     </a>
     
   </title>
@@ -180,7 +186,8 @@
     const span = document.getElementsByClassName('close')[0];
 
     // Open modal when clicking the search history button
-    btn.onclick = function() {
+    btn.onclick = function(e) {
+      e.preventDefault(); // Prevent # from appearing in the URL
       modal.style.display = 'block';
       loadSearchHistory();
     }
@@ -199,7 +206,7 @@
 
     // Function to load search history
     function loadSearchHistory() {
-      fetch('{% url "get_search_history" %}')
+      fetch('/api/api/search-history/')
         .then(response => response.json())
         .then(data => {
           const historyList = document.getElementById('searchHistoryList');
@@ -222,7 +229,6 @@
           }
         })
         .catch(error => {
-          console.error('Error loading search history:', error);
           document.getElementById('searchHistoryList').innerHTML = 
             '<p style="text-align: center; color: #666;">Error loading search history.</p>';
         });

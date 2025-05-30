@@ -13,6 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Max
 from django.contrib import messages
 from django.db.models import Q, Subquery, OuterRef
+from math import radians, cos, sin, asin, sqrt
 
 
 # Create your views here.
@@ -22,12 +23,23 @@ def home(request):
     """it will act as key pair value"""
 @login_required
 def profile_view(request):
+    user = request.user
+    # Handle profile update (username, email, password)
     if request.method == "POST":
-        user = request.user
         username = request.POST.get("username")
         email = request.POST.get("email")
         new_password = request.POST.get("new_password")
         confirm_password = request.POST.get("confirm_password")
+        selected_tags = request.POST.getlist("tags")
+
+        # Validate username
+        if not username:
+            messages.error(request, "Username cannot be empty.")
+            return redirect('profile_view')
+        # Check for unique username if changed
+        if username != user.username and User.objects.filter(username=username).exists():
+            messages.error(request, "This username is already taken.")
+            return redirect('profile_view')
 
         # Update username and email
         user.username = username
@@ -40,17 +52,35 @@ def profile_view(request):
                 messages.success(request, "Password updated.")
             else:
                 messages.error(request, "Passwords do not match.")
-                return redirect('profile')
+                return redirect('profile_view')
 
         user.save()
+        # Handle user preferences (tags)
+        from .models import UserPreference, Tag, Place
+        user_pref, created = UserPreference.objects.get_or_create(user=user)
+        if selected_tags:
+            user_pref.tags.set(selected_tags)
+        else:
+            user_pref.tags.clear()
+        user_pref.save()
         messages.success(request, "Profile updated successfully.")
-        return redirect('profile')
+        return redirect('profile_view')
 
     # Get user's search history
-    search_history = SearchHistory.objects.filter(user=request.user)[:10]  # Get last 10 searches
-    
+    search_history = SearchHistory.objects.filter(user=user)[:10]  # Get last 10 searches
+    # Get all tags
+    from .models import UserPreference, Tag, Place
+    all_tags = Tag.objects.filter(place__isnull=False).distinct()
+    user_pref, created = UserPreference.objects.get_or_create(user=user)
+    preferred_tags = user_pref.tags.all()
+    # Get recommended places based on preferred tags
+    recommended_places = Place.objects.filter(tags__in=preferred_tags).distinct()
+
     return render(request, "profile.html", {
-        'search_history': search_history
+        'search_history': search_history,
+        'all_tags': all_tags,
+        'preferred_tags': preferred_tags,
+        'recommended_places': recommended_places,
     })
 
 # def places_by_category(request, category):
@@ -220,7 +250,10 @@ def place_details(request, place_id):
 
 """List of places"""
 def place_list(request):
-    places = Place.objects.all()
+    if request.user.is_superuser:
+        places = Place.objects.all()
+    else:
+        places = Place.objects.filter(is_approved=True)
     return render(request, 'place_list.html', {'places': places})
 
 @csrf_exempt
@@ -360,6 +393,8 @@ def places_by_tag(request, tag_name):
 
 @login_required
 def add_place(request):
+    from .models import Tag
+    tags = Tag.objects.all()
     if request.method == 'POST':
         try:
             # Get form data
@@ -372,16 +407,15 @@ def add_place(request):
             latitude = request.POST.get('latitude')
             longitude = request.POST.get('longitude')
             image = request.FILES.get('image')
-            tags = request.POST.get('tags', '').split(',')
+            tags = request.POST.getlist('tags')
             crowdlevel = request.POST.get('crowdlevel')
-            status = request.POST.get('status')
 
             # Debug print
             print(f"Received data: {request.POST}")
             print(f"Received files: {request.FILES}")
 
             # Validate required fields
-            if not all([name, description, popular_for, category, district, location, latitude, longitude, image, crowdlevel, status]):
+            if not all([name, description, popular_for, category, district, location, latitude, longitude, image, crowdlevel]):
                 missing_fields = []
                 if not name: missing_fields.append('name')
                 if not description: missing_fields.append('description')
@@ -393,12 +427,20 @@ def add_place(request):
                 if not longitude: missing_fields.append('longitude')
                 if not image: missing_fields.append('image')
                 if not crowdlevel: missing_fields.append('crowdlevel')
-                if not status: missing_fields.append('status')
                 
                 messages.error(request, f'Missing required fields: {", ".join(missing_fields)}')
-                return redirect('add_place')
+                return render(request, 'addplace.html', {'tags': tags})
 
-            # Create new place
+            # Set status based on crowdlevel
+            crowdlevel = int(crowdlevel)
+            if crowdlevel > 70:
+                status = 'High'
+            elif crowdlevel > 30:
+                status = 'Medium'
+            else:
+                status = 'Low'
+
+            # Create new place with approval status based on user type
             place = Place.objects.create(
                 name=name,
                 description=description,
@@ -409,7 +451,8 @@ def add_place(request):
                 latitude=latitude,
                 longitude=longitude,
                 image=image,
-                added_by=request.user
+                added_by=request.user,
+                is_approved=request.user.is_superuser  # Auto-approve if superuser
             )
 
             # Add tags
@@ -422,18 +465,22 @@ def add_place(request):
             # Create crowd data
             CrowdData.objects.create(
                 place=place,
-                crowdlevel=int(crowdlevel),
+                crowdlevel=crowdlevel,
                 status=status
             )
 
-            messages.success(request, 'Place added successfully!')
+            if request.user.is_superuser:
+                messages.success(request, 'Place added successfully!')
+                return redirect('place_details', place_id=place.id)
+            else:
+                messages.success(request, 'Place submitted for approval! An admin will review it soon.')
             return redirect('place_details', place_id=place.id)
         except Exception as e:
             print(f"Error adding place: {str(e)}")  # Debug print
             messages.error(request, f'Error adding place: {str(e)}')
-            return redirect('add_place')
+            return render(request, 'addplace.html', {'tags': tags})
     
-    return render(request, 'addplace.html')
+    return render(request, 'addplace.html', {'tags': tags})
 
 @login_required
 def update_profile(request):
@@ -462,7 +509,9 @@ def update_profile(request):
 
 @login_required
 def add_place_form(request):
-    return render(request, 'addplace.html')
+    from .models import Tag
+    tags = Tag.objects.all()
+    return render(request, 'addplace.html', {'tags': tags})
 
 @api_view(['GET'])
 @login_required
@@ -475,3 +524,39 @@ def get_search_history(request):
     } for search in search_history]
     
     return JsonResponse({'searches': searches})
+
+def haversine(lat1, lon1, lat2, lon2):
+    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * asin(sqrt(a))
+    r = 6371  # Radius of earth in kilometers
+    return c * r
+
+@login_required
+def recommended_places_nearby(request):
+    user = request.user
+    # Get user location
+    user_location = UserLocation.objects.filter(user=user).last()
+    if not user_location:
+        messages.error(request, "No location found. Please set your location first.")
+        return redirect('profile_view')
+
+    # Get user preferences
+    user_pref, _ = UserPreference.objects.get_or_create(user=user)
+    preferred_tags = user_pref.tags.all()
+    places = Place.objects.filter(tags__in=preferred_tags).distinct()
+
+    # Calculate distance for each place
+    places_with_distance = []
+    for place in places:
+        if place.latitude is not None and place.longitude is not None:
+            distance = haversine(user_location.latitude, user_location.longitude, place.latitude, place.longitude)
+            places_with_distance.append((place, distance))
+    # Sort by distance
+    places_with_distance.sort(key=lambda x: x[1])
+
+    return render(request, 'recommended_places.html', {
+        'places_with_distance': places_with_distance
+    })

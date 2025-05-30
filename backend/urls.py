@@ -24,6 +24,7 @@ urlpatterns = [
     path('update-profile/', views.update_profile, name='update_profile'),
     path('api/places-by-tag/<str:tag_name>/', views.places_by_tag, name='places_by_tag'),
     path('api/search-history/', views.get_search_history, name='get_search_history'),
+    path('recommended-places/', views.recommended_places_nearby, name='recommended_places_nearby'),
 
 
     # path('place/<int:place_id>/', views.place_details, name='place_details'),
