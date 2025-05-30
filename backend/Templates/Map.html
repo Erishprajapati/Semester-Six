@@ -831,10 +831,10 @@
     // Sort by crowdlevel descending
     places.sort((a, b) => b.crowdlevel - a.crowdlevel);
   
-    // Filter places by crowd level
-    const highCrowd = places.filter(p => p.crowdlevel >= 75).slice(0, 3);
-    const mediumCrowd = places.filter(p => p.crowdlevel >= 50 && p.crowdlevel < 75).slice(0, 2);
-    const lowCrowd = places.filter(p => p.crowdlevel < 50).slice(0, 2);
+    // Filter places by crowd level with new thresholds
+    const highCrowd = places.filter(p => p.crowdlevel > 70).slice(0, 3);
+    const mediumCrowd = places.filter(p => p.crowdlevel >= 30 && p.crowdlevel <= 70).slice(0, 2);
+    const lowCrowd = places.filter(p => p.crowdlevel < 30).slice(0, 2);
   
     // Combine them
     const selectedPlaces = [...highCrowd, ...mediumCrowd, ...lowCrowd];
@@ -849,8 +849,8 @@
     const labels = selectedPlaces.map(place => place.name);
   
     const getColor = (crowdLevel) => {
-      if (crowdLevel >= 75) return '#FF0000'; // High crowd
-      else if (crowdLevel >= 50) return '#FFEB3B'; // Medium crowd
+      if (crowdLevel > 70) return '#FF0000'; // High crowd
+      else if (crowdLevel >= 30) return '#FFEB3B'; // Medium crowd
       else return '#4CAF50'; // Low crowd
     };
   
@@ -1314,8 +1314,8 @@ function displayPlacesOnMap(places) {
   }
 
   function getCrowdLevelBadgeClass(crowdLevel) {
-    if (crowdLevel >= 75) return 'bg-danger';
-    if (crowdLevel >= 50) return 'bg-warning';
+    if (crowdLevel > 70) return 'bg-danger';
+    if (crowdLevel >= 30) return 'bg-warning';
     return 'bg-success';
   }
 
