@@ -322,6 +322,7 @@ def search_places(request):
         tags = list(place.tags.values_list('name', flat=True))
 
         places_data.append({
+            'id': place.id,
             'name': place.name,
             'latitude': place.latitude,
             'longitude': place.longitude,
