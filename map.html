@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Map</title>
+    <!-- Add your CSS and other head elements here -->
+</head>
+<body>
+    <!-- Your map container and other HTML here -->
+    <div id="map"></div>
+
+    <script>
+    function askForLocationAndSave() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                localStorage.setItem('user_lat', position.coords.latitude);
+                localStorage.setItem('user_lng', position.coords.longitude);
+                loadMap(position.coords.latitude, position.coords.longitude);
+            }, function(error) {
+                alert('Location access denied or unavailable.');
+            });
+        } else {
+            alert('Geolocation is not supported by this browser.');
+        }
+    }
+
+    function loadMap(lat, lng) {
+        // Your map loading logic here
+        console.log('Loading map at:', lat, lng);
+        // Example: initializeMap(lat, lng);
+    }
+
+    // Detect if this is a reload (not a navigation)
+    let isReload = false;
+    if (performance.getEntriesByType("navigation")[0].type === "reload") {
+        isReload = true;
+    }
+
+    window.onload = function() {
+        if (isReload) {
+            // Always ask for location on reload
+            askForLocationAndSave();
+        } else {
+            // Use saved location if available, otherwise ask
+            const lat = localStorage.getItem('user_lat');
+            const lng = localStorage.getItem('user_lng');
+            if (lat && lng) {
+                loadMap(lat, lng);
+            } else {
+                askForLocationAndSave();
+            }
+        }
+    };
+    </script>
+</body>
+</html> 

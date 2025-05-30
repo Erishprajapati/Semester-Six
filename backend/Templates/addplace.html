@@ -2,72 +2,74 @@
 {% extends "base.html" %}
 
 {% block content %}
-
 <style>
     .add-place-container {
-        max-width: 800px;
-        margin: 2rem auto;
-        padding: 2rem;
+        max-width: 900px;
+        width: 80%;
+        padding: 1.2rem 2.5rem;
+        margin: 0.5rem auto 2rem auto;
         background: white;
         border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        box-sizing: border-box;
     }
 
     .form-header {
         text-align: center;
-        margin-bottom: 2rem;
+        margin-bottom: 1.2rem;
         color: #3b82f6;
     }
 
     .form-header h2 {
-        font-size: 2rem;
+        font-size: 1.5rem;
         font-weight: 600;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.2rem;
     }
 
     .form-header p {
         color: #6b7280;
-        font-size: 1.1rem;
+        font-size: 1rem;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-col {
+        flex: 1;
+        min-width: 0;
     }
 
     .form-group {
-        margin-bottom: 1.5rem;
+        margin-bottom: 0.8rem;
     }
 
     .form-label {
         display: block;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.3rem;
         font-weight: 500;
         color: #374151;
     }
 
-    .form-control {
+    .form-control, .form-select {
         width: 100%;
-        padding: 0.75rem;
+        padding: 0.5rem 0.7rem;
         border: 1px solid #e5e7eb;
         border-radius: 8px;
         font-size: 1rem;
-        transition: border-color 0.2s;
+        box-sizing: border-box;
     }
 
-    .form-control:focus {
+    .form-control:focus, .form-select:focus {
         outline: none;
         border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    .form-select {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        font-size: 1rem;
-        background-color: white;
-        cursor: pointer;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
     }
 
     textarea.form-control {
-        min-height: 120px;
+        min-height: 80px;
         resize: vertical;
     }
 
@@ -75,12 +77,15 @@
         border-radius: 8px;
         overflow: hidden;
         border: 1px solid #e5e7eb;
+        margin-top: 1rem;
+        max-height: 320px;
+        height: 320px;
     }
 
     .submit-btn {
         background-color: #3b82f6;
         color: white;
-        padding: 0.75rem 1.5rem;
+        padding: 0.65rem;
         border: none;
         border-radius: 8px;
         font-size: 1rem;
@@ -88,6 +93,7 @@
         cursor: pointer;
         width: 100%;
         transition: background-color 0.2s;
+        margin-top: 1.2rem;
     }
 
     .submit-btn:hover {
@@ -97,22 +103,22 @@
     .file-input-container {
         position: relative;
         overflow: hidden;
-        display: inline-block;
         width: 100%;
     }
 
     .file-input-container input[type="file"] {
-        font-size: 100px;
         position: absolute;
         left: 0;
         top: 0;
         opacity: 0;
         cursor: pointer;
+        width: 100%;
+        height: 100%;
     }
 
     .file-input-label {
         display: block;
-        padding: 0.75rem;
+        padding: 0.65rem;
         background-color: #f3f4f6;
         border: 2px dashed #d1d5db;
         border-radius: 8px;
@@ -127,22 +133,15 @@
         color: #3b82f6;
     }
 
-    .tags-input {
-        padding: 0.75rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        font-size: 1rem;
-        width: 100%;
-    }
-
-    .tags-input::placeholder {
-        color: #9ca3af;
+    .tags-input, .select2-container {
+        width: 100% !important;
     }
 
     .alert {
-        padding: 1rem;
+        padding: 0.7rem;
         margin-bottom: 1rem;
         border-radius: 8px;
+        font-size: 0.95rem;
     }
 
     .alert-error {
@@ -156,12 +155,23 @@
         border: 1px solid #bbf7d0;
         color: #16a34a;
     }
+
+    @media (max-width: 900px) {
+        .add-place-container {
+            width: 98%;
+            padding: 1rem 0.5rem;
+        }
+        .form-row {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+    }
 </style>
+
 
 <div class="add-place-container">
     <div class="form-header">
         <h2>Add New Place</h2>
-        <p>Share your favorite places with the community</p>
     </div>
 
     {% if messages %}
@@ -176,85 +186,71 @@
 
     <form method="POST" enctype="multipart/form-data" id="addPlaceForm">
         {% csrf_token %}
-        
-        <div class="form-group">
-            <label for="name" class="form-label">Place Name</label>
-            <input type="text" class="form-control" id="name" name="name" required placeholder="Enter the name of the place">
-        </div>
-
-        <div class="form-group">
-            <label for="category" class="form-label">Category</label>
-            <select class="form-select" id="category" name="category" required>
-                <option value="">Select Category</option>
-                <option value="Historical">Historical</option>
-                <option value="Religious">Religious</option>
-                <option value="Natural">Natural</option>
-                <option value="Cultural">Cultural</option>
-                <option value="Entertainment">Entertainment</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="description" class="form-label">Description</label>
-            <textarea class="form-control" id="description" name="description" required placeholder="Describe the place..."></textarea>
-        </div>
-
-        <div class="form-group">
-            <label for="popular_for" class="form-label">Popular For</label>
-            <input type="text" class="form-control" id="popular_for" name="popular_for" required placeholder="What is this place known for?">
-        </div>
-
-        <div class="form-group">
-            <label for="district" class="form-label">District</label>
-            <input type="text" class="form-control" id="district" name="district" required placeholder="Enter the district">
-        </div>
-
-        <div class="form-group">
-            <label for="location" class="form-label">Location</label>
-            <input type="text" class="form-control" id="location" name="location" required placeholder="Enter the specific location">
-        </div>
-
-        <div class="form-group">
-            <label for="image" class="form-label">Place Image</label>
-            <div class="file-input-container">
-                <label for="image" class="file-input-label">
-                    <i class="fas fa-cloud-upload-alt"></i> <span id="fileLabel">Choose an image or drag it here</span>
-                </label>
-                <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="tags" class="form-label">Tags</label>
-            <input type="text" class="tags-input" id="tags" name="tags" placeholder="Enter tags separated by commas (e.g., historical, temple, ancient)">
-        </div>
-
-        <div class="form-group">
-            <label class="form-label">Crowd Level Information</label>
-            <div class="row">
-                <div class="col-md-6">
-                    <label for="crowdlevel" class="form-label">Crowd Level (0-100)</label>
-                    <input type="number" class="form-control" id="crowdlevel" name="crowdlevel" min="0" max="100" required>
+        <div class="form-row">
+            <div class="form-col">
+                <div class="form-group">
+                    <label for="name" class="form-label">Place Name</label>
+                    <input type="text" class="form-control" id="name" name="name" required placeholder="Enter the name of the place">
                 </div>
-                <div class="col-md-6">
-                    <label for="status" class="form-label">Status</label>
-                    <select class="form-select" id="status" name="status" required>
-                        <option value="">Select Status</option>
-                        <option value="High">High</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Low">Low</option>
+                <div class="form-group">
+                    <label for="category" class="form-label">Category</label>
+                    <select class="form-select" id="category" name="category" required>
+                        <option value="">Select Category</option>
+                        <option value="Historical">Historical</option>
+                        <option value="Religious">Religious</option>
+                        <option value="Natural">Natural</option>
+                        <option value="Cultural">Cultural</option>
+                        <option value="Entertainment">Entertainment</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label for="district" class="form-label">District</label>
+                    <input type="text" class="form-control" id="district" name="district" required placeholder="Enter the district">
+                </div>
+                <div class="form-group">
+                    <label for="location" class="form-label">Location</label>
+                    <input type="text" class="form-control" id="location" name="location" required placeholder="Enter the specific location">
+                </div>
+                <div class="form-group">
+                    <label for="tags" class="form-label">Tags</label>
+                    <select class="form-control select2-tags" id="tags" name="tags" multiple="multiple" style="width: 100%;">
+                        {% for tag in tags %}
+                            <option value="{{ tag.name }}">{{ tag.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">You can search and select multiple tags.</small>
+                </div>
+            </div>
+            <div class="form-col">
+                <div class="form-group">
+                    <label for="popular_for" class="form-label">Popular For</label>
+                    <input type="text" class="form-control" id="popular_for" name="popular_for" required placeholder="What is this place known for?">
+                </div>
+                <div class="form-group">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" required placeholder="Describe the place..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="image" class="form-label">Place Image</label>
+                    <div class="file-input-container">
+                        <label for="image" class="file-input-label">
+                            <i class="fas fa-cloud-upload-alt"></i> <span id="fileLabel">Choose an image or drag it here</span>
+                        </label>
+                        <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Crowd Level (0-100)</label>
+                    <input type="number" class="form-control" id="crowdlevel" name="crowdlevel" min="0" max="100" required>
+                </div>
             </div>
         </div>
-
         <div class="form-group">
             <label class="form-label">Select Location on Map</label>
-            <div id="map" class="map-container" style="height: 400px;"></div>
+            <div id="map" class="map-container"></div>
             <input type="hidden" id="latitude" name="latitude" required>
             <input type="hidden" id="longitude" name="longitude" required>
         </div>
-
         <button type="submit" class="submit-btn" id="submitBtn">Add Place</button>
     </form>
 </div>
@@ -262,6 +258,12 @@
 <!-- Map Scripts -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- jQuery (must be loaded before Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -305,6 +307,36 @@
             } else {
                 marker = L.marker(e.latlng).addTo(map);
             }
+
+            // Reverse geocode using Nominatim
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.address) {
+                        // Try to get a human-readable location name
+                        const locationField = document.getElementById('location');
+                        const districtField = document.getElementById('district');
+                        // Compose a location string (e.g., road, suburb, city)
+                        let locationName = '';
+                        if (data.address.road) locationName += data.address.road + ', ';
+                        if (data.address.suburb) locationName += data.address.suburb + ', ';
+                        if (data.address.city) locationName += data.address.city + ', ';
+                        if (data.address.town) locationName += data.address.town + ', ';
+                        if (data.address.village) locationName += data.address.village + ', ';
+                        if (data.address.state_district) locationName += data.address.state_district + ', ';
+                        if (data.address.state) locationName += data.address.state + ', ';
+                        if (data.address.country) locationName += data.address.country;
+                        locationName = locationName.replace(/, $/, ''); // Remove trailing comma
+                        if (locationField) locationField.value = locationName;
+                        // Try to get district (could be city_district, county, or state_district)
+                        let districtName = data.address.city_district || data.address.county || data.address.state_district || data.address.state || '';
+                        if (districtField) districtField.value = districtName;
+                    }
+                })
+                .catch(err => {
+                    // Optionally handle errors
+                    console.error('Reverse geocoding failed:', err);
+                });
         });
 
         // Get user's location if available
@@ -320,54 +352,69 @@
         const form = document.getElementById('addPlaceForm');
         const submitBtn = document.getElementById('submitBtn');
 
-        form.addEventListener('submit', function(e) {
-            // Validate required fields
-            const requiredFields = form.querySelectorAll('[required]');
-            let isValid = true;
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                // Validate required fields
+                const requiredFields = form.querySelectorAll('[required]');
+                let isValid = true;
 
-            requiredFields.forEach(field => {
-                if (!field.value) {
-                    isValid = false;
-                    field.style.borderColor = '#dc2626';
-                } else {
-                    field.style.borderColor = '#e5e7eb';
+                requiredFields.forEach(field => {
+                    if (!field.value) {
+                        isValid = false;
+                        field.style.borderColor = '#dc2626';
+                    } else {
+                        field.style.borderColor = '#e5e7eb';
+                    }
+                });
+
+                if (!isValid) {
+                    e.preventDefault();
+                    alert('Please fill in all required fields');
+                    return;
+                }
+
+                // Disable submit button to prevent double submission
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Adding Place...';
                 }
             });
-
-            if (!isValid) {
-                e.preventDefault();
-                alert('Please fill in all required fields');
-                return;
-            }
-
-            // Disable submit button to prevent double submission
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Adding Place...';
-        });
+        }
 
         // File input handling
         const fileInput = document.getElementById('image');
         const fileLabel = document.getElementById('fileLabel');
 
-        fileInput.addEventListener('change', function(e) {
-            if (this.files && this.files[0]) {
-                const file = this.files[0];
-                // Validate file type
-                if (!file.type.startsWith('image/')) {
-                    alert('Please select an image file');
-                    this.value = '';
-                    fileLabel.textContent = 'Choose an image or drag it here';
-                    return;
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    // Validate file type
+                    if (!file.type.startsWith('image/')) {
+                        alert('Please select an image file');
+                        this.value = '';
+                        fileLabel.textContent = 'Choose an image or drag it here';
+                        return;
+                    }
+                    // Validate file size (max 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('Image size should be less than 5MB');
+                        this.value = '';
+                        fileLabel.textContent = 'Choose an image or drag it here';
+                        return;
+                    }
+                    fileLabel.textContent = file.name;
                 }
-                // Validate file size (max 5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('Image size should be less than 5MB');
-                    this.value = '';
-                    fileLabel.textContent = 'Choose an image or drag it here';
-                    return;
-                }
-                fileLabel.textContent = file.name;
-            }
+            });
+        }
+
+        // Only use Select2 for tags now
+        $(document).ready(function() {
+            $('.select2-tags').select2({
+                placeholder: 'Select tags',
+                allowClear: true,
+                width: 'resolve'
+            });
         });
     });
 </script>

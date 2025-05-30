@@ -33,6 +33,38 @@
                         </button>
                     </form>
                 </div>
+                <div class="card-body mt-4">
+                    <h5><i class="fas fa-tags"></i> Set Your Preferences</h5>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="tags" class="form-label">Select Preferred Tags:</label>
+                            <select class="form-control select2-tags" id="tags" name="tags" multiple="multiple" style="width: 100%;">
+                                {% for tag in all_tags %}
+                                    <option value="{{ tag.id }}" {% if tag in preferred_tags %}selected{% endif %}>{{ tag.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">You can search and select multiple tags.</small>
+                        </div>
+                        <button type="submit" class="btn btn-success">Save Preferences</button>
+                    </form>
+                </div>
+                {% comment %} <div class="card-body mt-4">
+                    <h5><i class="fas fa-map-marker-alt"></i> Recommended Places Based on Your Preferences</h5>
+                    <ul class="list-group">
+                        {% for place in recommended_places %}
+                            <li class="list-group-item">
+                                <strong>{{ place.name }}</strong> - {{ place.category }}<br>
+                                <span class="text-muted">{{ place.district }}</span>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item">No recommended places found for your selected tags.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="card-body mt-4">
+                    <a href="{% url 'recommended_places_nearby' %}" class="btn btn-info mb-3">Show Recommended Places Near Me</a>
+                </div> {% endcomment %}
             </div>
         </div>
     </div>
@@ -119,4 +151,67 @@
     }
 }
 </style>
+
+<!-- jQuery (must be loaded before Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Add Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<!-- Add Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        $(document).ready(function() {
+            $('.select2-tags').select2({
+                placeholder: 'Select tags',
+                allowClear: true,
+                width: 'resolve'
+            });
+        });
+    });
+</script>
+
+<script>
+function askForLocationAndSave() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            localStorage.setItem('user_lat', position.coords.latitude);
+            localStorage.setItem('user_lng', position.coords.longitude);
+            // Use the location for your map here
+            loadMap(position.coords.latitude, position.coords.longitude);
+        }, function(error) {
+            alert('Location access denied or unavailable.');
+        });
+    } else {
+        alert('Geolocation is not supported by this browser.');
+    }
+}
+
+function loadMap(lat, lng) {
+    // Your map loading logic here
+    console.log('Loading map at:', lat, lng);
+}
+
+// Detect if this is a reload (not a navigation)
+let isReload = false;
+if (performance.getEntriesByType("navigation")[0].type === "reload") {
+    isReload = true;
+}
+
+// On page load
+window.onload = function() {
+    if (isReload) {
+        // Always ask for location on reload
+        askForLocationAndSave();
+    } else {
+        // Use saved location if available, otherwise ask
+        const lat = localStorage.getItem('user_lat');
+        const lng = localStorage.getItem('user_lng');
+        if (lat && lng) {
+            loadMap(lat, lng);
+        } else {
+            askForLocationAndSave();
+        }
+    }
+};
+</script>
 {% endblock %}

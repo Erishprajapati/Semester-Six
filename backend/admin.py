@@ -5,7 +5,6 @@ from django import forms
 from django.utils.html import format_html
 from django.contrib.admin import AdminSite
 
-# Customize admin site
 admin.site.site_header = 'Tourism Management System'
 admin.site.site_title = 'Tourism Admin Portal'
 admin.site.index_title = 'Welcome to Tourism Management Portal'
