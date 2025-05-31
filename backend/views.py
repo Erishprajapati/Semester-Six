@@ -21,6 +21,10 @@ from math import radians, cos, sin, asin, sqrt
 def home(request):
     return render(request, 'register.html')
     """it will act as key pair value"""
+
+def map_view(request):
+    return render(request, 'Map.html')
+
 @login_required
 def profile_view(request):
     user = request.user
@@ -561,3 +565,19 @@ def recommended_places_nearby(request):
     return render(request, 'recommended_places.html', {
         'places_with_distance': places_with_distance
     })
+
+@login_required
+def delete_place(request, place_id):
+    place = get_object_or_404(Place, id=place_id)
+    
+    # Check if the current user is the one who added the place
+    if place.added_by != request.user and not request.user.is_superuser:
+        messages.error(request, "You don't have permission to delete this place.")
+        return redirect('place_details', place_id=place.id)
+    
+    if request.method == 'POST':
+        place.delete()
+        messages.success(request, "Place deleted successfully.")
+        return redirect('/accounts/dashboard/')  # Changed to redirect to the dashboard URL
+    
+    return render(request, 'delete_place_confirm.html', {'place': place})

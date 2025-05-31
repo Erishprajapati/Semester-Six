@@ -2,6 +2,17 @@
 {% block title %}Map Tracker{% endblock %}
 
 {% block content %}
+{% if messages %}
+<div class="messages" style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+    {% for message in messages %}
+    <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}" 
+        style="padding: 15px; margin-bottom: 10px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 <style>
   /* Move all styles to the top of the file */
   #location-access-prompt {
