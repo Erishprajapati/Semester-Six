@@ -477,8 +477,19 @@
                 <div class="place-hero-img" style="background-image: url('{{ place.image.url }}');"></div>
             {% endif %}
             <div class="p-5">
-                <h2>{{ place.name }}</h2>
-                <p class="text-muted"><i class="bi bi-tag"></i> {{ place.category }}</p>
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h2>{{ place.name }}</h2>
+                        <p class="text-muted"><i class="bi bi-tag"></i> {{ place.category }}</p>
+                    </div>
+                    {% if user.is_authenticated and place.added_by == user or user.is_superuser %}
+                    <div>
+                        <a href="{% url 'delete_place' place.id %}" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Delete Place
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
                 <p><strong>Description:</strong> {{ place.description }}</p>
                 <p><strong>Popular For:</strong> {{ place.popular_for }}</p>
                 <p><strong>District:</strong> {{ place.district }}</p>
