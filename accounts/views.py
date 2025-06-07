@@ -16,12 +16,12 @@ def register_user(request):
 
         # Check if passwords match
         if password != confirm_password:
-            messages.error(request, "Passwords do not match.")
+            messages.error(request, "Passwords do not match. Please try again.")
             return redirect('register')
 
         # Check password strength (min 8 chars, 1 uppercase, 1 number)
         if not re.match(r'^(?=.*[A-Z])(?=.*\d).{8,}$', password):
-            messages.error(request, "Password must be at least 8 characters long, contain one uppercase letter and one number.")
+            messages.error(request, "Password must be at least 8 characters long and contain one uppercase letter and one number.")
             return redirect('register')
 
         # Validate email format
@@ -31,19 +31,23 @@ def register_user(request):
 
         # Check if username already exists
         if User.objects.filter(username=username).exists():
-            messages.error(request, "Username already taken.")
+            messages.error(request, "Username is already taken. Please choose a different username.")
             return redirect('register')
 
         # Check if email already exists
         if User.objects.filter(email=email).exists():
-            messages.error(request, "Email already registered.")
+            messages.error(request, "This email is already registered. Please use a different email or try logging in.")
             return redirect('register')
 
         # All good, create user
-        user = User.objects.create_user(username=username, email=email, password=password)
-        user.save()
-        messages.success(request, "Registration successful! You can now log in.")
-        return redirect('login')
+        try:
+            user = User.objects.create_user(username=username, email=email, password=password)
+            user.save()
+            messages.success(request, "Registration successful! You can now log in with your credentials.")
+            return redirect('login')
+        except Exception as e:
+            messages.error(request, "An error occurred during registration. Please try again.")
+            return redirect('register')
 
     return render(request, 'register.html')
         
