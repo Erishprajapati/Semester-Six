@@ -1,12 +1,44 @@
-<h1>Places</h1>
-<ul>
-    {% for place in places %}
-        <li>
-            <h3>{{ place.name }}</h3>
-            <p>{{ place.description }}</p>
-            <p>Category: {{ place.category }}</p>
-            <p>Location: {{ place.location }}, {{ place.district }}</p>
+{% extends "base.html" %}
+{% block title %}Places{% endblock %}
 
-        </li>
-    {% endfor %}
-</ul>
+{% block content %}
+<div class="container mt-5">
+    {% if messages %}
+    <div class="messages mb-4">
+        {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <h2 class="mb-4">Places</h2>
+    
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for place in places %}
+        <div class="col">
+            <div class="card h-100">
+                {% if place.image %}
+                <img src="{{ place.image.url }}" class="card-img-top" alt="{{ place.name }}" style="height: 200px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ place.name }}</h5>
+                    <p class="card-text text-muted">{{ place.category }}</p>
+                    <p class="card-text">{{ place.description|truncatewords:30 }}</p>
+                    <p class="card-text"><small class="text-muted">Location: {{ place.location }}, {{ place.district }}</small></p>
+                    <a href="{% url 'place_details' place.id %}" class="btn btn-primary">View Details</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                No places available at the moment.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

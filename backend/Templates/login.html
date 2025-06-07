@@ -109,14 +109,6 @@
             background-color: #1669c1;
         }
     
-        /* Error Message Styling */
-        p[style="color: red"] {
-            color: #d93025;
-            font-size: 14px;
-            text-align: center;
-            margin: 10px 0;
-        }
-    
         /* Register Prompt */
         p {
             text-align: center;
@@ -141,6 +133,28 @@
                 padding: 30px 20px;
             }
         }
+
+        /* Message Styling */
+        .container .message {
+            font-size: 14px !important;
+            text-align: center !important;
+            margin: 10px 0 !important;
+            padding: 8px !important;
+            border-radius: 4px !important;
+            display: block !important;
+        }
+
+        .container .success-message {
+            color: #1a73e8 !important;
+            background-color: #e8f0fe !important;
+            border: 1px solid #1a73e8 !important;
+        }
+
+        .container .error-message {
+            color: #d93025 !important;
+            background-color: #fce8e6 !important;
+            border: 1px solid #d93025 !important;
+        }
     </style>
     
     <!-- Add Font Awesome for eye icons -->
@@ -152,7 +166,11 @@
 
         {% if messages %}
             {% for message in messages %}
-                <p style="color: red">{{ message }}</p>
+                {% if 'success' in message.tags %}
+                    <p class="message success-message">{{ message }}</p>
+                {% else %}
+                    <p class="message error-message">{{ message }}</p>
+                {% endif %}
             {% endfor %}
         {% endif %}
 

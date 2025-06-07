@@ -17,7 +17,6 @@ from math import radians, cos, sin, asin, sqrt
 
 
 # Create your views here.
-
 def home(request):
     return render(request, 'register.html')
     """it will act as key pair value"""
@@ -35,6 +34,10 @@ def profile_view(request):
         new_password = request.POST.get("new_password")
         confirm_password = request.POST.get("confirm_password")
         selected_tags = request.POST.getlist("tags")
+
+        # If tags are selected, redirect to places_by_tags view with correct api/ prefix
+        if selected_tags:
+            return redirect(f'/api/places-by-tags/?tags={"&tags=".join(selected_tags)}')
 
         # Validate username
         if not username:
@@ -576,8 +579,65 @@ def delete_place(request, place_id):
         return redirect('place_details', place_id=place.id)
     
     if request.method == 'POST':
+        place_name = place.name  # Store the name before deleting
         place.delete()
-        messages.success(request, "Place deleted successfully.")
-        return redirect('/accounts/dashboard/')  # Changed to redirect to the dashboard URL
+        messages.success(request, f"'{place_name}' has been successfully deleted.")
+        return redirect('/accounts/dashboard/')  # Changed to redirect to map view
     
     return render(request, 'delete_place_confirm.html', {'place': place})
+
+def save_place(request, place_id):
+    if not request.user.is_authenticated:
+        messages.error(request, "Please login to save places.")
+        return redirect('login')
+    
+    place = get_object_or_404(Place, id=place_id)
+    saved, created = SavedPlace.objects.get_or_create(user=request.user, place=place)
+    
+    if created:
+        messages.success(request, f"{place.name} has been saved to your list!")
+    else:
+        saved.delete()
+        messages.info(request, f"{place.name} has been removed from your saved places.")
+    
+    return redirect('place_details', place_id=place_id)
+
+# def saved_places(request):
+#     if not request.user.is_authenticated:
+#         messages.error(request, "Please login to view your saved places.")
+#         return redirect('login')
+    
+#     saved_places = SavedPlace.objects.filter(user=request.user).select_related('place')
+#     return render(request, 'saved_places.html', {
+#         'saved_places': saved_places,
+#         'title': 'My Saved Places'
+#     })
+
+# (tags__name__in=selected_tags).distinct()
+    
+#     # If user location is available, calculate distances and rank places
+#     if user_location:
+#         places_with_distance = []
+#         for place in places:
+#             if place.latitude and place.longitude:
+#                 distance = haversine(
+#                     user_location.latitude, 
+#                     user_location.longitude,
+#                     place.latitude, 
+#                     place.longitude
+#                 )
+#                 # Calculate tag match score (how many selected tags match)
+#                 tag_match_score = len(set(place.tags.values_list('name', flat=True)) & set(selected_tags))
+#                 # Calculate final score (higher tag match and lower distance = better score)
+#                 final_score = (tag_match_score * 2) - (distance * 0.1)  # Adjust weights as needed
+#                 places_with_distance.append((place, distance, final_score))
+        
+#         # Sort by final score (descending)
+#         places_with_distance.sort(key=lambda x: x[2], reverse=True)
+#         places = [p[0] for p in places_with_distance]
+    
+#     return render(request, 'places_by_tags.html', {
+#         'places': places,
+#         'selected_tags': selected_tags,
+#         'user_location': user_location
+#     })
