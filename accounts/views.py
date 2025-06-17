@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate, login,logout
 from django.contrib.auth.decorators import login_required
 import re
 from backend.models import *
+from django.utils import timezone
 
 # Create your views here.
 def register_user(request):
@@ -110,6 +111,28 @@ def home(request):
     place_name = "Kathmandu"  # You can change this or make it dynamic
     try:
         place = Place.objects.get(name__iexact=place_name)
+        today = timezone.now().date()
+        
+        # Get crowd data for each time slot for today
+        morning_data = CrowdData.objects.filter(
+            place=place,
+            date=today,
+            time_slot='morning'
+        ).order_by('-timestamp').first()
+        
+        afternoon_data = CrowdData.objects.filter(
+            place=place,
+            date=today,
+            time_slot='afternoon'
+        ).order_by('-timestamp').first()
+        
+        evening_data = CrowdData.objects.filter(
+            place=place,
+            date=today,
+            time_slot='evening'
+        ).order_by('-timestamp').first()
+
+        # Get historical data for the chart
         last_10 = CrowdData.objects.filter(place=place).order_by('-timestamp')[:10]
         last_10 = list(reversed(last_10))
 
@@ -122,6 +145,10 @@ def home(request):
             'crowd_levels': crowd_levels,
             'places': places,
             'query': query,
+            'morning_data': morning_data,
+            'afternoon_data': afternoon_data,
+            'evening_data': evening_data,
+            'today': today.strftime('%Y-%m-%d'),
         }
     except Place.DoesNotExist:
         context = {
@@ -130,7 +157,11 @@ def home(request):
             'crowd_levels': [],
             'places': [],
             'query': query,
-            'error': f"{place_name} not found."
+            'error': f"{place_name} not found.",
+            'morning_data': None,
+            'afternoon_data': None,
+            'evening_data': None,
+            'today': timezone.now().date().strftime('%Y-%m-%d'),
         }
 
     return render(request, 'map.html', context)

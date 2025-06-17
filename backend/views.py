@@ -15,7 +15,6 @@ from django.contrib import messages
 from django.db.models import Q, Subquery, OuterRef
 from math import radians, cos, sin, asin, sqrt
 
-
 # Create your views here.
 def home(request):
     return render(request, 'register.html')
