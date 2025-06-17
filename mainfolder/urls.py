@@ -20,10 +20,11 @@ from backend.views import *
 from django.conf import settings
 from django.conf.urls.static import static
 from backend import views
+from accounts.views import home as accounts_home
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.home, name='home'),
+    path('', accounts_home, name='home'),
     path('api/', include('backend.urls')),
     path('accounts/', include('accounts.urls')),
     path('api/crowd/<str:place_name>/', get_crowd_data, name='get_crowd_data'),
