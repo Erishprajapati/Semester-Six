@@ -14,6 +14,9 @@ from django.db.models import Max
 from django.contrib import messages
 from django.db.models import Q, Subquery, OuterRef
 from math import radians, cos, sin, asin, sqrt
+import joblib
+import os
+from datetime import datetime
 
 # Create your views here.
 def home(request):
@@ -198,45 +201,78 @@ TAG_WEIGHTS = {
     'temple': 1.3,
     'nature': 1.1,
 }
-@api_view(['GET'])
+
 def recommend_places(request, place_name):
-    place = get_object_or_404(Place, name__iexact=place_name)
-    selected_tags = place.tags.all()
-    selected_tag_names = set(selected_tags.values_list('name', flat=True))
-
-    user = request.user if request.user.is_authenticated else None
-    user_preference_tags = set()
-    if user and hasattr(user, 'userpreference'):
-        user_preference_tags = set(user.userpreference.tags.values_list('name', flat=True))
-
-    
-    related_places = Place.objects.filter(tags__in=selected_tags).exclude(id=place.id).distinct()
-
-    if related_places.count() < 3:
-        related_places = Place.objects.filter(category=place.category).exclude(id=place.id)
-
-    place_scores = []
-    for p in related_places:
-        other_tag_names = set(p.tags.values_list('name', flat=True))
-        shared_tags = selected_tag_names.intersection(other_tag_names)
-        weighted_score = sum(TAG_WEIGHTS.get(tag, 1) for tag in shared_tags)
-        normalized_score = weighted_score / max(sum(TAG_WEIGHTS.get(tag, 1) for tag in selected_tag_names), 1)
-        preference_boost = len(other_tag_names.intersection(user_preference_tags)) * 0.1
-        final_score = normalized_score + preference_boost
-
-        place_data = PlaceSerializer(p).data
-        place_data['visitor_count'] = random.randint(50, 500)
-        place_data['score'] = round(final_score, 2)
-        place_scores.append((place_data, final_score))
-
-    sorted_places = sorted(place_scores, key=lambda x: x[1], reverse=True)
-    top_places = [data for data, score in sorted_places[:5]]
-
-    return Response({
-        "base_place": PlaceSerializer(place).data,
-        "recommended": top_places
-    })
-
+    """Recommend places based on the given place"""
+    try:
+        # Get the reference place
+        reference_place = Place.objects.get(name__iexact=place_name)
+        
+        # Get tags of the reference place
+        reference_tags = set(reference_place.tags.values_list('name', flat=True))
+        
+        # Find places with similar tags
+        similar_places = []
+        all_places = Place.objects.exclude(id=reference_place.id)
+        
+        for place in all_places:
+            place_tags = set(place.tags.values_list('name', flat=True))
+            
+            # Calculate similarity score
+            if reference_tags and place_tags:
+                intersection = reference_tags.intersection(place_tags)
+                union = reference_tags.union(place_tags)
+                similarity = len(intersection) / len(union) if union else 0
+                
+                # Apply tag weights
+                weighted_similarity = 0
+                for tag in intersection:
+                    weighted_similarity += TAG_WEIGHTS.get(tag.lower(), 1.0)
+                
+                if similarity > 0:  # Only include places with some similarity
+                    similar_places.append({
+                        'place': place,
+                        'similarity_score': weighted_similarity * similarity
+                    })
+        
+        # Sort by similarity score
+        similar_places.sort(key=lambda x: x['similarity_score'], reverse=True)
+        
+        # Get top 5 recommendations
+        recommendations = similar_places[:5]
+        
+        # Format response
+        places_data = []
+        for rec in recommendations:
+            place = rec['place']
+            latest_crowd = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
+            
+            places_data.append({
+                'id': place.id,
+                'name': place.name,
+                'description': place.description,
+                'category': place.category,
+                'similarity_score': round(rec['similarity_score'], 2),
+                'crowdlevel': latest_crowd.crowdlevel if latest_crowd else 'N/A',
+                'status': latest_crowd.status if latest_crowd else 'N/A',
+                'tags': [tag.name for tag in place.tags.all()],
+                'latitude': place.latitude,
+                'longitude': place.longitude
+            })
+        
+        return JsonResponse({
+            'reference_place': place_name,
+            'recommendations': places_data
+        })
+        
+    except Place.DoesNotExist:
+        return JsonResponse({
+            'error': f'Place "{place_name}" not found.'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'error': f'An error occurred: {str(e)}'
+        }, status=500)
 
 @api_view(['GET'])
 def generate_fake_data(request):
@@ -254,12 +290,8 @@ def place_details(request, place_id):
         'crowd_data': crowd_data
     })
 
-"""List of places"""
 def place_list(request):
-    if request.user.is_superuser:
-        places = Place.objects.all()
-    else:
-        places = Place.objects.filter(is_approved=True)
+    places = Place.objects.all()
     return render(request, 'place_list.html', {'places': places})
 
 @csrf_exempt
@@ -270,36 +302,61 @@ def save_user_location(request):
             data = json.loads(request.body)
             latitude = data.get('latitude')
             longitude = data.get('longitude')
-
-            # Save the location data
-            user_location = UserLocation.objects.create(
-                user=request.user,
-                latitude=latitude,
-                longitude=longitude
-            )
-
-            return JsonResponse({"message": "Location saved successfully!"}, status=200)
+            
+            if latitude is not None and longitude is not None:
+                # Save or update user location
+                user_location, created = UserLocation.objects.get_or_create(
+                    user=request.user,
+                    defaults={'latitude': latitude, 'longitude': longitude}
+                )
+                
+                if not created:
+                    # Update existing location
+                    user_location.latitude = latitude
+                    user_location.longitude = longitude
+                    user_location.save()
+                
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Location saved successfully'
+                })
+            else:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Latitude and longitude are required'
+                }, status=400)
+                
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid JSON data'
+            }, status=400)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
-        
+            return JsonResponse({
+                'status': 'error',
+                'message': f'An error occurred: {str(e)}'
+            }, status=500)
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Only POST method is allowed'
+    }, status=405)
+
 @api_view(['GET'])
 @login_required  # Ensure the user is authenticated
 def get_user_location(request):
     try:
-        # Get the most recent location saved by the logged-in user
-        user_location = UserLocation.objects.filter(user=request.user).last()
+        user_location = UserLocation.objects.get(user=request.user)
+        return JsonResponse({
+            'latitude': user_location.latitude,
+            'longitude': user_location.longitude,
+            'last_updated': user_location.created_at.isoformat()
+        })
+    except UserLocation.DoesNotExist:
+        return JsonResponse({
+            'error': 'No location data found for this user'
+        }, status=404)
 
-        if user_location:
-            return JsonResponse({
-                'latitude': user_location.latitude,
-                'longitude': user_location.longitude
-            })
-        else:
-            return JsonResponse({"message": "No location found for the user."}, status=404)
-
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
-    
 @api_view(['GET'])
 def search_places(request):
     query = request.GET.get('q', '')  # Get the search query (place name)
@@ -512,30 +569,34 @@ def update_profile(request):
         messages.success(request, "Profile updated.")
         return redirect('login')  # Redirect to login page
 
-    return render(request, 'profile.html')
+    return render(request, 'accounts/profile.html')
 
 @login_required
 def add_place_form(request):
-    from .models import Tag
-    tags = Tag.objects.all()
-    return render(request, 'addplace.html', {'tags': tags})
+    return render(request, 'addplace.html')
 
 @api_view(['GET'])
 @login_required
 def get_search_history(request):
-    search_history = SearchHistory.objects.filter(user=request.user).order_by('-timestamp')[:10]
-    searches = [{
-        'search_query': search.search_query,
-        'search_type': search.search_type,
-        'timestamp': search.timestamp.isoformat()
-    } for search in search_history]
+    user = request.user
+    search_history = SearchHistory.objects.filter(user=user).order_by('-timestamp')[:10]
     
-    return JsonResponse({'searches': searches})
+    history_data = [{
+        'search_query': item.search_query,
+        'search_type': item.search_type,
+        'timestamp': item.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+    } for item in search_history]
+    
+    return JsonResponse({'search_history': history_data})
 
 def haversine(lat1, lon1, lat2, lon2):
-    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-    dlon = lon2 - lon1
+    """Calculate the great circle distance between two points on the earth"""
+    # Convert decimal degrees to radians
+    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+    
+    # Haversine formula
     dlat = lat2 - lat1
+    dlon = lon2 - lon1
     a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
     c = 2 * asin(sqrt(a))
     r = 6371  # Radius of earth in kilometers
@@ -543,100 +604,210 @@ def haversine(lat1, lon1, lat2, lon2):
 
 @login_required
 def recommended_places_nearby(request):
-    user = request.user
-    # Get user location
-    user_location = UserLocation.objects.filter(user=user).last()
-    if not user_location:
-        messages.error(request, "No location found. Please set your location first.")
-        return redirect('profile_view')
-
-    # Get user preferences
-    user_pref, _ = UserPreference.objects.get_or_create(user=user)
-    preferred_tags = user_pref.tags.all()
-    places = Place.objects.filter(tags__in=preferred_tags).distinct()
-
-    # Calculate distance for each place
-    places_with_distance = []
-    for place in places:
-        if place.latitude is not None and place.longitude is not None:
-            distance = haversine(user_location.latitude, user_location.longitude, place.latitude, place.longitude)
-            places_with_distance.append((place, distance))
-    # Sort by distance
-    places_with_distance.sort(key=lambda x: x[1])
-
-    return render(request, 'recommended_places.html', {
-        'places_with_distance': places_with_distance
-    })
+    try:
+        # Get user's current location
+        user_location = UserLocation.objects.get(user=request.user)
+        user_lat = user_location.latitude
+        user_lon = user_location.longitude
+        
+        # Get all places
+        places = Place.objects.all()
+        nearby_places = []
+        
+        for place in places:
+            if place.latitude and place.longitude:
+                distance = haversine(user_lat, user_lon, place.latitude, place.longitude)
+                
+                # Only include places within 10km
+                if distance <= 10:
+                    latest_crowd = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
+                    
+                    nearby_places.append({
+                        'id': place.id,
+                        'name': place.name,
+                        'description': place.description,
+                        'category': place.category,
+                        'distance': round(distance, 2),
+                        'crowdlevel': latest_crowd.crowdlevel if latest_crowd else 'N/A',
+                        'status': latest_crowd.status if latest_crowd else 'N/A',
+                        'tags': [tag.name for tag in place.tags.all()],
+                        'latitude': place.latitude,
+                        'longitude': place.longitude
+                    })
+        
+        # Sort by distance
+        nearby_places.sort(key=lambda x: x['distance'])
+        
+        return JsonResponse({'nearby_places': nearby_places[:10]})  # Return top 10
+        
+    except UserLocation.DoesNotExist:
+        return JsonResponse({'error': 'User location not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': f'An error occurred: {str(e)}'}, status=500)
 
 @login_required
 def delete_place(request, place_id):
     place = get_object_or_404(Place, id=place_id)
     
-    # Check if the current user is the one who added the place
-    if place.added_by != request.user and not request.user.is_superuser:
+    # Check if user has permission to delete (admin or place creator)
+    if not (request.user.is_superuser or place.added_by == request.user):
         messages.error(request, "You don't have permission to delete this place.")
-        return redirect('place_details', place_id=place.id)
+        return redirect('place_details', place_id=place_id)
     
     if request.method == 'POST':
-        place_name = place.name  # Store the name before deleting
+        place_name = place.name
         place.delete()
-        messages.success(request, f"'{place_name}' has been successfully deleted.")
-        return redirect('/accounts/dashboard/')  # Changed to redirect to map view
+        messages.success(request, f'Place "{place_name}" has been deleted.')
+        return redirect('place_list')
     
     return render(request, 'delete_place_confirm.html', {'place': place})
 
 def save_place(request, place_id):
-    if not request.user.is_authenticated:
-        messages.error(request, "Please login to save places.")
-        return redirect('login')
-    
     place = get_object_or_404(Place, id=place_id)
-    saved, created = SavedPlace.objects.get_or_create(user=request.user, place=place)
     
-    if created:
-        messages.success(request, f"{place.name} has been saved to your list!")
-    else:
-        saved.delete()
-        messages.info(request, f"{place.name} has been removed from your saved places.")
-    
-    return redirect('place_details', place_id=place_id)
-
-# def saved_places(request):
-#     if not request.user.is_authenticated:
-#         messages.error(request, "Please login to view your saved places.")
-#         return redirect('login')
-    
-#     saved_places = SavedPlace.objects.filter(user=request.user).select_related('place')
-#     return render(request, 'saved_places.html', {
-#         'saved_places': saved_places,
-#         'title': 'My Saved Places'
-#     })
-
-# (tags__name__in=selected_tags).distinct()
-    
-#     # If user location is available, calculate distances and rank places
-#     if user_location:
-#         places_with_distance = []
-#         for place in places:
-#             if place.latitude and place.longitude:
-#                 distance = haversine(
-#                     user_location.latitude, 
-#                     user_location.longitude,
-#                     place.latitude, 
-#                     place.longitude
-#                 )
-#                 # Calculate tag match score (how many selected tags match)
-#                 tag_match_score = len(set(place.tags.values_list('name', flat=True)) & set(selected_tags))
-#                 # Calculate final score (higher tag match and lower distance = better score)
-#                 final_score = (tag_match_score * 2) - (distance * 0.1)  # Adjust weights as needed
-#                 places_with_distance.append((place, distance, final_score))
+    if request.method == 'POST':
+        # Update place details
+        place.name = request.POST.get('name', place.name)
+        place.description = request.POST.get('description', place.description)
+        place.popular_for = request.POST.get('popular_for', place.popular_for)
+        place.category = request.POST.get('category', place.category)
+        place.district = request.POST.get('district', place.district)
+        place.location = request.POST.get('location', place.location)
         
-#         # Sort by final score (descending)
-#         places_with_distance.sort(key=lambda x: x[2], reverse=True)
-#         places = [p[0] for p in places_with_distance]
+        # Update coordinates if provided
+        latitude = request.POST.get('latitude')
+        longitude = request.POST.get('longitude')
+        if latitude and longitude:
+            place.latitude = float(latitude)
+            place.longitude = float(longitude)
+        
+        # Update image if provided
+        if 'image' in request.FILES:
+            place.image = request.FILES['image']
+        
+        place.save()
+        
+        # Update tags
+        tags = request.POST.getlist('tags')
+        place.tags.clear()
+        for tag_name in tags:
+            if tag_name.strip():
+                tag, created = Tag.objects.get_or_create(name=tag_name.strip())
+                place.tags.add(tag)
+        
+        messages.success(request, 'Place updated successfully!')
+        return redirect('place_details', place_id=place_id)
     
-#     return render(request, 'places_by_tags.html', {
-#         'places': places,
-#         'selected_tags': selected_tags,
-#         'user_location': user_location
-#     })
+    return render(request, 'edit_place.html', {'place': place})
+
+# Helper function to get season
+def get_season(month):
+    if month in [3, 4, 5]:
+        return 'Spring'
+    elif month in [6, 7, 8]:
+        return 'Summer'
+    elif month in [9, 10, 11]:
+        return 'Fall'
+    else:
+        return 'Winter'
+
+@api_view(['POST'])
+def predict_crowd(request):
+    """
+    Predict crowd level for a given place, date, and time slot
+    """
+    try:
+        # Get parameters from request
+        place_id = request.data.get('place_id')
+        date_str = request.data.get('date')
+        time_slot = request.data.get('time_slot')
+        weather_condition = request.data.get('weather_condition', 'Sunny')
+        
+        if not all([place_id, date_str, time_slot]):
+            return JsonResponse({
+                'error': 'Missing required parameters: place_id, date, time_slot'
+            }, status=400)
+        
+        # Get place details
+        try:
+            place = Place.objects.get(id=place_id)
+        except Place.DoesNotExist:
+            return JsonResponse({
+                'error': f'Place with ID {place_id} not found'
+            }, status=404)
+        
+        # Parse date
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d')
+        except ValueError:
+            return JsonResponse({
+                'error': 'Invalid date format. Use YYYY-MM-DD'
+            }, status=400)
+        
+        # Load the trained model
+        model_path = 'crowd_prediction_model.pkl'
+        if not os.path.exists(model_path):
+            return JsonResponse({
+                'error': 'Trained model not found. Please train the model first.'
+            }, status=500)
+        
+        model_data = joblib.load(model_path)
+        model = model_data['model']
+        encoders = model_data['label_encoders']
+        
+        # Prepare features
+        day_of_week = date.weekday()
+        month = date.month
+        season = get_season(month)
+        is_weekend = 1 if day_of_week >= 5 else 0
+        is_holiday = 0  # You can add holiday logic here
+        
+        # Encode categorical features
+        features = [
+            place_id,
+            encoders['category'].transform([place.category])[0],
+            encoders['district'].transform([place.district])[0],
+            encoders['time_slot'].transform([time_slot])[0],
+            day_of_week,
+            month,
+            encoders['season'].transform([season])[0],
+            is_weekend,
+            is_holiday,
+            encoders['weather_condition'].transform([weather_condition])[0]
+        ]
+        
+        # Make prediction
+        predicted_crowd = model.predict([features])[0]
+        predicted_crowd = float(max(0, min(100, round(predicted_crowd, 1))))
+        
+        # Determine status
+        if predicted_crowd > 70:
+            status = 'High'
+        elif predicted_crowd > 30:
+            status = 'Medium'
+        else:
+            status = 'Low'
+        
+        return JsonResponse({
+            'place_id': place_id,
+            'place_name': place.name,
+            'date': date_str,
+            'time_slot': time_slot,
+            'weather_condition': weather_condition,
+            'predicted_crowd_level': predicted_crowd,
+            'status': status,
+            'features_used': {
+                'category': place.category,
+                'district': place.district,
+                'day_of_week': day_of_week,
+                'month': month,
+                'season': season,
+                'is_weekend': is_weekend,
+                'is_holiday': is_holiday
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'error': f'Prediction failed: {str(e)}'
+        }, status=500)

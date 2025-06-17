@@ -847,12 +847,14 @@
                     fetch(`/api/recommend/{{ place.name }}`)
                         .then(response => response.json())
                         .then(data => {
+                            console.log("Recommendations API response:", data);
                             const container = document.getElementById("recommendations");
                             container.innerHTML = ''; // Clear existing content
                             
-                            if(data.recommended && data.recommended.length > 0) {
+                            if(data.recommendations && data.recommendations.length > 0) {
+                                console.log("Found recommendations:", data.recommendations.length);
                                 // Calculate distance for each place and sort
-                                const placesWithDistance = data.recommended.map(place => {
+                                const placesWithDistance = data.recommendations.map(place => {
                                     const distance = calculateDistance(
                                         userLat, 
                                         userLng, 
@@ -880,7 +882,7 @@
                                                 </div>
                                                 <div class="visitor-count">
                                                     <i class="bi bi-people"></i>
-                                                    ${place.visitor_count} visitors
+                                                    ${place.crowdlevel}% crowd level
                                                 </div>
                                                 <div class="distance">
                                                     <i class="bi bi-geo-alt"></i>
@@ -892,6 +894,7 @@
                                     container.innerHTML += card;
                                 });
                             } else {
+                                console.log("No recommendations found");
                                 container.innerHTML = `
                                     <div class="no-results">
                                         <i class="bi bi-emoji-frown"></i>
@@ -927,11 +930,13 @@
             fetch(`/api/recommend/{{ place.name }}`)
                 .then(response => response.json())
                 .then(data => {
+                    console.log("Recommendations API response (no location):", data);
                     const container = document.getElementById("recommendations");
                     container.innerHTML = '';
                     
-                    if(data.recommended && data.recommended.length > 0) {
-                        data.recommended.forEach(place => {
+                    if(data.recommendations && data.recommendations.length > 0) {
+                        console.log("Found recommendations (no location):", data.recommendations.length);
+                        data.recommendations.forEach(place => {
                             const card = `
                                 <div class="card">
                                     <img src="${place.image || 'https://via.placeholder.com/180'}" alt="${place.name}" class="img-fluid">
@@ -945,7 +950,7 @@
                                         </div>
                                         <div class="visitor-count">
                                             <i class="bi bi-people"></i>
-                                            ${place.visitor_count} visitors
+                                            ${place.crowdlevel}% crowd level
                                         </div>
                                     </div>
                                 </div>
@@ -953,6 +958,7 @@
                             container.innerHTML += card;
                         });
                     } else {
+                        console.log("No recommendations found (no location)");
                         container.innerHTML = `
                             <div class="no-results">
                                 <i class="bi bi-emoji-frown"></i>
