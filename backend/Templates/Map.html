@@ -429,6 +429,13 @@
       </form>
     </div>
   {% else %}
+    <div id="city-search-bar" style="display:none; position: absolute; top: 64px; right: 0; z-index: 1200; display: flex; align-items: center; min-width: 160px; max-width: 220px; background: #fff; border-radius: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.13); padding: 0.1rem 0.7rem;">
+      <span style="color: #65676b; font-size: 1rem; margin-right: 0.4rem; display: flex; align-items: center;">
+        <i class="fa fa-search"></i>
+      </span>
+      <input id="location-input" type="text" placeholder="Search..." style="flex:1; border:none; outline:none; background: transparent; font-size: 0.95rem; color: #22223b; padding: 0.4rem 0; min-width: 50px;" />
+      <button id="search-button" type="button" style="background: #2563eb; color: #fff; border: none; border-radius: 2rem; padding: 0.4rem 1rem; font-weight: 500; font-size: 0.95rem; margin-left: 0.4rem; cursor: pointer; transition: background 0.2s;">Search</button>
+    </div>
     <div id="location-access-prompt">
       <h3>Allow location access?</h3>
       <button id="grant-location-btn">Yes</button>
@@ -439,13 +446,6 @@
       <h3>Enter Your Location Manually:</h3>
       <input type="text" id="manual-location-input" placeholder="e.g., Kathmandu, Nepal" />
       <button id="submit-manual-location">Submit</button>
-    </div>
-
-    <div id="city-search-section" style="display:none;">
-      <h3>Explore here:</h3>
-      <input id="location-input" type="text" placeholder="Enter district or #category" />
-      <button id="search-button">Search</button>
-
     </div>
 
     <div id="map-wrapper" style="display:none;">
@@ -518,12 +518,14 @@
     }, 100);
 
     document.getElementById("grant-location-btn").addEventListener("click", () => {
+      document.getElementById("city-search-bar").style.display = "flex";
       document.getElementById("location-access-prompt").style.display = "none";
       initializeMap();
       getCurrentLocation();
     });
 
     document.getElementById("deny-location-btn").addEventListener("click", () => {
+      document.getElementById("city-search-bar").style.display = "flex";
       document.getElementById("location-access-prompt").style.display = "none";
       document.getElementById("manual-location-section").style.display = "block";
       initializeMap();
@@ -704,8 +706,21 @@
       fetch(`https://nominatim.openstreetmap.org/reverse?lat=${newCoords.lat}&lon=${newCoords.lng}&format=json`)
         .then(res => res.json())
         .then(data => {
-          const locationName = data.display_name || "Unknown location";
-          userMarker.setPopupContent(locationName).openPopup();
+          let shortName = "Unknown location";
+          if (data.address) {
+            const addr = data.address;
+            // Compose a short label: prefer road + city/town/village + state_district
+            shortName = [
+              addr.road,
+              addr.suburb,
+              addr.city || addr.town || addr.village,
+              addr.state_district || addr.state
+            ].filter(Boolean).join(', ');
+            if (!shortName) shortName = addr.country || data.display_name || "Unknown location";
+          } else if (data.display_name) {
+            shortName = data.display_name;
+          }
+          userMarker.setPopupContent(shortName).openPopup();
         })
         .catch(err => {
           console.error("Reverse geocoding failed:", err);
