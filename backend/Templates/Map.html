@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Map Tracker{% endblock %}
+{% block title %}Peak Times{% endblock %}
 
 {% block content %}
 {% if messages %}
@@ -429,7 +429,7 @@
       </form>
     </div>
   {% else %}
-    <div id="city-search-bar" style="display:none; position: absolute; top: 64px; right: 0; z-index: 1200; display: flex; align-items: center; min-width: 160px; max-width: 220px; background: #fff; border-radius: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.13); padding: 0.1rem 0.7rem;">
+    <div id="city-search-bar" style="display:none; position: absolute; top: 64px; right: 0; z-index: 1200; align-items: center; min-width: 160px; max-width: 220px; background: #fff; border-radius: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.13); padding: 0.1rem 0.7rem;">
       <span style="color: #65676b; font-size: 1rem; margin-right: 0.4rem; display: flex; align-items: center;">
         <i class="fa fa-search"></i>
       </span>
@@ -518,14 +518,12 @@
     }, 100);
 
     document.getElementById("grant-location-btn").addEventListener("click", () => {
-      document.getElementById("city-search-bar").style.display = "flex";
       document.getElementById("location-access-prompt").style.display = "none";
       initializeMap();
       getCurrentLocation();
     });
 
     document.getElementById("deny-location-btn").addEventListener("click", () => {
-      document.getElementById("city-search-bar").style.display = "flex";
       document.getElementById("location-access-prompt").style.display = "none";
       document.getElementById("manual-location-section").style.display = "block";
       initializeMap();
@@ -565,7 +563,7 @@
         alert(`Location set to: ${result.display_name}`);
         showUserLocation(userLatLng, "Manual Location Set");
         document.getElementById("manual-location-section").style.display = "none";
-        document.getElementById("city-search-section").style.display = "block";
+        document.getElementById("city-search-bar").style.display = "flex";
 
       } catch (error) {
         console.error("Error validating location:", error);
@@ -665,7 +663,7 @@
         hideLoading(locationPrompt);
         userLatLng = [pos.coords.latitude, pos.coords.longitude];
         showUserLocation(userLatLng, "You are here!");
-        document.getElementById("city-search-section").style.display = "block";
+        document.getElementById("city-search-bar").style.display = "flex";
       },
       error => {
         hideLoading(locationPrompt);
@@ -900,8 +898,16 @@
           if (elements.length > 0) {
             const index = elements[0].index;
             const selectedPlace = selectedPlaces[index];
-            if (selectedPlace && selectedPlace.id) {
-              window.location.href = `/place-details/${selectedPlace.id}/`;
+            if (selectedPlace) {
+              if (selectedPlace.id) {
+                // If we have an ID, redirect to place details
+                window.location.href = `/place-details/${selectedPlace.id}/`;
+              } else {
+                // If no ID, try to search for the place by name
+                console.log('No place ID found, searching by name:', selectedPlace.name);
+                // You could implement a search by name here or show an alert
+                alert(`Place details not available for ${selectedPlace.name}. This place may not be in the database.`);
+              }
             }
           }
         },

@@ -17,6 +17,8 @@ from math import radians, cos, sin, asin, sqrt
 import joblib
 import os
 from datetime import datetime
+import pandas as pd  # Add this at the top if not present
+from django.urls import reverse
 
 # Create your views here.
 def home(request):
@@ -123,39 +125,28 @@ def profile_view(request):
 
 @api_view(['GET'])
 def places_by_category(request, category):
-    # Record search history if user is authenticated
-    if request.user.is_authenticated:
-        SearchHistory.objects.create(
-            user=request.user,
-            search_query=category,
-            search_type='category'
-        )
-
-    category_cleaned = category.replace('#', '').lower()
-
-    latest_crowd = CrowdData.objects.filter(
-        place=OuterRef('pk')
-    ).order_by('-timestamp')
-
-    places = Place.objects.filter(
-        category__icontains=category_cleaned
-    ).annotate(
-        latest_crowdlevel=Subquery(latest_crowd.values('crowdlevel')[:1]),
-        latest_status=Subquery(latest_crowd.values('status')[:1])
-    ).order_by('-latest_crowdlevel')
-
-    places_data = [{
-        'id': p.id,
-        'name': p.name,
-        'latitude': p.latitude,
-        'longitude': p.longitude,
-        'description': p.description,
-        'category': p.category,
-        'crowdlevel': p.latest_crowdlevel or 0,
-        'status': p.latest_status or 'Unknown',
-        'tags': [tag.name for tag in p.tags.all()],
-    } for p in places]
-
+    csv_path = 'realistic_crowd_training_data.csv'
+    df = pd.read_csv(csv_path)
+    filtered = df[df['category'].str.lower() == category.lower()]
+    filtered = filtered.sort_values(['place_name', 'date', 'time_slot'], ascending=[True, False, False])
+    latest_places = filtered.drop_duplicates('place_name', keep='first')
+    places_data = []
+    for _, row in latest_places.iterrows():
+        # Try to find the place in the database to get the ID
+        try:
+            place = Place.objects.get(name__iexact=row['place_name'])
+            place_id = place.id
+        except Place.DoesNotExist:
+            place_id = None
+            
+        places_data.append({
+            'id': place_id,
+            'name': row['place_name'],
+            'description': '',
+            'category': row['category'],
+            'crowdlevel': row['crowdlevel'],
+            'district': row['district'],
+        })
     return JsonResponse({'places': places_data})
 
 @api_view(['GET'])
@@ -257,7 +248,8 @@ def recommend_places(request, place_name):
                 'status': latest_crowd.status if latest_crowd else 'N/A',
                 'tags': [tag.name for tag in place.tags.all()],
                 'latitude': place.latitude,
-                'longitude': place.longitude
+                'longitude': place.longitude,
+                'image': request.build_absolute_uri(place.image.url) if place.image else None
             })
         
         return JsonResponse({
@@ -394,41 +386,37 @@ def search_places(request):
             'category': place.category,
             'crowd_level': crowd_data.crowdlevel if crowd_data else 'N/A',
             'tags': tags,
+            'image': request.build_absolute_uri(place.image.url) if place.image else None
         })
     
     return JsonResponse({'places': places_data}, safe=False)
 
 @api_view(['GET'])
 def places_by_district(request, district_name):
-    # Record search history if user is authenticated
-    if request.user.is_authenticated:
-        SearchHistory.objects.create(
-            user=request.user,
-            search_query=district_name,
-            search_type='district'
-        )
-
-    # Fetch places matching the district
-    places = Place.objects.filter(district__iexact=district_name)
-    result = []
-
-    for place in places:
-        latest_crowd = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
-
-        result.append({
-            'id': place.id,
-            'name': place.name,
-            'description': place.description,
-            'popular_for': place.popular_for,
-            'category': place.category,
-            'crowdlevel': latest_crowd.crowdlevel if latest_crowd else None,
-            'status': latest_crowd.status if latest_crowd else None,
-            'tags': list(place.tags.values_list('name', flat=True)),
-            'latitude': place.latitude,
-            'longitude': place.longitude
+    csv_path = 'realistic_crowd_training_data.csv'
+    df = pd.read_csv(csv_path)
+    filtered = df[df['district'].str.lower() == district_name.lower()]
+    # Sort by date and time_slot to get the latest
+    filtered = filtered.sort_values(['place_name', 'date', 'time_slot'], ascending=[True, False, False])
+    latest_places = filtered.drop_duplicates('place_name', keep='first')
+    places_data = []
+    for _, row in latest_places.iterrows():
+        # Try to find the place in the database to get the ID
+        try:
+            place = Place.objects.get(name__iexact=row['place_name'])
+            place_id = place.id
+        except Place.DoesNotExist:
+            place_id = None
+            
+        places_data.append({
+            'id': place_id,
+            'name': row['place_name'],
+            'description': '',  # No description in CSV
+            'category': row['category'],
+            'crowdlevel': row['crowdlevel'],
+            'district': row['district'],
         })
-
-    return JsonResponse({'places': result})
+    return JsonResponse({'places': places_data})
 
 
 @api_view(['GET'])
@@ -450,7 +438,8 @@ def places_by_tag(request, tag_name):
             'status': latest_crowd.status if latest_crowd else 'N/A',
             'tags': list(place.tags.values_list('name', flat=True)),
             'lat': place.latitude,
-            'lng': place.longitude
+            'lng': place.longitude,
+            'image': request.build_absolute_uri(place.image.url) if place.image else None
         })
 
     return JsonResponse({'places': result})
@@ -648,19 +637,41 @@ def recommended_places_nearby(request):
 @login_required
 def delete_place(request, place_id):
     place = get_object_or_404(Place, id=place_id)
-    
-    # Check if user has permission to delete (admin or place creator)
+
+    # Check for permission
     if not (request.user.is_superuser or place.added_by == request.user):
         messages.error(request, "You don't have permission to delete this place.")
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': "You don't have permission."}, status=403)
         return redirect('place_details', place_id=place_id)
-    
+
     if request.method == 'POST':
-        place_name = place.name
-        place.delete()
-        messages.success(request, f'Place "{place_name}" has been deleted.')
-        return redirect('place_list')
-    
-    return render(request, 'delete_place_confirm.html', {'place': place})
+        try:
+            place_name = place.name
+            place.delete()
+            messages.success(request, f'Place "{place_name}" has been deleted successfully.')
+
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                # For AJAX, return success and a redirect URL
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Place "{place_name}" has been deleted successfully.',
+                    'redirect_url': reverse('home') 
+                })
+            
+            # For standard form submissions, redirect to home
+            return redirect('home')
+
+        except Exception as e:
+            error_message = f'An error occurred: {e}'
+            messages.error(request, error_message)
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': str(e)}, status=500)
+            return redirect('place_details', place_id=place_id)
+
+    # If it's a GET request, redirect away, as we no longer have a confirmation page.
+    # This prevents the TemplateDoesNotExist error.
+    return redirect('place_details', place_id=place_id)
 
 def save_place(request, place_id):
     place = get_object_or_404(Place, id=place_id)

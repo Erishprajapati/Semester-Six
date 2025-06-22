@@ -30,7 +30,9 @@ urlpatterns = [
     path('api/crowd/<str:place_name>/', get_crowd_data, name='get_crowd_data'),
     path('places-by-district/<str:district_name>/', places_by_district, name='places_by_district'),
     path('places-by-category/<str:category>', views.places_by_category, name='places-by-category'),
+    path('places-by-tag/<str:tag_name>/', views.places_by_tag, name='places_by_tag'),
     path('place-details/<int:place_id>/', views.place_details, name='place_details'),
+    path('place-details/<int:place_id>/delete/', views.delete_place, name='delete_place'),
 ] 
 
 if settings.DEBUG:

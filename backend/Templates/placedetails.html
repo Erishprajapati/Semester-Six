@@ -484,9 +484,13 @@
                     </div>
                     {% if user.is_authenticated and place.added_by == user or user.is_superuser %}
                     <div>
-                        <a href="{% url 'delete_place' place.id %}" class="btn btn-danger">
+                        <button id="delete-place-btn" 
+                                data-url="{% url 'delete_place' place.id %}" 
+                                data-place-name="{{ place.name }}" 
+                                class="btn btn-danger" 
+                                style="background: linear-gradient(135deg, #dc3545, #c82333); border: none; box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3); font-weight: 600; transition: all 0.3s ease;">
                             <i class="bi bi-trash"></i> Delete Place
-                        </a>
+                        </button>
                     </div>
                     {% endif %}
                 </div>
@@ -871,7 +875,7 @@
                                 placesWithDistance.forEach(place => {
                                     const card = `
                                         <div class="card">
-                                            <img src="${place.image || 'https://via.placeholder.com/180'}" alt="${place.name}" class="img-fluid">
+                                            <img src="${place.image || 'https://via.placeholder.com/120x120?text=No+Image'}" alt="${place.name}" class="img-fluid">
                                             <div class="card-content">
                                                 <h6>
                                                     <a href="/place-details/${place.id}/">${place.name}</a>
@@ -939,7 +943,7 @@
                         data.recommendations.forEach(place => {
                             const card = `
                                 <div class="card">
-                                    <img src="${place.image || 'https://via.placeholder.com/180'}" alt="${place.name}" class="img-fluid">
+                                    <img src="${place.image || 'https://via.placeholder.com/120x120?text=No+Image'}" alt="${place.name}" class="img-fluid">
                                     <div class="card-content">
                                         <h6>
                                             <a href="/place-details/${place.id}/">${place.name}</a>
@@ -1009,6 +1013,49 @@
                 console.error("Error fetching weather:", error);
                 weatherContainer.innerHTML = `<p class="text-danger">Failed to load weather data for {{ place.name }}.</p>`;
             });
+    });
+
+    // Function to confirm delete action
+    function confirmDelete(placeName) {
+        return confirm(`Are you sure you want to delete "${placeName}"? This action cannot be undone.`);
+    }
+
+    // New script for instant delete
+    document.addEventListener('DOMContentLoaded', () => {
+        const deleteButton = document.getElementById('delete-place-btn');
+        if (deleteButton) {
+            deleteButton.addEventListener('click', async (event) => {
+                event.preventDefault();
+                const placeName = deleteButton.dataset.placeName;
+                const deleteUrl = deleteButton.dataset.url;
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                if (confirm(`Are you sure you want to delete "${placeName}"? This action cannot be undone.`)) {
+                    try {
+                        const response = await fetch(deleteUrl, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': csrfToken,
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            alert(data.message);
+                            window.location.href = data.redirect_url;
+                        } else {
+                            alert(`Error: ${data.error || 'An unknown error occurred.'}`);
+                        }
+                    } catch (error) {
+                        console.error('Deletion failed:', error);
+                        alert('An error occurred while trying to delete the place.');
+                    }
+                }
+            });
+        }
     });
 </script>
 
