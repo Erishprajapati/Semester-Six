@@ -787,51 +787,22 @@
   }
 
   function displayPlacesOnMap(places) {
-    // Calculate distances and sort places
-    const placesWithDistance = places.map(place => ({
-      ...place,
-      distance: userLatLng ? calculateDistance(
-        userLatLng[0], userLatLng[1],
-        place.latitude, place.longitude
-      ) : Infinity
-    }));
+    if (window.placeMarkers) {
+      window.placeMarkers.forEach(marker => map.removeLayer(marker));
+    }
+    window.placeMarkers = [];
 
-    // Sort places by distance
-    placesWithDistance.sort((a, b) => a.distance - b.distance);
-
-    // Create numbered markers
-    placesWithDistance.forEach((place, index) => {
+    places.forEach(place => {
       if (place.latitude && place.longitude) {
-        const number = index + 1;
-        const marker = L.marker([place.latitude, place.longitude], {
-          icon: L.divIcon({
-            className: 'custom-number-icon',
-            html: `<div style="background: #4CAF50; color: white; border-radius: 50%; width: 30px; height: 30px; text-align: center; font-weight: bold; line-height: 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">${number}</div>`,
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
-          })
-        }).addTo(map);
-
-        // Create popup content with distance
-        const popupContent = `
-          <div style="font-family: Arial, sans-serif; padding: 5px;">
-            <strong>${place.name}</strong><br>
-            ${place.description || "No description"}<br>
-            <small style="color: #666;">Distance: ${place.distance.toFixed(1)} km</small>
-          </div>
-        `;
-
-        marker.bindPopup(popupContent);
-
+        const marker = L.marker([place.latitude, place.longitude]).addTo(map)
+          .bindPopup(`<b>${place.name}</b><br>${place.description || "No description"}`);
+        window.placeMarkers.push(marker);
         marker.on('click', () => {
           showPlaceInfo(place);
-
-          // Remove previous routing and number markers
           if (routingControl) {
             map.removeControl(routingControl);
             routingControl = null;
           }
-          // Remove any previous blue lines
           if (window.activeRouteLine) {
             map.removeLayer(window.activeRouteLine);
             window.activeRouteLine = null;
@@ -839,11 +810,9 @@
           routeClicks.forEach(m => map.removeLayer(m));
           routeClicks = [];
           routeClickCount = 1;
-
           if (userLatLng) {
             const userLocation = L.latLng(userLatLng[0], userLatLng[1]);
             const placeLocation = L.latLng(place.latitude, place.longitude);
-
             routingControl = L.Routing.control({
               waypoints: [userLocation, placeLocation],
               draggableWaypoints: true,
@@ -855,30 +824,28 @@
                     icon: redIcon,
                     draggable: true
                   }).bindPopup("Your Location").addTo(map);
-
                   userMarker.on('dragend', async function(e) {
                     const newPos = e.target.getLatLng();
                     userLatLng = [newPos.lat, newPos.lng];
                     const locationName = await reverseGeocode(newPos.lat, newPos.lng);
                     userMarker.bindPopup(`<b>Current Location:</b><br>${locationName}`).openPopup();
+                    console.log("Updated user location:", locationName, userLatLng);
                   });
-
                   return userMarker;
                 } else {
-                  return L.marker(wp.latLng, {
-                    icon: L.divIcon({
-                      className: 'custom-number-icon',
-                      html: `<div style="background: #4CAF50; color: white; border-radius: 50%; width: 30px; height: 30px; text-align: center; font-weight: bold; line-height: 30px;">${number}</div>`,
-                      iconSize: [30, 30],
-                      iconAnchor: [15, 15]
-                    })
-                  }).bindPopup(place.name);
+                  const blueIcon = new L.Icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+                    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                  });
+                  return L.marker(wp.latLng, { icon: blueIcon }).bindPopup(place.name);
                 }
               }
             }).addTo(map);
-
             routingControl.on('routesfound', function(e) {
-              // Remove previous blue line if exists
               if (window.activeRouteLine) {
                 map.removeLayer(window.activeRouteLine);
               }
@@ -886,12 +853,15 @@
             });
           }
         });
+      } else {
+        console.warn('Place missing coordinates:', place);
       }
     });
 
     // Fit map to show all markers
-    if (placesWithDistance.length > 0) {
-      const bounds = L.latLngBounds(placesWithDistance.map(p => [p.latitude, p.longitude]));
+    const validPlaces = places.filter(p => p.latitude && p.longitude);
+    if (validPlaces.length > 0) {
+      const bounds = L.latLngBounds(validPlaces.map(p => [p.latitude, p.longitude]));
       if (userLatLng) {
         bounds.extend(userLatLng);
       }
@@ -969,14 +939,25 @@
         }
       }
     });
+    return selectedPlaces;
   }
   
-// Function to fetch places by district
+// Utility: Map hour to time slot
+function getTimeSlotFromHour(hour) {
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 21) return 'evening';
+  return 'morning'; // default fallback
+}
+
 // Function to fetch places by district
 async function fetchPlacesByDistrict(district) {
   try {
-    console.log("Fetching places for district:", district);
-    const response = await fetch(`/places-by-district/${district}/`);
+    const now = new Date();
+    const hour = now.getHours();
+    const time_slot = getTimeSlotFromHour(hour);
+    console.log("Fetching places for district:", district, "time_slot:", time_slot, "hour:", hour);
+    const response = await fetch(`/places-by-district/${district}/?time_slot=${time_slot}&hour=${hour}`);
     const data = await response.json();
     console.log("Fetched data:", data);
 
@@ -985,117 +966,42 @@ async function fetchPlacesByDistrict(district) {
       return;
     }
 
-    // Display the chart and map wrapper
     document.getElementById("chart-wrapper").style.display = "block";
-    
-    // Render the bar chart with the fetched data
-    renderBarChart(data.places);
-
-    // 🔽 Scroll the chart into view
+    const selectedPlaces = renderBarChart(data.places);
     const chartWrapper = document.getElementById("chart-wrapper");
     chartWrapper.scrollIntoView({ behavior: "smooth" });
-
-    // 🔽 Highlight the chart briefly
     chartWrapper.classList.add("chart-highlight");
     setTimeout(() => chartWrapper.classList.remove("chart-highlight"), 1500);
-
-    // Display places on the map
-    displayPlacesOnMap(data.places);
-
+    displayPlacesOnMap(selectedPlaces);
   } catch (error) {
     console.error("Error fetching places by district:", error);
   }
 }
 
-{% comment %} async function fetchPlacesByCategory(category){
-  try{
-    console response = await fetch('/places-by-category/${category}/');
-    const data = await response.json();
-    console.log("Fetched data:", data);
-
-    if (!data.places || !data.places.length) {
-      alert("No places found for this category.");
-      return;
-    }
-
-    // Display the chart and map wrapper
-    document.getElementById("chart-wrapper").style.display = "block";
-    
-    // Render the bar chart with the fetched data
-    renderBarChart(data.places);
-    
-    // Display places on the map
-    displayPlacesOnMap(data.places);
-
-  } catch (error) {
-    console.error("Error fetching places by district:", error);
-  }
-} 
- {% endcomment %}
-
-
-{% comment %} 
-async function fetchPlacesByDistrict(district) {
-  try {
-    console.log("Fetching places for category:", district);
-    const response = await fetch(`/places-by-district/${district}/`);
-    const data = await response.json();
-    console.log("Fetched data for districtss:", data);
-
-    if (!data.places || !data.places.length) {
-      alert("No places found in this districtss.");
-      return;
-    }
-
-    // Display the chart and map wrapper
-    document.getElementById("chart-wrapper").style.display = "block";
-    
-    // Render the bar chart with the fetched data
-    renderBarChart(data.places);
-    
-    // Display places on the map
-    displayPlacesOnMap(data.places);
-
-  } catch (error) {
-    console.error("Error fetching places by category:", error);
-  }
-} {% endcomment %}
-
 // Function to fetch places by category (hashtag)
 async function fetchPlacesByCategory(category) {
   try {
-    console.log("Fetching places for category:", category);
-    const response = await fetch(`/places-by-category/${category}`);
+    const now = new Date();
+    const hour = now.getHours();
+    const time_slot = getTimeSlotFromHour(hour);
+    console.log("Fetching places for category:", category, "time_slot:", time_slot, "hour:", hour);
+    const response = await fetch(`/places-by-category/${category}?time_slot=${time_slot}&hour=${hour}`);
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
-
     const data = await response.json();
-
     console.log("Fetched data for category:", data);
-
     if (!data.places || !data.places.length) {
       alert("No places found in this category.");
       return;
     }
-
-    // Display the chart and map wrapper
     document.getElementById("chart-wrapper").style.display = "block";
-
-    // Render the bar chart with the fetched data
-    renderBarChart(data.places);
-
-    // 🔽 Scroll the chart into view
+    const selectedPlaces = renderBarChart(data.places);
     const chartWrapper = document.getElementById("chart-wrapper");
     chartWrapper.scrollIntoView({ behavior: "smooth" });
-
-    // 🔽 Highlight the chart briefly
     chartWrapper.classList.add("chart-highlight");
     setTimeout(() => chartWrapper.classList.remove("chart-highlight"), 1500);
-
-    // Display places on the map
-    displayPlacesOnMap(data.places);
-
+    displayPlacesOnMap(selectedPlaces);
   } catch (error) {
     console.error("Error fetching places by category:", error);
     alert("An error occurred while fetching places. Please try again.");
@@ -1103,27 +1009,6 @@ async function fetchPlacesByCategory(category) {
 }
 
 // Function to display places on map
-{% comment %} function displayPlacesOnMap(places) {
-  clearMarkers(); // Clear existing Leaflet markers
-
-  places.forEach(place => {
-    if (place.lat && place.lng) {
-      const marker = L.marker([place.lat, place.lng])
-        .addTo(map)
-        .bindPopup(`<b>${place.name}</b><br>${place.description || "No description"}`);
-  
-      marker.on('click', () => showPlaceInfo(place));
-      mapMarkers.push(marker);
-    }
-  });
-  
-
-  // Center and zoom to the first valid place
-  const firstPlace = places.find(p => p.latitude && p.longitude);
-  if (firstPlace) {
-    map.setView([firstPlace.latitude, firstPlace.longitude], 12);
-  }
-} {% endcomment %}
 function showPlacesOnMap(places) {
   // Remove existing place markers or polylines if needed
   if (window.placeMarkers) {
@@ -1175,20 +1060,22 @@ async function reverseGeocode(lat, lng) {
 
 // Main function
 function displayPlacesOnMap(places) {
+  if (window.placeMarkers) {
+    window.placeMarkers.forEach(marker => map.removeLayer(marker));
+  }
+  window.placeMarkers = [];
+
   places.forEach(place => {
     if (place.latitude && place.longitude) {
       const marker = L.marker([place.latitude, place.longitude]).addTo(map)
         .bindPopup(`<b>${place.name}</b><br>${place.description || "No description"}`);
-
+      window.placeMarkers.push(marker);
       marker.on('click', () => {
         showPlaceInfo(place);
-
-        // Remove previous routing and number markers
         if (routingControl) {
           map.removeControl(routingControl);
           routingControl = null;
         }
-        // Remove any previous blue lines
         if (window.activeRouteLine) {
           map.removeLayer(window.activeRouteLine);
           window.activeRouteLine = null;
@@ -1196,40 +1083,29 @@ function displayPlacesOnMap(places) {
         routeClicks.forEach(m => map.removeLayer(m));
         routeClicks = [];
         routeClickCount = 1;
-
         if (userLatLng) {
           const userLocation = L.latLng(userLatLng[0], userLatLng[1]);
           const placeLocation = L.latLng(place.latitude, place.longitude);
-
           routingControl = L.Routing.control({
             waypoints: [userLocation, placeLocation],
             draggableWaypoints: true,
             routeWhileDragging: false,
             createMarker: function(i, wp) {
               if (i === 0) {
-                // Remove old marker
                 if (userMarker) map.removeLayer(userMarker);
-
-                // Create new draggable red marker
                 userMarker = L.marker(wp.latLng, {
                   icon: redIcon,
                   draggable: true
                 }).bindPopup("Your Location").addTo(map);
-
-                // On dragend, update userLatLng and show location name
                 userMarker.on('dragend', async function(e) {
                   const newPos = e.target.getLatLng();
                   userLatLng = [newPos.lat, newPos.lng];
-
                   const locationName = await reverseGeocode(newPos.lat, newPos.lng);
                   userMarker.bindPopup(`<b>Current Location:</b><br>${locationName}`).openPopup();
-
                   console.log("Updated user location:", locationName, userLatLng);
                 });
-
                 return userMarker;
               } else {
-                // Blue marker at destination
                 const blueIcon = new L.Icon({
                   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
                   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -1242,10 +1118,7 @@ function displayPlacesOnMap(places) {
               }
             }
           }).addTo(map);
-
-          // After route is created, draw line and allow number markers on click
           routingControl.on('routesfound', function(e) {
-            // Remove previous blue line if exists
             if (window.activeRouteLine) {
               map.removeLayer(window.activeRouteLine);
             }
@@ -1253,8 +1126,20 @@ function displayPlacesOnMap(places) {
           });
         }
       });
+    } else {
+      console.warn('Place missing coordinates:', place);
     }
   });
+
+  // Fit map to show all markers
+  const validPlaces = places.filter(p => p.latitude && p.longitude);
+  if (validPlaces.length > 0) {
+    const bounds = L.latLngBounds(validPlaces.map(p => [p.latitude, p.longitude]));
+    if (userLatLng) {
+      bounds.extend(userLatLng);
+    }
+    map.fitBounds(bounds, { padding: [50, 50] });
+  }
 }
 
 

@@ -24,5 +24,6 @@ urlpatterns = [
     path('update-profile/', views.update_profile, name='update_profile'),
     path('places-by-tag/<str:tag_name>/', views.places_by_tag, name='places_by_tag'),
     path('search-history/', views.get_search_history, name='get_search_history'),
+    path('api/search-history/', views.get_search_history, name='api_get_search_history'),
     path('predict-crowd/', views.predict_crowd, name='predict_crowd'),
 ]

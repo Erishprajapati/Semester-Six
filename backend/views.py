@@ -124,10 +124,25 @@ def profile_view(request):
 
 @api_view(['GET'])
 def places_by_category(request, category):
+    time_slot = request.GET.get('time_slot')
+    hour = request.GET.get('hour')
+    if not time_slot:
+        now = datetime.now()
+        hour = now.hour
+        if 5 <= hour < 12:
+            time_slot = 'morning'
+        elif 12 <= hour < 17:
+            time_slot = 'afternoon'
+        elif 17 <= hour < 21:
+            time_slot = 'evening'
+        else:
+            time_slot = 'morning'
+    # Save search history
+    save_search_history(request.user, category, 'category')
     places = Place.objects.filter(category__iexact=category)
     places_data = []
     for place in places:
-        crowdlevel = predict_crowd_for_place(place)
+        crowdlevel = predict_crowd_for_place(place, time_slot)
         places_data.append({
             'id': place.id,
             'name': place.name,
@@ -135,6 +150,8 @@ def places_by_category(request, category):
             'category': place.category,
             'crowdlevel': crowdlevel,
             'district': place.district,
+            'latitude': place.latitude,
+            'longitude': place.longitude,
         })
     return JsonResponse({'places': places_data})
 
@@ -346,12 +363,7 @@ def search_places(request):
         return JsonResponse({'error': 'No search term provided.'}, status=400)
 
     # Record search history if user is authenticated
-    if request.user.is_authenticated:
-        SearchHistory.objects.create(
-            user=request.user,
-            search_query=query,
-            search_type='place'
-        )
+    save_search_history(request.user, query, 'place')
 
     places = Place.objects.filter(name__icontains=query)
     
@@ -382,10 +394,25 @@ def search_places(request):
 
 @api_view(['GET'])
 def places_by_district(request, district_name):
+    time_slot = request.GET.get('time_slot')
+    hour = request.GET.get('hour')
+    if not time_slot:
+        now = datetime.now()
+        hour = now.hour
+        if 5 <= hour < 12:
+            time_slot = 'morning'
+        elif 12 <= hour < 17:
+            time_slot = 'afternoon'
+        elif 17 <= hour < 21:
+            time_slot = 'evening'
+        else:
+            time_slot = 'morning'
+    # Save search history
+    save_search_history(request.user, district_name, 'district')
     places = Place.objects.filter(district__iexact=district_name)
     places_data = []
     for place in places:
-        crowdlevel = predict_crowd_for_place(place)
+        crowdlevel = predict_crowd_for_place(place, time_slot)
         places_data.append({
             'id': place.id,
             'name': place.name,
@@ -393,6 +420,8 @@ def places_by_district(request, district_name):
             'category': place.category,
             'crowdlevel': crowdlevel,
             'district': place.district,
+            'latitude': place.latitude,
+            'longitude': place.longitude,
         })
     return JsonResponse({'places': places_data})
 
@@ -855,3 +884,12 @@ def predict_crowd_for_place(place, time_slot='morning'):
         return float(max(0, min(100, round(predicted_crowd, 1))))
     except Exception as e:
         return 0
+
+# Utility to save search history
+def save_search_history(user, query, search_type):
+    if user.is_authenticated:
+        SearchHistory.objects.create(
+            user=user,
+            search_query=query,
+            search_type=search_type
+        )
