@@ -295,15 +295,33 @@
     background-color: #45a049;
   }
 
-  /* Map box styling */
+  {% comment %} /* Map box styling */
   .map-box {
-    height: 600px;
-    width: 90%;
-    margin: 20px auto;
+    height: 780px;
+    width: 100%;
+    margin: 40px auto;
     border: 2px solid #ccc;
     border-radius: 12px;
+  } {% endcomment %}
+  .map-box {
+    width: 100%;
+    max-width: 1200px; /* optional max-width for larger screens */
+    height: 80vh;       /* use viewport height to make it responsive */
+    margin: 2rem auto;  /* use rems for spacing consistency */
+    border: 2px solid #ccc;
+    border-radius: 0.75rem; /* rounded corners using rems */
+    box-sizing: border-box; /* ensure padding/border included in total width/height */
+    overflow: hidden;       /* hide any overflowing elements */
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); /* subtle shadow for depth */
+    background: #f9f9f9;    /* optional light background */
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
   }
-
+  
+  .map-box:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); /* slightly larger shadow on hover */
+    transform: translateY(-4px);                 /* gentle lift effect */
+  }
+  
   /* Info box styling */
   .info-box {
     border: 1px solid #ccc;
@@ -323,12 +341,129 @@
     background-color: #f9f9f9;
     border-radius: 10px;
   }
-
+{% comment %} 
   /* Chart section */
   #chart-wrapper {
-    display: none; /* change this from 'block' to 'none' */
+    display: none;
     text-align: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
   }
+
+  #chart-wrapper:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    transform: translateY(-4px);
+  }
+
+  #chart-wrapper h3 {
+    font-size: 1.75rem;
+    color: #2563eb;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  #bar-chart {
+    width: 100% !important;
+    height: 400px !important;
+    margin: 1rem auto;
+  }
+
+  @media (max-width: 768px) {
+    #chart-wrapper {
+      padding: 1rem;
+      margin: 1rem;
+    }
+    
+    #bar-chart {
+      height: 300px !important;
+    }
+    
+    #chart-wrapper h3 {
+      font-size: 1.25rem;
+    }
+  } {% endcomment %}
+  /* Chart section */
+  #chart-wrapper {
+    display: none;
+    width: 100%;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    text-align: center;
+    background: linear-gradient(135deg, #ffffff, #f9fafb); /* subtle gradient */
+    border-radius: 1rem;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+  }
+  
+  #chart-wrapper::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border-radius: inherit;
+    border: 2px solid transparent;
+    background: linear-gradient(45deg, #3b82f6, #9333ea) border-box;
+    -webkit-mask:
+      linear-gradient(#fff 0 0) padding-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  #chart-wrapper:hover::before {
+    opacity: 1;
+  }
+  
+  #chart-wrapper:hover {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+  }
+  
+  #chart-wrapper h3 {
+    font-size: 1.8rem;
+    color: #3b82f6;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  
+  #bar-chart {
+    width: 100% !important;
+    height: 400px !important;
+    margin: 1rem auto;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    #chart-wrapper {
+      padding: 1rem;
+      margin: 1rem;
+    }
+  
+    #chart-wrapper h3 {
+      font-size: 1.4rem;
+    }
+  
+    #bar-chart {
+      height: 280px !important;
+    }
+  }
+  
   
 
   #place-info-box {

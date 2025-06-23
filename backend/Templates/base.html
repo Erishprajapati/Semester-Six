@@ -191,6 +191,27 @@
       if (searchForm) searchForm.style.display = 'none';
     });
 
+    // Function to show navbar search bar only if location is set
+    function showNavbarSearchBarIfAllowed() {
+      const searchForm = document.getElementById('navbar-search-form');
+      if (!searchForm) return;
+
+      // Check if user location is set
+      const userLat = localStorage.getItem('user_lat');
+      const userLng = localStorage.getItem('user_lng');
+      const locationDenied = localStorage.getItem('location_denied');
+
+      // Only show search bar if location is set (either through geolocation or manual entry)
+      if ((userLat && userLng) || locationDenied === 'true') {
+        searchForm.style.display = 'flex';
+      } else {
+        searchForm.style.display = 'none';
+      }
+    }
+
+    // Listen for location set event
+    window.addEventListener('userLocationSet', showNavbarSearchBarIfAllowed);
+
     // Get modal elements
     const modal = document.getElementById('searchHistoryModal');
     const btn = document.getElementById('searchHistoryBtn');
@@ -289,30 +310,6 @@
           }
         });
       }
-    });
-
-    // Show navbar search bar only after location is set and not on place-details page
-    function showNavbarSearchBarIfAllowed() {
-      const searchForm = document.getElementById('navbar-search-form');
-      if (!searchForm) return;
-      if (window.location.pathname.includes('/place-details/')) {
-        searchForm.style.display = 'none';
-        return;
-      }
-      // Check if user location is set in localStorage or location_denied is set
-      const lat = localStorage.getItem('user_lat');
-      const lng = localStorage.getItem('user_lng');
-      const locationDenied = localStorage.getItem('location_denied');
-      if ((lat && lng) || locationDenied === 'true') {
-        searchForm.style.display = 'flex';
-      } else {
-        searchForm.style.display = 'none';
-      }
-    }
-    document.addEventListener('DOMContentLoaded', function() {
-      showNavbarSearchBarIfAllowed();
-      // Listen for location set events (simulate after Yes/No click)
-      window.addEventListener('userLocationSet', showNavbarSearchBarIfAllowed);
     });
   </script>
 
