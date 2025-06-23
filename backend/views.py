@@ -407,13 +407,18 @@ def places_by_district(request, district_name):
             time_slot = 'evening'
         else:
             time_slot = 'morning'
+    
     # Save search history
     save_search_history(request.user, district_name, 'district')
+    
+    # Get places for the district
     places = Place.objects.filter(district__iexact=district_name)
+    print(f"Found {places.count()} places for district {district_name}")  # Debug log
+    
     places_data = []
     for place in places:
         crowdlevel = predict_crowd_for_place(place, time_slot)
-        places_data.append({
+        place_data = {
             'id': place.id,
             'name': place.name,
             'description': place.description,
@@ -422,7 +427,11 @@ def places_by_district(request, district_name):
             'district': place.district,
             'latitude': place.latitude,
             'longitude': place.longitude,
-        })
+        }
+        print(f"Place data: {place_data}")  # Debug log
+        places_data.append(place_data)
+    
+    print(f"Sending {len(places_data)} places")  # Debug log
     return JsonResponse({'places': places_data})
 
 

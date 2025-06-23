@@ -341,7 +341,6 @@
     background-color: #f9f9f9;
     border-radius: 10px;
   }
-{% comment %} 
   /* Chart section */
   #chart-wrapper {
     display: none;
@@ -389,8 +388,8 @@
     #chart-wrapper h3 {
       font-size: 1.25rem;
     }
-  } {% endcomment %}
-  /* Chart section */
+  } 
+  {% comment %} /* Chart section */
   #chart-wrapper {
     display: none;
     width: 100%;
@@ -464,7 +463,7 @@
     }
   }
   
-  
+   {% endcomment %}
 
   #place-info-box {
     display: none;
@@ -685,113 +684,127 @@
   // Wait for DOM and styles to be fully loaded
   document.addEventListener('DOMContentLoaded', function() {
     // Show the location prompt after a small delay to ensure styles are applied
-    setTimeout(() => {
-      document.getElementById("location-access-prompt").style.display = "block";
-    }, 100);
+    const locationPrompt = document.getElementById("location-access-prompt");
+    if (locationPrompt) {
+      setTimeout(() => {
+        locationPrompt.style.display = "block";
+      }, 100);
+    }
 
-    document.getElementById("grant-location-btn").addEventListener("click", () => {
-      document.getElementById("location-access-prompt").style.display = "none";
-      initializeMap();
-      getCurrentLocation();
-      localStorage.removeItem('location_denied');
-      window.dispatchEvent(new Event('userLocationSet'));
-      if (typeof showNavbarSearchBarIfAllowed === 'function') {
-        showNavbarSearchBarIfAllowed();
-      }
-    });
-
-    document.getElementById("deny-location-btn").addEventListener("click", () => {
-      document.getElementById("location-access-prompt").style.display = "none";
-      document.getElementById("manual-location-section").style.display = "block";
-      initializeMap();
-      localStorage.setItem('location_denied', 'true');
-      window.dispatchEvent(new Event('userLocationSet'));
-    });
-
-    document.getElementById("submit-manual-location").addEventListener("click", async () => {
-      const locationInput = document.getElementById("manual-location-input").value.trim();
-
-      if (!locationInput) {
-        alert("Please enter a location.");
-        return;
-      }
-
-      try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationInput)}`);
-        const data = await response.json();
-
-        if (data.length === 0) {
-          alert("Location not found. Reloading page...");
-          window.location.reload();
-          return;
-        }
-
-        const result = data[0];
-        const displayName = result.display_name.toLowerCase();
-
-        if (!displayName.includes("nepal")) {
-          alert("Only locations within Nepal are supported. Reloading page...");
-          window.location.reload();
-          return;
-        }
-
-        const lat = parseFloat(result.lat);
-        const lon = parseFloat(result.lon);
-        userLatLng = [lat, lon];
-        localStorage.setItem('user_lat', lat);
-        localStorage.setItem('user_lng', lon);
-
-        alert(`Location set to: ${result.display_name}`);
-        showUserLocation(userLatLng, "Manual Location Set");
-        document.getElementById("manual-location-section").style.display = "none";
-        document.getElementById("city-search-bar").style.display = "flex";
+    const grantBtn = document.getElementById("grant-location-btn");
+    if (grantBtn) {
+      grantBtn.addEventListener("click", () => {
+        if (locationPrompt) locationPrompt.style.display = "none";
+        initializeMap();
+        getCurrentLocation();
+        localStorage.removeItem('location_denied');
         window.dispatchEvent(new Event('userLocationSet'));
-
-      } catch (error) {
-        console.error("Error validating location:", error);
-        alert("Something went wrong. Reloading page...");
-        window.location.reload();
-      }
-    });
-
-    document.getElementById("search-button").addEventListener("click", async () => {
-      const searchButton = document.getElementById("search-button");
-      const input = document.getElementById("location-input").value.trim();
-      if (!input || !userLatLng) {
-        showError("Please set your location and enter a district name, place name, or #category.");
-        return;
-      }
-      showLoading(searchButton);
-      try {
-        if (input.startsWith("#")) {
-          const category = input.slice(1);
-          await fetchPlacesByCategory(category);
-        } else {
-          // Try district first
-          let districtResponse = await fetch(`/places-by-district/${input}/`);
-          let districtData = await districtResponse.json();
-          if (districtData.places && districtData.places.length > 0) {
-            await fetchPlacesByDistrict(input);
-          } else {
-            // If not found as district, try as place name
-            await fetchPlaceByName(input);
-          }
+        if (typeof showNavbarSearchBarIfAllowed === 'function') {
+          showNavbarSearchBarIfAllowed();
         }
-        showSuccess('Search completed successfully');
-      } catch (error) {
-        console.error('Search error:', error);
-        showError('Failed to complete search. Please try again.');
-      } finally {
-        hideLoading(searchButton);
-      }
-    });
+      });
+    }
 
-    // Add keyboard support for search
-    document.getElementById("location-input").addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        document.getElementById("search-button").click();
-      }
-    });
+    const denyBtn = document.getElementById("deny-location-btn");
+    if (denyBtn) {
+      denyBtn.addEventListener("click", () => {
+        if (locationPrompt) locationPrompt.style.display = "none";
+        const manualSection = document.getElementById("manual-location-section");
+        if (manualSection) manualSection.style.display = "block";
+        initializeMap();
+        localStorage.setItem('location_denied', 'true');
+        window.dispatchEvent(new Event('userLocationSet'));
+      });
+    }
+
+    const submitManualBtn = document.getElementById("submit-manual-location");
+    if (submitManualBtn) {
+      submitManualBtn.addEventListener("click", async () => {
+        const locationInputElem = document.getElementById("manual-location-input");
+        const locationInput = locationInputElem ? locationInputElem.value.trim() : '';
+        if (!locationInput) {
+          alert("Please enter a location.");
+          return;
+        }
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationInput)}`);
+          const data = await response.json();
+          if (data.length === 0) {
+            alert("Location not found. Reloading page...");
+            window.location.reload();
+            return;
+          }
+          const result = data[0];
+          const displayName = result.display_name.toLowerCase();
+          if (!displayName.includes("nepal")) {
+            alert("Only locations within Nepal are supported. Reloading page...");
+            window.location.reload();
+            return;
+          }
+          const lat = parseFloat(result.lat);
+          const lon = parseFloat(result.lon);
+          userLatLng = [lat, lon];
+          localStorage.setItem('user_lat', lat);
+          localStorage.setItem('user_lng', lon);
+          alert(`Location set to: ${result.display_name}`);
+          showUserLocation(userLatLng, "Manual Location Set");
+          const manualSection = document.getElementById("manual-location-section");
+          if (manualSection) manualSection.style.display = "none";
+          const citySearchBar = document.getElementById("city-search-bar");
+          if (citySearchBar) citySearchBar.style.display = "flex";
+          window.dispatchEvent(new Event('userLocationSet'));
+        } catch (error) {
+          console.error("Error validating location:", error);
+          alert("Something went wrong. Reloading page...");
+          window.location.reload();
+        }
+      });
+    }
+
+    const searchBtn = document.getElementById("search-button");
+    if (searchBtn) {
+      searchBtn.addEventListener("click", async () => {
+        const inputElem = document.getElementById("location-input");
+        const input = inputElem ? inputElem.value.trim() : '';
+        if (!input || !userLatLng) {
+          showError("Please set your location and enter a district name, place name, or #category.");
+          return;
+        }
+        showLoading(searchBtn);
+        try {
+          if (input.startsWith("#")) {
+            const category = input.slice(1);
+            await fetchPlacesByCategory(category);
+          } else {
+            // Try district first
+            let districtResponse = await fetch(`/places-by-district/${input}/`);
+            let districtData = await districtResponse.json();
+            if (districtData.places && districtData.places.length > 0) {
+              await fetchPlacesByDistrict(input);
+            } else {
+              // If not found as district, try as place name
+              await fetchPlaceByName(input);
+            }
+          }
+          showSuccess('Search completed successfully');
+        } catch (error) {
+          console.error('Search error:', error);
+          showError('Failed to complete search. Please try again.');
+        } finally {
+          hideLoading(searchBtn);
+        }
+      });
+    }
+
+    const locationInputElem = document.getElementById("location-input");
+    if (locationInputElem) {
+      locationInputElem.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          const searchBtn = document.getElementById("search-button");
+          if (searchBtn) searchBtn.click();
+        }
+      });
+    }
   });
 
   // Initialize map with better error handling
@@ -1005,7 +1018,7 @@
   }
   
   function renderBarChart(places) {
-    console.log('Places Data:', places);
+    console.log('Raw Places Data:', places);
   
     // Sort by crowdlevel descending
     places.sort((a, b) => b.crowdlevel - a.crowdlevel);
@@ -1017,6 +1030,7 @@
   
     // Combine them
     const selectedPlaces = [...highCrowd, ...mediumCrowd, ...lowCrowd];
+    console.log('Filtered Selected Places:', selectedPlaces);
   
     const ctx = document.getElementById('bar-chart').getContext('2d');
   
@@ -1035,6 +1049,9 @@
   
     const backgroundColors = selectedPlaces.map(place => getColor(place.crowdlevel));
   
+    window.selectedPlaces = selectedPlaces; // Store the places data globally
+    console.log('Stored in window.selectedPlaces:', window.selectedPlaces);
+  
     window.barChart = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -1049,21 +1066,21 @@
       },
       options: {
         onClick: function (evt, activeEls, chart) {
+          console.log('Chart clicked:', evt);
           const elements = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
+          console.log('Chart elements:', elements);
           if (elements.length > 0) {
             const index = elements[0].index;
-            const selectedPlace = selectedPlaces[index];
-            if (selectedPlace) {
-              if (selectedPlace.id) {
-                // If we have an ID, redirect to place details
-                window.location.href = `/place-details/${selectedPlace.id}/`;
-              } else {
-                // If no ID, try to search for the place by name
-                console.log('No place ID found, searching by name:', selectedPlace.name);
-                // You could implement a search by name here or show an alert
-                alert(`Place details not available for ${selectedPlace.name}. This place may not be in the database.`);
-              }
+            console.log('Clicked index:', index);
+            console.log('Available places:', window.selectedPlaces);
+            const selectedPlace = window.selectedPlaces[index];
+            console.log('Selected place:', selectedPlace);
+            if (selectedPlace && selectedPlace.id) {
+              console.log('Redirecting to:', `/place-details/${selectedPlace.id}/`);
+              window.location.href = `/place-details/${selectedPlace.id}/`;
             }
+          } else {
+            alert('No chart element found for click.');
           }
         },
         responsive: true,
@@ -1074,6 +1091,7 @@
         }
       }
     });
+    
     return selectedPlaces;
   }
   
@@ -1087,31 +1105,48 @@ function getTimeSlotFromHour(hour) {
 
 // Function to fetch places by district
 async function fetchPlacesByDistrict(district) {
-  try {
-    const now = new Date();
-    const hour = now.getHours();
-    const time_slot = getTimeSlotFromHour(hour);
-    console.log("Fetching places for district:", district, "time_slot:", time_slot, "hour:", hour);
-    const response = await fetch(`/places-by-district/${district}/?time_slot=${time_slot}&hour=${hour}`);
-    const data = await response.json();
-    console.log("Fetched data:", data);
+    try {
+      const now = new Date();
+      const hour = now.getHours();
+      const time_slot = getTimeSlotFromHour(hour);
+      console.log("Fetching places for district:", district, "time_slot:", time_slot, "hour:", hour);
+      
+      const response = await fetch(`/places-by-district/${district}/?time_slot=${time_slot}&hour=${hour}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("API Response Data:", data);
 
-    if (!data.places || !data.places.length) {
-      alert("No places found for this district.");
-      return;
+      if (!data.places || !data.places.length) {
+        alert("No places found for this district.");
+        return;
+      }
+
+      // Verify each place has required data
+      const validPlaces = data.places.map(place => {
+        console.log("Processing place:", place);
+        if (!place.id) {
+          console.error("Place missing ID:", place);
+        }
+        return place;
+      });
+
+      document.getElementById("chart-wrapper").style.display = "block";
+      const selectedPlaces = renderBarChart(validPlaces);
+      console.log("Rendered places:", selectedPlaces);
+      
+      const chartWrapper = document.getElementById("chart-wrapper");
+      chartWrapper.scrollIntoView({ behavior: "smooth" });
+      chartWrapper.classList.add("chart-highlight");
+      setTimeout(() => chartWrapper.classList.remove("chart-highlight"), 1500);
+      
+      displayPlacesOnMap(selectedPlaces);
+    } catch (error) {
+      console.error("Error fetching places by district:", error);
+      alert("Error loading places. Please try again.");
     }
-
-    document.getElementById("chart-wrapper").style.display = "block";
-    const selectedPlaces = renderBarChart(data.places);
-    const chartWrapper = document.getElementById("chart-wrapper");
-    chartWrapper.scrollIntoView({ behavior: "smooth" });
-    chartWrapper.classList.add("chart-highlight");
-    setTimeout(() => chartWrapper.classList.remove("chart-highlight"), 1500);
-    displayPlacesOnMap(selectedPlaces);
-  } catch (error) {
-    console.error("Error fetching places by district:", error);
   }
-}
 
 // Function to fetch places by category (hashtag)
 async function fetchPlacesByCategory(category) {
