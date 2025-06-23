@@ -421,14 +421,13 @@
     <div id="login-section">
       <form method="POST" action="{% url 'login' %}">
         {% csrf_token %}
-        <label for="username">Username:</label><br>
-        <input type="text" name="username" required><br>
+        <label for="email">Email:</label><br>
+        <input type="email" name="email" required><br>
         <label for="password">Password:</label><br>
         <input type="password" name="password" required><br>
         <button type="submit">Login</button>
       </form>
     </div>
-  {% else %}
     <div id="city-search-bar" style="display:none; position: absolute; top: 64px; right: 0; z-index: 1200; align-items: center; min-width: 160px; max-width: 220px; background: #fff; border-radius: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.13); padding: 0.1rem 0.7rem;">
       <span style="color: #65676b; font-size: 1rem; margin-right: 0.4rem; display: flex; align-items: center;">
         <i class="fa fa-search"></i>
@@ -436,6 +435,44 @@
       <input id="location-input" type="text" placeholder="Search..." style="flex:1; border:none; outline:none; background: transparent; font-size: 0.95rem; color: #22223b; padding: 0.4rem 0; min-width: 50px;" />
       <button id="search-button" type="button" style="background: #2563eb; color: #fff; border: none; border-radius: 2rem; padding: 0.4rem 1rem; font-weight: 500; font-size: 0.95rem; margin-left: 0.4rem; cursor: pointer; transition: background 0.2s;">Search</button>
     </div>
+    <div id="location-access-prompt">
+      <h3>Allow location access?</h3>
+      <button id="grant-location-btn">Yes</button>
+      <button id="deny-location-btn">No</button>
+    </div>
+
+    <div id="manual-location-section" style="display:none;">
+      <h3>Enter Your Location Manually:</h3>
+      <input type="text" id="manual-location-input" placeholder="e.g., Kathmandu, Nepal" />
+      <button id="submit-manual-location">Submit</button>
+    </div>
+
+    <div id="map-wrapper" style="display:none;">
+      <div id="map" class="map-box"></div>
+    </div>
+    <div id="distances">
+    <!-- Distances will be dynamically added here by JavaScript -->
+    </div>
+    
+    <div id="chart-wrapper" style="display:none;">
+      <h3>Popular Places in Selected District</h3>
+      <canvas id="bar-chart" width="600" height="300"></canvas>
+    </div>
+
+    <div id="place-info-box" style="display:none;" class="info-box">
+      <h4 id="place-title"></h4>
+      <p id="place-description"></p>
+      <p><strong>Popular For:</strong> <span id="place-popular"></span></p>
+      <p><strong>Category:</strong> <span id="place-category"></span></p>
+      <p><strong>Crowd Level:</strong> <span id="place-crowd"></span></p>
+      <p><strong>Status:</strong> <span id="place-status"></span></p>
+      <p><strong>Tags:</strong> <span id="place-tags"></span></p>
+      <div id="related-places" class="mt-4">
+        <h5>Related Places</h5>
+        <div id="related-places-list"></div>
+      </div>
+    </div>
+  {% else %}
     <div id="location-access-prompt">
       <h3>Allow location access?</h3>
       <button id="grant-location-btn">Yes</button>
@@ -521,12 +558,19 @@
       document.getElementById("location-access-prompt").style.display = "none";
       initializeMap();
       getCurrentLocation();
+      localStorage.removeItem('location_denied');
+      window.dispatchEvent(new Event('userLocationSet'));
+      if (typeof showNavbarSearchBarIfAllowed === 'function') {
+        showNavbarSearchBarIfAllowed();
+      }
     });
 
     document.getElementById("deny-location-btn").addEventListener("click", () => {
       document.getElementById("location-access-prompt").style.display = "none";
       document.getElementById("manual-location-section").style.display = "block";
       initializeMap();
+      localStorage.setItem('location_denied', 'true');
+      window.dispatchEvent(new Event('userLocationSet'));
     });
 
     document.getElementById("submit-manual-location").addEventListener("click", async () => {
@@ -559,11 +603,14 @@
         const lat = parseFloat(result.lat);
         const lon = parseFloat(result.lon);
         userLatLng = [lat, lon];
+        localStorage.setItem('user_lat', lat);
+        localStorage.setItem('user_lng', lon);
 
         alert(`Location set to: ${result.display_name}`);
         showUserLocation(userLatLng, "Manual Location Set");
         document.getElementById("manual-location-section").style.display = "none";
         document.getElementById("city-search-bar").style.display = "flex";
+        window.dispatchEvent(new Event('userLocationSet'));
 
       } catch (error) {
         console.error("Error validating location:", error);
@@ -662,8 +709,11 @@
       pos => {
         hideLoading(locationPrompt);
         userLatLng = [pos.coords.latitude, pos.coords.longitude];
+        localStorage.setItem('user_lat', pos.coords.latitude);
+        localStorage.setItem('user_lng', pos.coords.longitude);
         showUserLocation(userLatLng, "You are here!");
         document.getElementById("city-search-bar").style.display = "flex";
+        window.dispatchEvent(new Event('userLocationSet'));
       },
       error => {
         hideLoading(locationPrompt);

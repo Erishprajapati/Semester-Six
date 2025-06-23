@@ -141,6 +141,13 @@
     
     <div class="nav-right">
       {% if user.is_authenticated %}
+        <form id="navbar-search-form" style="display: none; align-items: center; background: #fff; border-radius: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.13); padding: 0.1rem 0.7rem; margin-right: 1.2rem; min-width: 160px; max-width: 220px; height: 40px;" onsubmit="return false;">
+          <span style="color: #65676b; font-size: 1rem; margin-right: 0.4rem; display: flex; align-items: center;">
+            <i class="fa fa-search"></i>
+          </span>
+          <input id="navbar-location-input" type="text" placeholder="Search..." style="flex:1; border:none; outline:none; background: transparent; font-size: 0.95rem; color: #22223b; padding: 0.4rem 0; min-width: 50px;" />
+          <button id="navbar-search-button" type="button" style="background: #2563eb; color: #fff; border: none; border-radius: 2rem; padding: 0.4rem 1rem; font-weight: 500; font-size: 0.95rem; margin-left: 0.4rem; cursor: pointer; transition: background 0.2s;">Search</button>
+        </form>
         <div class="profile-dropdown">
           <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Profile" class="profile-icon" />
           <div class="dropdown-content">
@@ -178,59 +185,135 @@
   </main>
 
   <script>
+    // Always hide the search bar on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const searchForm = document.getElementById('navbar-search-form');
+      if (searchForm) searchForm.style.display = 'none';
+    });
+
     // Get modal elements
     const modal = document.getElementById('searchHistoryModal');
     const btn = document.getElementById('searchHistoryBtn');
     const span = document.getElementsByClassName('close')[0];
 
     // Open modal when clicking the search history button
-    btn.onclick = function(e) {
-      e.preventDefault(); // Prevent # from appearing in the URL
-      modal.style.display = 'block';
-      loadSearchHistory();
-    }
+    if (btn && modal && span) {
+      btn.onclick = function(e) {
+        e.preventDefault(); // Prevent # from appearing in the URL
+        modal.style.display = 'block';
+        loadSearchHistory();
+      }
 
-    // Close modal when clicking the X
-    span.onclick = function() {
-      modal.style.display = 'none';
-    }
-
-    // Close modal when clicking outside
-    window.onclick = function(event) {
-      if (event.target == modal) {
+      // Close modal when clicking the X
+      span.onclick = function() {
         modal.style.display = 'none';
+      }
+
+      // Close modal when clicking outside
+      window.onclick = function(event) {
+        if (event.target == modal) {
+          modal.style.display = 'none';
+        }
       }
     }
 
     // Function to load search history
     function loadSearchHistory() {
-      fetch('/api/api/search-history/')
+      fetch('/api/search-history/')
         .then(response => response.json())
         .then(data => {
           const historyList = document.getElementById('searchHistoryList');
-          if (data.searches && data.searches.length > 0) {
-            historyList.innerHTML = data.searches.map(search => `
-              <div style="padding: 10px; border-bottom: 1px solid #eee;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <div>
-                    <strong>${search.search_query}</strong>
-                    <span style="background-color: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 8px;">
-                      ${search.search_type}
-                    </span>
+          if (historyList) {
+            if (data.searches && data.searches.length > 0) {
+              historyList.innerHTML = data.searches.map(search => `
+                <div style="padding: 10px; border-bottom: 1px solid #eee;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                      <strong>${search.search_query}</strong>
+                      <span style="background-color: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 8px;">
+                        ${search.search_type}
+                      </span>
+                    </div>
+                    <small style="color: #666;">${search.timestamp}</small>
                   </div>
-                  <small style="color: #666;">${new Date(search.timestamp).toLocaleString()}</small>
                 </div>
-              </div>
-            `).join('');
-          } else {
-            historyList.innerHTML = '<p style="text-align: center; color: #666;">No search history available.</p>';
+              `).join('');
+            } else {
+              historyList.innerHTML = '<p style="text-align: center; color: #666;">No search history available.</p>';
+            }
           }
         })
         .catch(error => {
-          document.getElementById('searchHistoryList').innerHTML = 
-            '<p style="text-align: center; color: #666;">Error loading search history.</p>';
+          const historyList = document.getElementById('searchHistoryList');
+          if (historyList) {
+            historyList.innerHTML = 
+              '<p style="text-align: center; color: #666;">Error loading search history.</p>';
+          }
         });
     }
+
+    // Navbar search bar logic (works like Map.html)
+    document.addEventListener('DOMContentLoaded', function() {
+      const searchBtn = document.getElementById('navbar-search-button');
+      const searchInput = document.getElementById('navbar-location-input');
+      if (searchBtn && searchInput) {
+        async function doNavbarSearch() {
+          const input = searchInput.value.trim();
+          if (!input) {
+            alert('Please enter a search term.');
+            return;
+          }
+          if (typeof userLatLng === 'undefined' || !userLatLng) {
+            alert('Please set your location first.');
+            return;
+          }
+          if (input.startsWith('#')) {
+            const category = input.slice(1);
+            await fetchPlacesByCategory(category);
+          } else {
+            // Try district first
+            let districtResponse = await fetch(`/places-by-district/${input}/`);
+            let districtData = await districtResponse.json();
+            if (districtData.places && districtData.places.length > 0) {
+              await fetchPlacesByDistrict(input);
+            } else {
+              // If not found as district, try as place name
+              await fetchPlaceByName(input);
+            }
+          }
+        }
+        searchBtn.addEventListener('click', doNavbarSearch);
+        searchInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            doNavbarSearch();
+          }
+        });
+      }
+    });
+
+    // Show navbar search bar only after location is set and not on place-details page
+    function showNavbarSearchBarIfAllowed() {
+      const searchForm = document.getElementById('navbar-search-form');
+      if (!searchForm) return;
+      if (window.location.pathname.includes('/place-details/')) {
+        searchForm.style.display = 'none';
+        return;
+      }
+      // Check if user location is set in localStorage or location_denied is set
+      const lat = localStorage.getItem('user_lat');
+      const lng = localStorage.getItem('user_lng');
+      const locationDenied = localStorage.getItem('location_denied');
+      if ((lat && lng) || locationDenied === 'true') {
+        searchForm.style.display = 'flex';
+      } else {
+        searchForm.style.display = 'none';
+      }
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+      showNavbarSearchBarIfAllowed();
+      // Listen for location set events (simulate after Yes/No click)
+      window.addEventListener('userLocationSet', showNavbarSearchBarIfAllowed);
+    });
   </script>
 
 </body>

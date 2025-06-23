@@ -19,14 +19,13 @@ import os
 from datetime import datetime
 import pandas as pd  # Add this at the top if not present
 from django.urls import reverse
+from django.contrib.auth import authenticate, login
+from .ml_model import get_current_season, get_current_weather
 
 # Create your views here.
-def home(request):
-    return render(request, 'register.html')
-    """it will act as key pair value"""
-
 def map_view(request):
     return render(request, 'Map.html')
+    """it will act as key pair value"""
 
 @login_required
 def profile_view(request):
@@ -125,27 +124,17 @@ def profile_view(request):
 
 @api_view(['GET'])
 def places_by_category(request, category):
-    csv_path = 'realistic_crowd_training_data.csv'
-    df = pd.read_csv(csv_path)
-    filtered = df[df['category'].str.lower() == category.lower()]
-    filtered = filtered.sort_values(['place_name', 'date', 'time_slot'], ascending=[True, False, False])
-    latest_places = filtered.drop_duplicates('place_name', keep='first')
+    places = Place.objects.filter(category__iexact=category)
     places_data = []
-    for _, row in latest_places.iterrows():
-        # Try to find the place in the database to get the ID
-        try:
-            place = Place.objects.get(name__iexact=row['place_name'])
-            place_id = place.id
-        except Place.DoesNotExist:
-            place_id = None
-            
+    for place in places:
+        crowdlevel = predict_crowd_for_place(place)
         places_data.append({
-            'id': place_id,
-            'name': row['place_name'],
-            'description': '',
-            'category': row['category'],
-            'crowdlevel': row['crowdlevel'],
-            'district': row['district'],
+            'id': place.id,
+            'name': place.name,
+            'description': place.description,
+            'category': place.category,
+            'crowdlevel': crowdlevel,
+            'district': place.district,
         })
     return JsonResponse({'places': places_data})
 
@@ -393,28 +382,17 @@ def search_places(request):
 
 @api_view(['GET'])
 def places_by_district(request, district_name):
-    csv_path = 'realistic_crowd_training_data.csv'
-    df = pd.read_csv(csv_path)
-    filtered = df[df['district'].str.lower() == district_name.lower()]
-    # Sort by date and time_slot to get the latest
-    filtered = filtered.sort_values(['place_name', 'date', 'time_slot'], ascending=[True, False, False])
-    latest_places = filtered.drop_duplicates('place_name', keep='first')
+    places = Place.objects.filter(district__iexact=district_name)
     places_data = []
-    for _, row in latest_places.iterrows():
-        # Try to find the place in the database to get the ID
-        try:
-            place = Place.objects.get(name__iexact=row['place_name'])
-            place_id = place.id
-        except Place.DoesNotExist:
-            place_id = None
-            
+    for place in places:
+        crowdlevel = predict_crowd_for_place(place)
         places_data.append({
-            'id': place_id,
-            'name': row['place_name'],
-            'description': '',  # No description in CSV
-            'category': row['category'],
-            'crowdlevel': row['crowdlevel'],
-            'district': row['district'],
+            'id': place.id,
+            'name': place.name,
+            'description': place.description,
+            'category': place.category,
+            'crowdlevel': crowdlevel,
+            'district': place.district,
         })
     return JsonResponse({'places': places_data})
 
@@ -539,26 +517,46 @@ def add_place(request):
 def update_profile(request):
     if request.method == 'POST':
         user = request.user
-        username = request.POST['username']
-        email = request.POST['email']
+        username = request.POST.get('username')
+        email = request.POST.get('email')
         new_password = request.POST.get('new_password')
         confirm_password = request.POST.get('confirm_password')
+
+        # Basic validation
+        if not username or not email:
+            messages.error(request, "Username and email are required.")
+            return redirect('profile_view')
+
+        # Check if username is taken by another user
+        if User.objects.filter(username=username).exclude(pk=user.pk).exists():
+            messages.error(request, "This username is already taken.")
+            return redirect('profile_view')
 
         user.username = username
         user.email = email
 
+        password_changed = False
         if new_password:
-            if new_password == confirm_password:
-                user.set_password(new_password)
-            else:
+            if new_password != confirm_password:
                 messages.error(request, "Passwords do not match.")
-                return redirect('update_profile')  # Or re-render the form with error
+                return redirect('profile_view')
+            user.set_password(new_password)
+            password_changed = True
+            messages.success(request, "Password updated successfully.")
 
         user.save()
-        messages.success(request, "Profile updated.")
-        return redirect('login')  # Redirect to login page
 
-    return render(request, 'accounts/profile.html')
+        # Re-authenticate and log in the user if password was changed
+        if password_changed:
+            user = authenticate(request, username=username, password=new_password)
+            if user is not None:
+                login(request, user)
+
+        messages.success(request, "Profile updated successfully.")
+        return redirect('map_view')  # Redirect to map_view (home page)
+
+    # On GET request, just show the profile page.
+    return redirect('profile_view')
 
 @login_required
 def add_place_form(request):
@@ -576,7 +574,7 @@ def get_search_history(request):
         'timestamp': item.timestamp.strftime('%Y-%m-%d %H:%M:%S')
     } for item in search_history]
     
-    return JsonResponse({'search_history': history_data})
+    return JsonResponse({'searches': history_data})
 
 def haversine(lat1, lon1, lat2, lon2):
     """Calculate the great circle distance between two points on the earth"""
@@ -822,3 +820,38 @@ def predict_crowd(request):
         return JsonResponse({
             'error': f'Prediction failed: {str(e)}'
         }, status=500)
+
+def register_view(request):
+    return render(request, 'register.html')
+
+def predict_crowd_for_place(place, time_slot='morning'):
+    model_path = 'crowd_prediction_model.pkl'
+    if not os.path.exists(model_path):
+        return 0
+    model_data = joblib.load(model_path)
+    model = model_data['model']
+    encoders = model_data['label_encoders']
+    now = datetime.now()
+    day_of_week = now.weekday()
+    month = now.month
+    season = get_current_season()
+    is_weekend = 1 if day_of_week >= 5 else 0
+    is_holiday = 0
+    weather = get_current_weather()
+    try:
+        features = [
+            place.id,
+            encoders['category'].transform([place.category])[0],
+            encoders['district'].transform([place.district])[0],
+            encoders['time_slot'].transform([time_slot])[0],
+            day_of_week,
+            month,
+            encoders['season'].transform([season])[0],
+            is_weekend,
+            is_holiday,
+            encoders['weather_condition'].transform([weather])[0]
+        ]
+        predicted_crowd = model.predict([features])[0]
+        return float(max(0, min(100, round(predicted_crowd, 1))))
+    except Exception as e:
+        return 0

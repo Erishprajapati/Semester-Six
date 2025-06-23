@@ -73,18 +73,21 @@ def register_user(request):
 
 def login_user(request):
     if request.method == 'POST':
-        username = request.POST['username']
+        email = request.POST['email']
         password = request.POST['password']
 
         # DEBUG: print info
-        print("Username:", username)
+        print("Email:", email)
         print("Password:", password)
 
         try:
-            user_check = User.objects.get(username=username)
+            user_check = User.objects.get(email=email)
             print("User found in DB:", user_check)
+            username = user_check.username
         except User.DoesNotExist:
             print("User does not exist!")
+            messages.error(request, 'Invalid email or password')
+            return redirect('login')
 
         user = authenticate(request, username=username, password=password)
 
@@ -92,7 +95,7 @@ def login_user(request):
             login(request, user)
             return redirect('dashboard')  # <- make sure this matches your URL name
         else:
-            messages.error(request, 'Invalid username or password')
+            messages.error(request, 'Invalid email or password')
             return redirect('login')
 
     return render(request, 'login.html')
