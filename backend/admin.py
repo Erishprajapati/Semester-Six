@@ -49,11 +49,14 @@ class PlaceAdminForm(forms.ModelForm):
 
 class PlaceAdmin(admin.ModelAdmin):
     form = PlaceAdminForm
-    list_display = ('name', 'category', 'district', 'location', 'get_tags', 'get_crowd_status', 'added_by')
-    list_filter = ('category', 'district', 'tags')
+    list_display = ('name', 'category', 'district', 'location', 'get_tags', 'get_crowd_status', 'added_by', 'is_approved', 'approval_status')
+    list_filter = ('category', 'district', 'tags', 'is_approved')
     search_fields = ('name', 'description', 'popular_for', 'location')
     readonly_fields = ('added_by',)
     filter_horizontal = ('tags',)
+    actions = ['approve_places', 'decline_places']
+    list_editable = ['is_approved']
+    
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'description', 'popular_for', 'category', 'district')
@@ -63,6 +66,10 @@ class PlaceAdmin(admin.ModelAdmin):
         }),
         ('Additional Information', {
             'fields': ('image', 'tags', 'added_by')
+        }),
+        ('Approval Status', {
+            'fields': ('is_approved',),
+            'classes': ('wide',)
         }),
     )
     
@@ -85,6 +92,22 @@ class PlaceAdmin(admin.ModelAdmin):
             )
         return "No Data"
     get_crowd_status.short_description = 'Current Crowd Status'
+
+    def approval_status(self, obj):
+        if obj.is_approved:
+            return format_html('<span style="color: green;">✓ Approved</span>')
+        return format_html('<span style="color: red;">✗ Pending</span>')
+    approval_status.short_description = 'Status'
+    
+    def approve_places(self, request, queryset):
+        updated = queryset.update(is_approved=True)
+        self.message_user(request, f'{updated} place(s) were successfully approved.')
+    approve_places.short_description = "Approve selected places"
+    
+    def decline_places(self, request, queryset):
+        updated = queryset.update(is_approved=False)
+        self.message_user(request, f'{updated} place(s) were declined.')
+    decline_places.short_description = "Decline selected places"
     
     def save_model(self, request, obj, form, change):
         if not change:  # If creating new object

@@ -3,7 +3,6 @@ from django.urls import path
 from .views import *
 from . import views
 
-
 urlpatterns = [
     path('', views.register_view, name='register'),
     path('crowd/<str:place_name>', get_crowd_data, name="get_crowd_data"),

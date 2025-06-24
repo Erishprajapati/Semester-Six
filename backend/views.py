@@ -377,6 +377,9 @@ def search_places(request):
         crowd_data = CrowdData.objects.filter(place=place, timestamp=latest_crowd_data['max_timestamp']).first()
         tags = list(place.tags.values_list('name', flat=True))
 
+        # Use CSV for full-day crowd pattern
+        crowd_pattern = get_crowd_pattern_from_csv(place.name)
+
         places_data.append({
             'id': place.id,
             'name': place.name,
@@ -385,7 +388,8 @@ def search_places(request):
             'description': place.description,
             'popular_for': place.popular_for,
             'category': place.category,
-            'crowd_level': crowd_data.crowdlevel if crowd_data else 'N/A',
+            'crowdlevel': crowd_data.crowdlevel if crowd_data else 'N/A',
+            'crowd_pattern': crowd_pattern,
             'tags': tags,
             'image': request.build_absolute_uri(place.image.url) if place.image else None
         })
@@ -902,3 +906,16 @@ def save_search_history(user, query, search_type):
             search_query=query,
             search_type=search_type
         )
+
+def get_crowd_pattern_from_csv(place_name):
+    df = pd.read_csv('enhanced_crowd_training_data.csv')
+    place_df = df[df['place'].str.lower() == place_name.lower()]
+    pattern = []
+    for hour in range(24):
+        hour_df = place_df[place_df['hour'] == hour]
+        if not hour_df.empty:
+            crowd = float(hour_df['crowdlevel'].mean())
+        else:
+            crowd = 0
+        pattern.append({'hour': hour, 'crowdlevel': crowd})
+    return pattern

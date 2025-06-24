@@ -1358,16 +1358,11 @@ function displayPlacesOnMap(places) {
     if (place.tags && place.tags.length > 0) {
       const relatedPlacesList = document.getElementById("related-places-list");
       relatedPlacesList.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div></div>';
-
-      // If only one tag, fetch all places with that tag
       if (place.tags.length === 1) {
         fetchPlacesByTag(place.tags[0], 10);
       } else {
-        // For multiple tags, fetch 2-3 places per tag
         const promises = place.tags.map(tag => fetchPlacesByTag(tag, 3));
-        Promise.all(promises).then(() => {
-          // All places have been fetched and displayed
-        }).catch(error => {
+        Promise.all(promises).then(() => {}).catch(error => {
           console.error('Error fetching related places:', error);
           relatedPlacesList.innerHTML = '<div class="alert alert-danger">Failed to load related places</div>';
         });
@@ -1376,6 +1371,9 @@ function displayPlacesOnMap(places) {
 
     // Show the info box with animation
     infoBox.classList.add('visible');
+
+    // Render the full-day bar graph for this place
+    renderFullDayBarGraph(place);
   }  
 
   function addToSearchHistory(district) {
@@ -1477,6 +1475,36 @@ function displayPlacesOnMap(places) {
       alert('Error searching for place.');
       console.error(error);
     }
+  }
+
+  function renderFullDayBarGraph(place) {
+    if (!place.crowd_pattern || !Array.isArray(place.crowd_pattern)) {
+        document.getElementById('chart-wrapper').style.display = 'none';
+        return;
+    }
+    const labels = place.crowd_pattern.map(item => `${item.hour}:00`);
+    const data = place.crowd_pattern.map(item => item.crowdlevel);
+
+    const ctx = document.getElementById('bar-chart').getContext('2d');
+    if (window.barChart) window.barChart.destroy();
+    window.barChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Crowd Level',
+                data: data,
+                backgroundColor: data.map(val => val > 70 ? '#FF0000' : val > 30 ? '#FFEB3B' : '#4CAF50')
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true, max: 100 }
+            }
+        }
+    });
+    document.getElementById('chart-wrapper').style.display = 'block';
   }
 </script>
 {% endblock %}
