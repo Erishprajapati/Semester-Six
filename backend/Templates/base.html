@@ -231,12 +231,6 @@
   </main>
 
   <script>
-    // Always hide the search bar on page load
-    document.addEventListener('DOMContentLoaded', function() {
-      const searchForm = document.getElementById('navbar-search-form');
-      if (searchForm) searchForm.style.display = 'none';
-    });
-
     // Function to show navbar search bar only if location is set
     function showNavbarSearchBarIfAllowed() {
       const searchForm = document.getElementById('navbar-search-form');
@@ -257,6 +251,11 @@
 
     // Listen for location set event
     window.addEventListener('userLocationSet', showNavbarSearchBarIfAllowed);
+
+    // Ensure search bar is shown/hidden correctly on every page load
+    document.addEventListener('DOMContentLoaded', function() {
+      showNavbarSearchBarIfAllowed();
+    });
 
     // Get modal elements
     const modal = document.getElementById('searchHistoryModal');
