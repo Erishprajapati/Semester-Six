@@ -91,5 +91,16 @@ class SearchHistory(models.Model):
     
     def __str__(self):
         return f"{self.user.username} searched for {self.search_query} at {self.timestamp}"
+
+class CrowdPattern(models.Model):
+    place = models.ForeignKey(Place, on_delete=models.CASCADE)
+    hour = models.IntegerField()
+    crowdlevel = models.FloatField()
+
+    class Meta:
+        unique_together = ('place', 'hour')
+
+    def __str__(self):
+        return f"{self.place.name} - {self.hour}:00 ({self.crowdlevel})"
     
     

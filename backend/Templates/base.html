@@ -129,6 +129,21 @@
       font-size: 1.5rem;
       letter-spacing: 1px;
     }
+
+    /* Custom search bar styling for navbar */
+    #navbar-search-form {
+      min-width: 220px !important;
+      max-width: 350px !important;
+      height: 34px !important;
+      margin: 0 auto;
+    }
+    #navbar-location-input:focus {
+      border-color: #3b82f6;
+    }
+    #navbar-search-button:hover {
+      background: #3b82f6 !important;
+      border-color: #3b82f6 !important;
+    }
   </style>
 </head>
 <body>
@@ -141,12 +156,43 @@
     
     <div class="nav-right">
       {% if user.is_authenticated %}
-        <form id="navbar-search-form" style="display: none; align-items: center; background: #fff; border-radius: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.13); padding: 0.1rem 0.7rem; margin-right: 1.2rem; min-width: 160px; max-width: 220px; height: 40px;" onsubmit="return false;">
-          <span style="color: #65676b; font-size: 1rem; margin-right: 0.4rem; display: flex; align-items: center;">
-            <i class="fa fa-search"></i>
-          </span>
-          <input id="navbar-location-input" type="text" placeholder="Search..." style="flex:1; border:none; outline:none; background: transparent; font-size: 0.95rem; color: #22223b; padding: 0.4rem 0; min-width: 50px;" />
-          <button id="navbar-search-button" type="button" style="background: #2563eb; color: #fff; border: none; border-radius: 2rem; padding: 0.4rem 1rem; font-weight: 500; font-size: 0.95rem; margin-left: 0.4rem; cursor: pointer; transition: background 0.2s;">Search</button>
+        <form id="navbar-search-form" style="display: none; align-items: center; justify-content: flex-start; background: transparent; border: none; box-shadow: none; margin-right: 1.2rem; min-width: 220px; max-width: 350px; height: 34px;" onsubmit="return false;">
+          <div style="display: flex; width: 100%;">
+            <input id="navbar-location-input" type="text" placeholder="Search..." style="
+              flex: 1;
+              height: 34px;
+              border: 2px solid #231815;
+              border-right: none;
+              border-radius: 10px 0 0 10px;
+              outline: none;
+              background: #fff;
+              font-size: 1rem;
+              color: #231815;
+              padding: 0 0.7rem;
+              box-sizing: border-box;
+              transition: border 0.2s;
+              min-width: 0;
+              max-width: 100%;
+            " />
+            <button id="navbar-search-button" type="button" style="
+              width: 40px;
+              height: 34px;
+              background: #231815;
+              color: #fff;
+              border: 2px solid #231815;
+              border-left: none;
+              border-radius: 0 10px 10px 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              cursor: pointer;
+              transition: background 0.2s;
+              font-size: 1.2rem;
+              padding: 0;
+            ">
+              <i class="fa fa-search"></i>
+            </button>
+          </div>
         </form>
         <div class="profile-dropdown">
           <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="Profile" class="profile-icon" />

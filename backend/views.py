@@ -21,6 +21,7 @@ import pandas as pd  # Add this at the top if not present
 from django.urls import reverse
 from django.contrib.auth import authenticate, login
 from .ml_model import get_current_season, get_current_weather
+import logging
 
 # Create your views here.
 def map_view(request):
@@ -355,6 +356,8 @@ def get_user_location(request):
             'error': 'No location data found for this user'
         }, status=404)
 
+MODEL_CACHE = {}
+
 @api_view(['GET'])
 def search_places(request):
     query = request.GET.get('q', '')  # Get the search query (place name)
@@ -376,10 +379,7 @@ def search_places(request):
         latest_crowd_data = CrowdData.objects.filter(place=place).aggregate(max_timestamp=Max('timestamp'))
         crowd_data = CrowdData.objects.filter(place=place, timestamp=latest_crowd_data['max_timestamp']).first()
         tags = list(place.tags.values_list('name', flat=True))
-
-        # Use CSV for full-day crowd pattern
-        crowd_pattern = get_crowd_pattern_from_csv(place.name)
-
+        crowd_pattern = get_crowd_pattern_from_db(place)
         places_data.append({
             'id': place.id,
             'name': place.name,
@@ -393,7 +393,7 @@ def search_places(request):
             'tags': tags,
             'image': request.build_absolute_uri(place.image.url) if place.image else None
         })
-    
+    print(f"[DEBUG] search_places API response: {places_data}")
     return JsonResponse({'places': places_data}, safe=False)
 
 @api_view(['GET'])
@@ -411,14 +411,9 @@ def places_by_district(request, district_name):
             time_slot = 'evening'
         else:
             time_slot = 'morning'
-    
-    # Save search history
     save_search_history(request.user, district_name, 'district')
-    
-    # Get places for the district
     places = Place.objects.filter(district__iexact=district_name)
-    print(f"Found {places.count()} places for district {district_name}")  # Debug log
-    
+    print(f"Found {places.count()} places for district {district_name}")
     places_data = []
     for place in places:
         crowdlevel = predict_crowd_for_place(place, time_slot)
@@ -432,10 +427,9 @@ def places_by_district(request, district_name):
             'latitude': place.latitude,
             'longitude': place.longitude,
         }
-        print(f"Place data: {place_data}")  # Debug log
+        print(f"Place data: {place_data}")
         places_data.append(place_data)
-    
-    print(f"Sending {len(places_data)} places")  # Debug log
+    print(f"Sending {len(places_data)} places")
     return JsonResponse({'places': places_data})
 
 
@@ -868,9 +862,13 @@ def register_view(request):
 
 def predict_crowd_for_place(place, time_slot='morning'):
     model_path = 'crowd_prediction_model.pkl'
-    if not os.path.exists(model_path):
-        return 0
-    model_data = joblib.load(model_path)
+    if model_path not in MODEL_CACHE:
+        if not os.path.exists(model_path):
+            return 0
+        model_data = joblib.load(model_path)
+        MODEL_CACHE[model_path] = model_data
+    else:
+        model_data = MODEL_CACHE[model_path]
     model = model_data['model']
     encoders = model_data['label_encoders']
     now = datetime.now()
@@ -896,6 +894,7 @@ def predict_crowd_for_place(place, time_slot='morning'):
         predicted_crowd = model.predict([features])[0]
         return float(max(0, min(100, round(predicted_crowd, 1))))
     except Exception as e:
+        print(f"[DEBUG] Model prediction error for place {place.name}: {e}")
         return 0
 
 # Utility to save search history
@@ -907,15 +906,10 @@ def save_search_history(user, query, search_type):
             search_type=search_type
         )
 
-def get_crowd_pattern_from_csv(place_name):
-    df = pd.read_csv('enhanced_crowd_training_data.csv')
-    place_df = df[df['place'].str.lower() == place_name.lower()]
+def get_crowd_pattern_from_db(place):
     pattern = []
     for hour in range(24):
-        hour_df = place_df[place_df['hour'] == hour]
-        if not hour_df.empty:
-            crowd = float(hour_df['crowdlevel'].mean())
-        else:
-            crowd = 0
+        cp = CrowdPattern.objects.filter(place=place, hour=hour).first()
+        crowd = cp.crowdlevel if cp else 0
         pattern.append({'hour': hour, 'crowdlevel': crowd})
     return pattern

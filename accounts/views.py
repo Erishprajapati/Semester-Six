@@ -3,6 +3,10 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import authenticate, login,logout
 from django.contrib.auth.decorators import login_required
+from .decorators import session_timeout_required
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 import re
 from backend.models import *
 from django.utils import timezone
@@ -93,6 +97,8 @@ def login_user(request):
 
         if user is not None:
             login(request, user)
+            # Set initial session activity time
+            request.session['last_activity'] = timezone.now().isoformat()
             return redirect('dashboard')  # <- make sure this matches your URL name
         else:
             messages.error(request, 'Invalid email or password')
@@ -127,6 +133,7 @@ def get_current_time_slot():
         return 'evening'
 
 @login_required(login_url='login')
+@session_timeout_required
 def home(request):
     query = request.GET.get('q', '')  # search query from input
     places = Place.objects.all()
@@ -280,10 +287,13 @@ def home(request):
 
     return render(request, 'map.html', context)
 
+@login_required(login_url='login')
+@session_timeout_required
 def graph(request):
     return render(request, 'graph.html')
 
 @login_required
+@session_timeout_required
 def update_profile(request):
     if request.method == 'POST':
         user = request.user
@@ -307,3 +317,13 @@ def update_profile(request):
         return redirect('login')  # Redirect to login page
 
     return render(request, 'accounts/profile.html')
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def extend_session(request):
+    if request.user.is_authenticated:
+        # Update the session activity time
+        request.session['last_activity'] = timezone.now().isoformat()
+        return JsonResponse({'status': 'success', 'message': 'Session extended'})
+    else:
+        return JsonResponse({'status': 'error', 'message': 'User not authenticated'}, status=403)
