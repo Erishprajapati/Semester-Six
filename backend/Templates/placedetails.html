@@ -1066,7 +1066,7 @@
     });
 </script>
 
-<!-- Delete Confirmation Modal -->
+{% comment %} <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -1101,9 +1101,9 @@
             </div>
         </div>
     </div>
-</div>
+</div> {% endcomment %}
 
-<script>
+{% comment %} <script>
     // Delete confirmation modal functionality
     document.addEventListener('DOMContentLoaded', function() {
         const deleteButton = document.getElementById('delete-place-btn');
@@ -1169,7 +1169,7 @@
                 }
             });
         }
-    });
-</script>
+    }); {% endcomment %}
+{% comment %} </script> {% endcomment %}
 
 {% endblock %}
