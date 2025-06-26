@@ -4,7 +4,8 @@ from django.utils.timezone import now
 from django.shortcuts import render, get_object_or_404,redirect
 from django.http import JsonResponse
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from .models import *
 from .serializers import PlaceSerializer, CrowdDataSerializer, TagSerializer
 from .utils import get_weather
@@ -22,6 +23,7 @@ from django.urls import reverse
 from django.contrib.auth import authenticate, login
 from .ml_model import get_current_season, get_current_weather
 import logging
+from rest_framework import status
 
 # Create your views here.
 def map_view(request):
@@ -682,19 +684,20 @@ def delete_place(request, place_id):
     if request.method == 'POST':
         try:
             place_name = place.name
+            place_district = place.district  # Store district before deletion
             place.delete()
             messages.success(request, f'Place "{place_name}" has been deleted successfully.')
 
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                # For AJAX, return success and a redirect URL
+                # For AJAX, return success and a redirect URL with district search
                 return JsonResponse({
                     'success': True,
                     'message': f'Place "{place_name}" has been deleted successfully.',
-                    'redirect_url': reverse('home') 
+                    'redirect_url': f'/?district_search={place_district}'  # Redirect to home with district search
                 })
             
-            # For standard form submissions, redirect to home
-            return redirect('home')
+            # For standard form submissions, redirect to home with district search
+            return redirect(f'/?district_search={place_district}')
 
         except Exception as e:
             error_message = f'An error occurred: {e}'
@@ -709,6 +712,8 @@ def delete_place(request, place_id):
 
 def save_place(request, place_id):
     place = get_object_or_404(Place, id=place_id)
+    tags = Tag.objects.all()
+    place_tag_names = list(place.tags.values_list('name', flat=True))
     
     if request.method == 'POST':
         # Update place details
@@ -743,7 +748,7 @@ def save_place(request, place_id):
         messages.success(request, 'Place updated successfully!')
         return redirect('place_details', place_id=place_id)
     
-    return render(request, 'edit_place.html', {'place': place})
+    return render(request, 'edit_place.html', {'place': place, 'tags': tags, 'place_tag_names': place_tag_names})
 
 # Helper function to get season
 def get_season(month):
@@ -913,3 +918,37 @@ def get_crowd_pattern_from_db(place):
         crowd = cp.crowdlevel if cp else 0
         pattern.append({'hour': hour, 'crowdlevel': crowd})
     return pattern
+
+@api_view(["PUT", "PATCH"])
+@permission_classes([IsAuthenticated])
+def api_update_place(request, place_id):
+    try:
+        place = get_object_or_404(Place, id=place_id)
+        # Only allow the user who added the place or a superuser to update
+        if not (request.user.is_superuser or place.added_by == request.user):
+            return Response({"error": "You do not have permission to update this place."}, status=status.HTTP_403_FORBIDDEN)
+
+        print(f"[DEBUG] Updating place {place_id} with data: {request.data}")
+        print(f"[DEBUG] Content type: {request.content_type}")
+        print(f"[DEBUG] Files: {request.FILES}")
+        
+        # Handle both JSON and multipart form data
+        data = request.data.copy()
+        
+        # If there are files, merge them with the data
+        if request.FILES:
+            for key, file in request.FILES.items():
+                data[key] = file
+                print(f"[DEBUG] Added file {key}: {file.name}")
+        
+        serializer = PlaceSerializer(place, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            print(f"[DEBUG] Place {place_id} updated successfully")
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            print(f"[DEBUG] Serializer errors: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        print(f"[DEBUG] Error updating place {place_id}: {str(e)}")
+        return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

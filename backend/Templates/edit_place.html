@@ -1,0 +1,491 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .add-place-container {
+        max-width: 900px;
+        width: 80%;
+        padding: 1.2rem 2.5rem;
+        margin: 0.5rem auto 2rem auto;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        box-sizing: border-box;
+    }
+    .form-header {
+        text-align: center;
+        margin-bottom: 1.2rem;
+        color: #3b82f6;
+    }
+    .form-header h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.2rem;
+    }
+    .form-header p {
+        color: #6b7280;
+        font-size: 1rem;
+    }
+    .form-row {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .form-col {
+        flex: 1;
+        min-width: 0;
+    }
+    .form-group {
+        margin-bottom: 0.8rem;
+    }
+    .form-label {
+        display: block;
+        margin-bottom: 0.3rem;
+        font-weight: 500;
+        color: #374151;
+    }
+    .form-control, .form-select {
+        width: 100%;
+        padding: 0.5rem 0.7rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+    textarea.form-control {
+        min-height: 80px;
+        resize: vertical;
+    }
+    .map-container {
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+        margin-top: 1rem;
+        max-height: 320px;
+        height: 320px;
+    }
+    .submit-btn {
+        background-color: #3b82f6;
+        color: white;
+        padding: 0.65rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        width: 100%;
+        transition: background-color 0.2s;
+        margin-top: 1.2rem;
+    }
+    .submit-btn:hover {
+        background-color: #2563eb;
+    }
+    .file-input-container {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+    }
+    .file-input-container input[type="file"] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+    }
+    .file-input-label {
+        display: block;
+        padding: 0.65rem;
+        background-color: #f3f4f6;
+        border: 2px dashed #d1d5db;
+        border-radius: 8px;
+        text-align: center;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .file-input-label:hover {
+        border-color: #3b82f6;
+        color: #3b82f6;
+    }
+    .tags-input, .select2-container {
+        width: 100% !important;
+    }
+    .alert {
+        padding: 0.7rem;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        font-size: 0.95rem;
+    }
+    .alert-error {
+        background-color: #fee2e2;
+        border: 1px solid #fecaca;
+        color: #dc2626;
+    }
+    .alert-success {
+        background-color: #dcfce7;
+        border: 1px solid #bbf7d0;
+        color: #16a34a;
+    }
+    @media (max-width: 900px) {
+        .add-place-container {
+            width: 98%;
+            padding: 1rem 0.5rem;
+        }
+        .form-row {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+    }
+</style>
+
+<div class="add-place-container">
+    <div class="form-header">
+        <h2>Edit Place</h2>
+    </div>
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <form method="POST" enctype="multipart/form-data" id="editPlaceForm">
+        {% csrf_token %}
+        <div id="editPlaceMessages"></div>
+        <div class="form-row">
+            <div class="form-col">
+                <div class="form-group">
+                    <label for="name" class="form-label">Place Name</label>
+                    <input type="text" class="form-control" id="name" name="name" required value="{{ place.name }}" placeholder="Enter the name of the place">
+                </div>
+                <div class="form-group">
+                    <label for="category" class="form-label">Category</label>
+                    <select class="form-select" id="category" name="category" required>
+                        <option value="">Select Category</option>
+                        <option value="Historical" {% if place.category == 'Historical' %}selected{% endif %}>Historical</option>
+                        <option value="Religious" {% if place.category == 'Religious' %}selected{% endif %}>Religious</option>
+                        <option value="Natural" {% if place.category == 'Natural' %}selected{% endif %}>Natural</option>
+                        <option value="Cultural" {% if place.category == 'Cultural' %}selected{% endif %}>Cultural</option>
+                        <option value="Entertainment" {% if place.category == 'Entertainment' %}selected{% endif %}>Entertainment</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="district" class="form-label">District</label>
+                    <select class="form-select" id="district" name="district" required>
+                        <option value="">Select District</option>
+                        <option value="Kathmandu" {% if place.district == 'Kathmandu' %}selected{% endif %}>Kathmandu</option>
+                        <option value="Lalitpur" {% if place.district == 'Lalitpur' %}selected{% endif %}>Lalitpur</option>
+                        <option value="Bhaktapur" {% if place.district == 'Bhaktapur' %}selected{% endif %}>Bhaktapur</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="location" class="form-label">Location</label>
+                    <input type="text" class="form-control" id="location" name="location" required value="{{ place.location }}" placeholder="Enter the specific location">
+                </div>
+                <div class="form-group">
+                    <label for="tags" class="form-label">Tags</label>
+                    <select class="form-control select2-tags" id="tags" name="tags" multiple="multiple" style="width: 100%;">
+                        {% for tag in tags %}
+                            <option value="{{ tag.name }}" {% if tag.name in place_tag_names %}selected{% endif %}>{{ tag.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">You can search and select multiple tags.</small>
+                </div>
+            </div>
+            <div class="form-col">
+                <div class="form-group">
+                    <label for="popular_for" class="form-label">Popular For</label>
+                    <input type="text" class="form-control" id="popular_for" name="popular_for" required value="{{ place.popular_for }}" placeholder="What is this place known for?">
+                </div>
+                <div class="form-group">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" required placeholder="Describe the place...">{{ place.description }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="image" class="form-label">Place Image</label>
+                    <div class="file-input-container">
+                        <label for="image" class="file-input-label">
+                            <i class="fas fa-cloud-upload-alt"></i> <span id="fileLabel">{% if place.image %}{{ place.image.name|default:'Choose an image or drag it here' }}{% else %}Choose an image or drag it here{% endif %}</span>
+                        </label>
+                        <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                    </div>
+                    {% if place.image %}
+                        <div class="mt-2">
+                            <img src="{{ place.image.url }}" alt="Current Image" style="max-width: 100px; border-radius: 6px;">
+                            <span class="text-muted">Current image</span>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Crowd Level (0-100)</label>
+                    <input type="number" class="form-control" id="crowdlevel" name="crowdlevel" min="0" max="100" required value="{{ place.crowddata_set.last.crowdlevel|default:'' }}">
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Select Location on Map</label>
+            <div id="map" class="map-container"></div>
+            <input type="hidden" id="latitude" name="latitude" value="{{ place.latitude }}" required>
+            <input type="hidden" id="longitude" name="longitude" value="{{ place.longitude }}" required>
+        </div>
+        <button type="submit" class="submit-btn" id="submitBtn">Save Changes</button>
+    </form>
+</div>
+
+<!-- Map Scripts -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- jQuery (must be loaded before Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize map
+        const lat = parseFloat(document.getElementById('latitude').value) || 27.7172;
+        const lng = parseFloat(document.getElementById('longitude').value) || 85.3240;
+        const map = L.map('map').setView([lat, lng], 13);
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        });
+        const satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            attribution: '&copy; Google'
+        });
+        osmLayer.addTo(map);
+        const baseMaps = {
+            "Street View": osmLayer,
+            "Satellite View": satelliteLayer
+        };
+        L.control.layers(baseMaps).addTo(map);
+        let marker;
+        if (lat && lng) {
+            marker = L.marker([lat, lng]).addTo(map);
+        }
+        map.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lng;
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng).addTo(map);
+            }
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.address) {
+                        const locationField = document.getElementById('location');
+                        const districtField = document.getElementById('district');
+                        let locationName = '';
+                        if (data.address.road) locationName += data.address.road + ', ';
+                        if (data.address.suburb) locationName += data.address.suburb + ', ';
+                        if (data.address.city) locationName += data.address.city + ', ';
+                        if (data.address.town) locationName += data.address.town + ', ';
+                        if (data.address.village) locationName += data.address.village + ', ';
+                        if (data.address.state_district) locationName += data.address.state_district + ', ';
+                        if (data.address.state) locationName += data.address.state + ', ';
+                        if (data.address.country) locationName += data.address.country;
+                        locationName = locationName.replace(/, $/, '');
+                        if (locationField) locationField.value = locationName;
+                        let districtName = data.address.city_district || data.address.county || data.address.state_district || data.address.state || '';
+                        if (districtField && districtName) {
+                            let found = false;
+                            for (let i = 0; i < districtField.options.length; i++) {
+                                const opt = districtField.options[i];
+                                if (
+                                    opt.value.toLowerCase() === districtName.toLowerCase() ||
+                                    opt.text.toLowerCase() === districtName.toLowerCase() ||
+                                    districtName.toLowerCase().includes(opt.value.toLowerCase()) ||
+                                    districtName.toLowerCase().includes(opt.text.toLowerCase()) ||
+                                    opt.value.toLowerCase().includes(districtName.toLowerCase()) ||
+                                    opt.text.toLowerCase().includes(districtName.toLowerCase())
+                                ) {
+                                    districtField.selectedIndex = i;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                districtField.selectedIndex = 0;
+                            }
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('Reverse geocoding failed:', err);
+                });
+        });
+        // Select2 for tags
+        $(document).ready(function() {
+            $('.select2-tags').select2({
+                placeholder: 'Select tags',
+                allowClear: true,
+                width: 'resolve'
+            });
+        });
+        // File input handling
+        const fileInput = document.getElementById('image');
+        const fileLabel = document.getElementById('fileLabel');
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    if (!file.type.startsWith('image/')) {
+                        alert('Please select an image file');
+                        this.value = '';
+                        fileLabel.textContent = 'Choose an image or drag it here';
+                        return;
+                    }
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('Image size should be less than 5MB');
+                        this.value = '';
+                        fileLabel.textContent = 'Choose an image or drag it here';
+                        return;
+                    }
+                    fileLabel.textContent = file.name;
+                }
+            });
+        }
+        // AJAX form submission for REST API
+        const form = document.getElementById('editPlaceForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const messagesDiv = document.getElementById('editPlaceMessages');
+        if (form) {
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                messagesDiv.innerHTML = '';
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Saving...';
+                
+                // Check if an image file is selected
+                const imageInput = document.getElementById('image');
+                const hasImageFile = imageInput && imageInput.files && imageInput.files.length > 0;
+                
+                let response;
+                
+                if (hasImageFile) {
+                    // Use FormData for file uploads
+                    const formData = new FormData();
+                    
+                    // Add all form fields to FormData
+                    const nameInput = document.getElementById('name');
+                    const categorySelect = document.getElementById('category');
+                    const districtSelect = document.getElementById('district');
+                    const locationInput = document.getElementById('location');
+                    const popularForInput = document.getElementById('popular_for');
+                    const descriptionTextarea = document.getElementById('description');
+                    const crowdlevelInput = document.getElementById('crowdlevel');
+                    const latitudeInput = document.getElementById('latitude');
+                    const longitudeInput = document.getElementById('longitude');
+                    const tagsSelect = document.getElementById('tags');
+                    
+                    if (nameInput) formData.append('name', nameInput.value);
+                    if (categorySelect) formData.append('category', categorySelect.value);
+                    if (districtSelect) formData.append('district', districtSelect.value);
+                    if (locationInput) formData.append('location', locationInput.value);
+                    if (popularForInput) formData.append('popular_for', popularForInput.value);
+                    if (descriptionTextarea) formData.append('description', descriptionTextarea.value);
+                    if (crowdlevelInput) formData.append('crowdlevel', crowdlevelInput.value);
+                    if (latitudeInput) formData.append('latitude', latitudeInput.value);
+                    if (longitudeInput) formData.append('longitude', longitudeInput.value);
+                    if (imageInput.files[0]) formData.append('image', imageInput.files[0]);
+                    
+                    // Handle tags
+                    if (tagsSelect) {
+                        const selectedTags = Array.from(tagsSelect.selectedOptions).map(option => option.value);
+                        selectedTags.forEach(tag => formData.append('tags', tag));
+                    }
+                    
+                    console.log('Sending FormData with image file');
+                    
+                    response = await fetch(`/api/place/{{ place.id }}/`, {
+                        method: 'PATCH',
+                        headers: {
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: formData
+                    });
+                } else {
+                    // Use JSON for non-file updates
+                    const data = {};
+                    
+                    // Get form elements
+                    const nameInput = document.getElementById('name');
+                    const categorySelect = document.getElementById('category');
+                    const districtSelect = document.getElementById('district');
+                    const locationInput = document.getElementById('location');
+                    const popularForInput = document.getElementById('popular_for');
+                    const descriptionTextarea = document.getElementById('description');
+                    const crowdlevelInput = document.getElementById('crowdlevel');
+                    const latitudeInput = document.getElementById('latitude');
+                    const longitudeInput = document.getElementById('longitude');
+                    const tagsSelect = document.getElementById('tags');
+                    
+                    // Add form data manually
+                    if (nameInput) data.name = nameInput.value;
+                    if (categorySelect) data.category = categorySelect.value;
+                    if (districtSelect) data.district = districtSelect.value;
+                    if (locationInput) data.location = locationInput.value;
+                    if (popularForInput) data.popular_for = popularForInput.value;
+                    if (descriptionTextarea) data.description = descriptionTextarea.value;
+                    if (crowdlevelInput) data.crowdlevel = crowdlevelInput.value;
+                    if (latitudeInput) data.latitude = latitudeInput.value;
+                    if (longitudeInput) data.longitude = longitudeInput.value;
+                    
+                    // Handle tags
+                    if (tagsSelect) {
+                        const selectedTags = Array.from(tagsSelect.selectedOptions).map(option => option.value);
+                        data.tags = selectedTags;
+                    }
+                    
+                    console.log('Sending JSON data without image');
+                    
+                    response = await fetch(`/api/place/{{ place.id }}/`, {
+                        method: 'PATCH',
+                        headers: {
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+                }
+                
+                const result = await response.json();
+                if (response.ok) {
+                    messagesDiv.innerHTML = '<div class="alert alert-success">Place updated successfully! Redirecting...</div>';
+                    setTimeout(() => {
+                        window.location.href = '/place-details/{{ place.id }}/';
+                    }, 1200);
+                } else {
+                    let errorMsg = 'Failed to update place.';
+                    if (result && typeof result === 'object') {
+                        errorMsg += '<ul>';
+                        for (const key in result) {
+                            errorMsg += `<li><strong>${key}:</strong> ${result[key]}</li>`;
+                        }
+                        errorMsg += '</ul>';
+                    }
+                    messagesDiv.innerHTML = `<div class="alert alert-error">${errorMsg}</div>`;
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Save Changes';
+                }
+            });
+        }
+    });
+</script>
+{% endblock %} 

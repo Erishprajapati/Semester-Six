@@ -136,6 +136,7 @@ def get_current_time_slot():
 @session_timeout_required
 def home(request):
     query = request.GET.get('q', '')  # search query from input
+    district_search = request.GET.get('district_search', '')  # district search from delete redirect
     places = Place.objects.all()
 
     if query:
@@ -262,6 +263,7 @@ def home(request):
             'crowd_levels': crowd_levels,
             'places': places,
             'query': query,
+            'district_search': district_search,  # Add district search to context
             'morning_data': morning_data,
             'afternoon_data': afternoon_data,
             'evening_data': evening_data,
@@ -276,6 +278,7 @@ def home(request):
             'crowd_levels': [],
             'places': [],
             'query': query,
+            'district_search': district_search,  # Add district search to context
             'error': f"{place_name} not found.",
             'morning_data': None,
             'afternoon_data': None,

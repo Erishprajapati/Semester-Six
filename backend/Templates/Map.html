@@ -303,24 +303,43 @@
     border: 2px solid #ccc;
     border-radius: 12px;
   } {% endcomment %}
-  .map-box {
-    width: 100%;
-    max-width: 1200px; /* optional max-width for larger screens */
-    height: 80vh;       /* use viewport height to make it responsive */
-    margin: 2rem auto;  /* use rems for spacing consistency */
-    border: 2px solid #ccc;
-    border-radius: 0.75rem; /* rounded corners using rems */
-    box-sizing: border-box; /* ensure padding/border included in total width/height */
-    overflow: hidden;       /* hide any overflowing elements */
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); /* subtle shadow for depth */
-    background: #f9f9f9;    /* optional light background */
-    transition: box-shadow 0.3s ease, transform 0.3s ease;
-  }
+  /* Styling for the map container */
+.map-box {
+  width: 100%;                 
+  max-width: 1900px;        
+  height: 80vh;               
+  margin: 2rem auto;        
   
-  .map-box:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); /* slightly larger shadow on hover */
-    transform: translateY(-4px);                 /* gentle lift effect */
+  border: 2px solid #3b82f6;  /* Blue border */
+  border-radius: 12px;        /* Rounded corners */
+  box-sizing: border-box;
+  overflow: hidden;
+  
+  background: #f0f4ff;        /* Solid light blue background for a clean look */
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2); /* Soft shadow */
+
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  animation: mapFadeIn 0.7s ease;
+}
+
+/* Hover effect to give a subtle "lift" feeling */
+.map-box:hover {
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+  transform: translateY(-4px); /* Move up slightly */
+}
+
+/* Fade-in animation for a smooth appearance */
+@keyframes mapFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
   }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
   
   /* Info box styling */
   .info-box {
@@ -697,7 +716,7 @@
         if (locationPrompt) locationPrompt.style.display = "none";
         initializeMap();
         getCurrentLocation();
-        localStorage.removeItem('location_denied');
+        localStorage.setItem('location_decision', 'granted');
         window.dispatchEvent(new Event('userLocationSet'));
         if (typeof showNavbarSearchBarIfAllowed === 'function') {
           showNavbarSearchBarIfAllowed();
@@ -712,7 +731,7 @@
         const manualSection = document.getElementById("manual-location-section");
         if (manualSection) manualSection.style.display = "block";
         initializeMap();
-        localStorage.setItem('location_denied', 'true');
+        localStorage.setItem('location_decision', 'denied');
         window.dispatchEvent(new Event('userLocationSet'));
       });
     }
@@ -804,6 +823,31 @@
           if (searchBtn) searchBtn.click();
         }
       });
+    }
+
+    // Auto-search functionality for district_search parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const districtSearch = urlParams.get('district_search');
+    
+    if (districtSearch) {
+      // Wait a bit for the page to fully load, then perform the search
+      setTimeout(() => {
+        console.log('Auto-searching for district:', districtSearch);
+        
+        // Set the search input value
+        const locationInput = document.getElementById('location-input');
+        if (locationInput) {
+          locationInput.value = districtSearch;
+        }
+        
+        // Perform the district search
+        fetchPlacesByDistrict(districtSearch);
+        
+        // Show a message to the user
+        if (typeof showSuccess === 'function') {
+          showSuccess(`Showing places in ${districtSearch} district`);
+        }
+      }, 1000); // Wait 1 second for page to load
     }
   });
 
@@ -1372,8 +1416,14 @@ function displayPlacesOnMap(places) {
     // Show the info box with animation
     infoBox.classList.add('visible');
 
-    // Render the full-day bar graph for this place
-    renderFullDayBarGraph(place);
+    // Always show the bar graph when a marker is clicked
+    const chartWrapper = document.getElementById('chart-wrapper');
+    chartWrapper.style.display = 'block';
+
+    // Render the full-day bar graph for this place if available, otherwise keep the previous one
+    if (place.crowd_pattern && Array.isArray(place.crowd_pattern) && place.crowd_pattern.length > 0) {
+      renderFullDayBarGraph(place);
+    }
   }  
 
   function addToSearchHistory(district) {
@@ -1478,13 +1528,13 @@ function displayPlacesOnMap(places) {
   }
 
   function renderFullDayBarGraph(place) {
-    if (!place.crowd_pattern || !Array.isArray(place.crowd_pattern)) {
-        document.getElementById('chart-wrapper').style.display = 'none';
-        return;
+    const chartWrapper = document.getElementById('chart-wrapper');
+    if (!place.crowd_pattern || !Array.isArray(place.crowd_pattern) || place.crowd_pattern.length === 0) {
+      // Do NOT hide the bar graph, just keep the previous one
+      return;
     }
     const labels = place.crowd_pattern.map(item => `${item.hour}:00`);
     const data = place.crowd_pattern.map(item => item.crowdlevel);
-
     const ctx = document.getElementById('bar-chart').getContext('2d');
     if (window.barChart) window.barChart.destroy();
     window.barChart = new Chart(ctx, {
@@ -1504,7 +1554,7 @@ function displayPlacesOnMap(places) {
             }
         }
     });
-    document.getElementById('chart-wrapper').style.display = 'block';
+    chartWrapper.style.display = 'block';
   }
 </script>
 {% endblock %}

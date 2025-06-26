@@ -144,6 +144,10 @@
       background: #3b82f6 !important;
       border-color: #3b82f6 !important;
     }
+
+    #search-bar {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -235,14 +239,14 @@
     function showNavbarSearchBarIfAllowed() {
       const searchForm = document.getElementById('navbar-search-form');
       if (!searchForm) return;
-
-      // Check if user location is set
       const userLat = localStorage.getItem('user_lat');
       const userLng = localStorage.getItem('user_lng');
       const locationDenied = localStorage.getItem('location_denied');
-
-      // Only show search bar if location is set (either through geolocation or manual entry)
-      if ((userLat && userLng) || locationDenied === 'true') {
+      // Show if both lat/lng are set and not empty, or if denied is true
+      const hasLocation = userLat !== null && userLat !== '' && userLng !== null && userLng !== '';
+      const denied = locationDenied === 'true';
+      console.log('userLat:', userLat, 'userLng:', userLng, 'locationDenied:', locationDenied, 'hasLocation:', hasLocation, 'denied:', denied);
+      if (hasLocation || denied) {
         searchForm.style.display = 'flex';
       } else {
         searchForm.style.display = 'none';
@@ -354,6 +358,16 @@
             doNavbarSearch();
           }
         });
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var searchBar = document.getElementById('search-bar');
+      var decision = localStorage.getItem('location_decision');
+      if (searchBar && (decision === 'granted' || decision === 'denied')) {
+        searchBar.style.display = 'block';
+      } else if (searchBar) {
+        searchBar.style.display = 'none';
       }
     });
   </script>

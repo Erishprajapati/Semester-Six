@@ -456,6 +456,46 @@
                 width: 'resolve'
             });
         });
+
+        // Utility: Set district dropdown from a place object or location string
+        function setDistrictFromPlace(place) {
+            // place: the object you get from your API or search
+            // Try to get the district from the place object first
+            let districtName = place.district || place.city_district || place.county || place.state_district || place.state || '';
+            // If not found, try to parse from the location string
+            if (!districtName && place.location) {
+                // Try to extract the district from the location string (assuming it's comma-separated)
+                const parts = place.location.split(',');
+                if (parts.length >= 2) {
+                    // Try the second last part as district (customize as per your data)
+                    districtName = parts[parts.length - 2].trim();
+                }
+            }
+            // Set the district dropdown
+            const districtField = document.getElementById('district');
+            if (districtField && districtName) {
+                let found = false;
+                for (let i = 0; i < districtField.options.length; i++) {
+                    const opt = districtField.options[i];
+                    if (
+                        opt.value.toLowerCase() === districtName.toLowerCase() ||
+                        opt.text.toLowerCase() === districtName.toLowerCase() ||
+                        districtName.toLowerCase().includes(opt.value.toLowerCase()) ||
+                        districtName.toLowerCase().includes(opt.text.toLowerCase()) ||
+                        opt.value.toLowerCase().includes(districtName.toLowerCase()) ||
+                        opt.text.toLowerCase().includes(districtName.toLowerCase())
+                    ) {
+                        districtField.selectedIndex = i;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    districtField.selectedIndex = 0; // Default to first option if not matched
+                }
+            }
+        }
+        // Usage: call setDistrictFromPlace(placeObject) after filling the location input from a place selection.
     });
 </script>
 
