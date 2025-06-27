@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Pending Places - Admin{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-clock-history"></i> Pending Places ({{ total_pending }})</h2>
+                <a href="{% url 'home' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Home
+                </a>
+            </div>
+
+            {% if messages %}
+            <div class="messages mb-4">
+                {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if pending_places %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for place in pending_places %}
+                <div class="col">
+                    <div class="card h-100 border-warning">
+                        {% if place.image %}
+                        <img src="{{ place.image.url }}" class="card-img-top" alt="{{ place.name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title">{{ place.name }}</h5>
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            </div>
+                            <p class="card-text text-muted">
+                                <i class="bi bi-tag"></i> {{ place.category }}
+                            </p>
+                            <div class="mb-2">
+                                {% for tag in place.tags.all %}
+                                    <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                                {% endfor %}
+                            </div>
+                            <p class="card-text">{{ place.description|truncatewords:20 }}</p>
+                            <p class="card-text"><small class="text-muted">
+                                <i class="bi bi-geo-alt"></i> {{ place.location }}, {{ place.district }}
+                            </small></p>
+                            <p class="card-text"><small class="text-muted">
+                                <i class="bi bi-person"></i> Added by: {{ place.added_by.username }}
+                            </small></p>
+                            <div class="d-flex gap-2 mt-3">
+                                <a href="{% url 'place_details' place.id %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye"></i> View Details
+                                </a>
+                                <button class="btn btn-success btn-sm approve-btn" data-place-id="{{ place.id }}" data-place-name="{{ place.name }}">
+                                    <i class="bi bi-check-circle"></i> Approve
+                                </button>
+                                <button class="btn btn-danger btn-sm reject-btn" data-place-id="{{ place.id }}" data-place-name="{{ place.name }}">
+                                    <i class="bi bi-x-circle"></i> Reject
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-check-circle display-1 text-success"></i>
+                <h3 class="mt-3">No Pending Places</h3>
+                <p class="text-muted">All places have been reviewed and approved!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid #ffc107;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .approve-btn:hover {
+        background-color: #198754;
+        border-color: #198754;
+    }
+    
+    .reject-btn:hover {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Approve place functionality
+    document.querySelectorAll('.approve-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const placeId = this.dataset.placeId;
+            const placeName = this.dataset.placeName;
+            
+            if (confirm(`Are you sure you want to approve "${placeName}"?`)) {
+                fetch(`/approve-place/${placeId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while approving the place.');
+                });
+            }
+        });
+    });
+
+    // Reject place functionality
+    document.querySelectorAll('.reject-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const placeId = this.dataset.placeId;
+            const placeName = this.dataset.placeName;
+            
+            if (confirm(`Are you sure you want to reject "${placeName}"? This will delete the place.`)) {
+                fetch(`/reject-place/${placeId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while rejecting the place.');
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

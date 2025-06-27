@@ -204,6 +204,9 @@
             <p>{{ user.username }}</p>
             <a href="{% url 'profile_view' %}">Profile</a>
             <a href="{% url 'add_place' %}">Add Place</a>
+            {% if user.is_superuser %}
+            <a href="{% url 'pending_places' %}">Pending Places</a>
+            {% endif %}
             <a href="#" id="searchHistoryBtn">Search History</a>
             <a href="{% url 'logout' %}">Logout</a>
           </div>

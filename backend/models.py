@@ -22,6 +22,14 @@ class Place(models.Model):
     image = models.ImageField(upload_to='place_images/', null=True, blank=True)
     added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     is_approved = models.BooleanField(default=False)
+    
+    # Entry fee fields
+    tourist_fee_npr = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, help_text="Entry fee for foreign tourists in NPR")
+    tourist_fee_usd = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, help_text="Entry fee for foreign tourists in USD")
+    local_fee_npr = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, help_text="Entry fee for locals in NPR")
+    saarc_fee_npr = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, help_text="Entry fee for SAARC nationals in NPR")
+    fee_description = models.TextField(blank=True, help_text="Additional information about fees, discounts, or special conditions")
+    has_entry_fee = models.BooleanField(default=False, help_text="Whether this place has an entry fee")
 
     class Meta:
         unique_together = ('name', 'district')

@@ -24,6 +24,8 @@ from django.contrib.auth import authenticate, login
 from .ml_model import get_current_season, get_current_weather
 import logging
 from rest_framework import status
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__)))
 
 # Create your views here.
 def map_view(request):
@@ -87,7 +89,10 @@ def profile_view(request):
     user_pref, created = UserPreference.objects.get_or_create(user=user)
     preferred_tags = user_pref.tags.all()
     # Get recommended places based on preferred tags
-    recommended_places = Place.objects.filter(tags__in=preferred_tags).distinct()
+    if request.user.is_superuser:
+        recommended_places = Place.objects.filter(tags__in=preferred_tags).distinct()
+    else:
+        recommended_places = Place.objects.filter(tags__in=preferred_tags, is_approved=True).distinct()
 
     return render(request, "profile.html", {
         'search_history': search_history,
@@ -142,7 +147,13 @@ def places_by_category(request, category):
             time_slot = 'morning'
     # Save search history
     save_search_history(request.user, category, 'category')
-    places = Place.objects.filter(category__iexact=category)
+    
+    # Filter places based on user permissions
+    if request.user.is_superuser:
+        places = Place.objects.filter(category__iexact=category)
+    else:
+        places = Place.objects.filter(category__iexact=category, is_approved=True)
+    
     places_data = []
     for place in places:
         crowdlevel = predict_crowd_for_place(place, time_slot)
@@ -213,7 +224,10 @@ def recommend_places(request, place_name):
         
         # Find places with similar tags
         similar_places = []
-        all_places = Place.objects.exclude(id=reference_place.id)
+        if request.user.is_superuser:
+            all_places = Place.objects.exclude(id=reference_place.id)
+        else:
+            all_places = Place.objects.exclude(id=reference_place.id).filter(is_approved=True)
         
         for place in all_places:
             place_tags = set(place.tags.values_list('name', flat=True))
@@ -283,16 +297,62 @@ def generate_fake_data(request):
 
 def place_details(request, place_id):
     place = get_object_or_404(Place, id=place_id)
-    # Fetch other related data like crowd data if needed
-    crowd_data = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
     
+    # Check if user can view this place
+    can_view = (
+        request.user.is_superuser or  # Superusers can view all places
+        place.added_by == request.user or  # Place owner can view their own place
+        place.is_approved  # Approved places are visible to everyone
+    )
+    
+    if not can_view:
+        messages.warning(request, 'This place is pending admin approval and is not yet visible to the public.')
+        return redirect('home')  # Redirect to home page
+    
+    # Use the improved model for prediction (same as bar graph)
+    from datetime import datetime
+    from backend.improved_ml_model import ImprovedCrowdPredictionModel
+    import os
+    crowdlevel = None
+    improved_model_path = 'improved_crowd_prediction_model.pkl'
+    if os.path.exists(improved_model_path):
+        model = ImprovedCrowdPredictionModel()
+        if model.load_model():
+            now = datetime.now()
+            day_of_week = now.weekday()
+            month = now.month
+            season = get_current_season()
+            is_weekend = 1 if day_of_week >= 5 else 0
+            is_holiday = 0
+            # Use default hour for details page (e.g., 14 for afternoon)
+            hour = 14
+            crowdlevel = model.predict(
+                place_id=place.id,
+                category=place.category,
+                district=place.district,
+                time_slot='afternoon',
+                day_of_week=day_of_week,
+                month=month,
+                season=season,
+                is_weekend=is_weekend,
+                is_holiday=is_holiday,
+                weather_condition='Sunny',
+                hour=hour
+            )
+    # Fallback: use latest crowd data if improved model not available
+    if crowdlevel is None:
+        crowd_data = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
+        crowdlevel = crowd_data.crowdlevel if crowd_data else 'N/A'
     return render(request, 'placedetails.html', {
         'place': place,
-        'crowd_data': crowd_data
+        'crowdlevel': crowdlevel
     })
 
 def place_list(request):
-    places = Place.objects.all()
+    if request.user.is_superuser:
+        places = Place.objects.all()
+    else:
+        places = Place.objects.filter(is_approved=True)
     return render(request, 'place_list.html', {'places': places})
 
 @csrf_exempt
@@ -370,7 +430,11 @@ def search_places(request):
     # Record search history if user is authenticated
     save_search_history(request.user, query, 'place')
 
-    places = Place.objects.filter(name__icontains=query)
+    # Filter places based on user permissions
+    if request.user.is_superuser:
+        places = Place.objects.filter(name__icontains=query)
+    else:
+        places = Place.objects.filter(name__icontains=query, is_approved=True)
     
     if not places:
         return JsonResponse({'error': 'No places found matching the query.'}, status=404)
@@ -414,7 +478,13 @@ def places_by_district(request, district_name):
         else:
             time_slot = 'morning'
     save_search_history(request.user, district_name, 'district')
-    places = Place.objects.filter(district__iexact=district_name)
+    
+    # Filter places based on user permissions
+    if request.user.is_superuser:
+        places = Place.objects.filter(district__iexact=district_name)
+    else:
+        places = Place.objects.filter(district__iexact=district_name, is_approved=True)
+    
     print(f"Found {places.count()} places for district {district_name}")
     places_data = []
     for place in places:
@@ -438,7 +508,11 @@ def places_by_district(request, district_name):
 @api_view(['GET'])
 def places_by_tag(request, tag_name):
     # Fetch places matching the tag
-    places = Place.objects.filter(tags__name__iexact=tag_name)
+    if request.user.is_superuser:
+        places = Place.objects.filter(tags__name__iexact=tag_name)
+    else:
+        places = Place.objects.filter(tags__name__iexact=tag_name, is_approved=True)
+    
     result = []
 
     for place in places:
@@ -478,6 +552,14 @@ def add_place(request):
             image = request.FILES.get('image')
             tags = request.POST.getlist('tags')
             crowdlevel = request.POST.get('crowdlevel')
+            
+            # Entry fee fields
+            has_entry_fee = request.POST.get('has_entry_fee') == 'on'
+            tourist_fee_npr = request.POST.get('tourist_fee_npr')
+            tourist_fee_usd = request.POST.get('tourist_fee_usd')
+            saarc_fee_npr = request.POST.get('saarc_fee_npr')
+            local_fee_npr = request.POST.get('local_fee_npr')
+            fee_description = request.POST.get('fee_description')
 
             # Debug print
             print(f"Received data: {request.POST}")
@@ -521,7 +603,13 @@ def add_place(request):
                 longitude=longitude,
                 image=image,
                 added_by=request.user,
-                is_approved=request.user.is_superuser  # Auto-approve if superuser
+                is_approved=request.user.is_superuser,  # Auto-approve if superuser
+                has_entry_fee=has_entry_fee,
+                tourist_fee_npr=tourist_fee_npr if tourist_fee_npr else None,
+                tourist_fee_usd=tourist_fee_usd if tourist_fee_usd else None,
+                saarc_fee_npr=saarc_fee_npr if saarc_fee_npr else None,
+                local_fee_npr=local_fee_npr if local_fee_npr else None,
+                fee_description=fee_description if fee_description else ''
             )
 
             # Add tags
@@ -542,7 +630,7 @@ def add_place(request):
                 messages.success(request, 'Place added successfully!')
                 return redirect('place_details', place_id=place.id)
             else:
-                messages.success(request, 'Place submitted for approval! An admin will review it soon.')
+                messages.success(request, 'Place submitted for approval! An admin will review it soon. You can view your place while it\'s pending approval.')
             return redirect('place_details', place_id=place.id)
         except Exception as e:
             print(f"Error adding place: {str(e)}")  # Debug print
@@ -636,7 +724,11 @@ def recommended_places_nearby(request):
         user_lon = user_location.longitude
         
         # Get all places
-        places = Place.objects.all()
+        if request.user.is_superuser:
+            places = Place.objects.all()
+        else:
+            places = Place.objects.filter(is_approved=True)
+        
         nearby_places = []
         
         for place in places:
@@ -689,15 +781,15 @@ def delete_place(request, place_id):
             messages.success(request, f'Place "{place_name}" has been deleted successfully.')
 
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                # For AJAX, return success and a redirect URL with district search
+                # For AJAX, return success and a redirect URL to home page
                 return JsonResponse({
                     'success': True,
                     'message': f'Place "{place_name}" has been deleted successfully.',
-                    'redirect_url': f'/?district_search={place_district}'  # Redirect to home with district search
+                    'redirect_url': '/'  # Redirect to home page
                 })
             
-            # For standard form submissions, redirect to home with district search
-            return redirect(f'/?district_search={place_district}')
+            # For standard form submissions, redirect to home page
+            return redirect('/')
 
         except Exception as e:
             error_message = f'An error occurred: {e}'
@@ -723,6 +815,14 @@ def save_place(request, place_id):
         place.category = request.POST.get('category', place.category)
         place.district = request.POST.get('district', place.district)
         place.location = request.POST.get('location', place.location)
+        
+        # Update entry fee fields
+        place.has_entry_fee = request.POST.get('has_entry_fee') == 'on'
+        place.tourist_fee_npr = request.POST.get('tourist_fee_npr') if request.POST.get('tourist_fee_npr') else None
+        place.tourist_fee_usd = request.POST.get('tourist_fee_usd') if request.POST.get('tourist_fee_usd') else None
+        place.saarc_fee_npr = request.POST.get('saarc_fee_npr') if request.POST.get('saarc_fee_npr') else None
+        place.local_fee_npr = request.POST.get('local_fee_npr') if request.POST.get('local_fee_npr') else None
+        place.fee_description = request.POST.get('fee_description', '')
         
         # Update coordinates if provided
         latitude = request.POST.get('latitude')
@@ -794,7 +894,74 @@ def predict_crowd(request):
                 'error': 'Invalid date format. Use YYYY-MM-DD'
             }, status=400)
         
-        # Load the trained model
+        # Try to use improved model first
+        improved_model_path = 'improved_crowd_prediction_model.pkl'
+        if os.path.exists(improved_model_path):
+            try:
+                from backend.improved_ml_model import ImprovedCrowdPredictionModel
+                model = ImprovedCrowdPredictionModel()
+                if model.load_model():
+                    # Prepare features for improved model
+                    day_of_week = date.weekday()
+                    month = date.month
+                    season = get_season(month)
+                    is_weekend = 1 if day_of_week >= 5 else 0
+                    is_holiday = 0
+                    
+                    # Get hour for time slot
+                    if time_slot == 'morning':
+                        hour = 9
+                    elif time_slot == 'afternoon':
+                        hour = 14
+                    else:  # evening
+                        hour = 19
+                    
+                    predicted_crowd = model.predict(
+                        place_id=place_id,
+                        category=place.category,
+                        district=place.district,
+                        time_slot=time_slot,
+                        day_of_week=day_of_week,
+                        month=month,
+                        season=season,
+                        is_weekend=is_weekend,
+                        is_holiday=is_holiday,
+                        weather_condition=weather_condition,
+                        hour=hour
+                    )
+                    
+                    # Determine status
+                    if predicted_crowd > 70:
+                        status = 'High'
+                    elif predicted_crowd > 30:
+                        status = 'Medium'
+                    else:
+                        status = 'Low'
+                    
+                    return JsonResponse({
+                        'place_id': place_id,
+                        'place_name': place.name,
+                        'date': date_str,
+                        'time_slot': time_slot,
+                        'weather_condition': weather_condition,
+                        'predicted_crowd_level': predicted_crowd,
+                        'status': status,
+                        'model_used': 'improved',
+                        'features_used': {
+                            'category': place.category,
+                            'district': place.district,
+                            'day_of_week': day_of_week,
+                            'month': month,
+                            'season': season,
+                            'is_weekend': is_weekend,
+                            'is_holiday': is_holiday
+                        }
+                    })
+            except Exception as e:
+                print(f"[DEBUG] Improved model prediction failed: {e}")
+                # Continue to fallback model
+        
+        # Fallback to old model
         model_path = 'crowd_prediction_model.pkl'
         if not os.path.exists(model_path):
             return JsonResponse({
@@ -846,6 +1013,7 @@ def predict_crowd(request):
             'weather_condition': weather_condition,
             'predicted_crowd_level': predicted_crowd,
             'status': status,
+            'model_used': 'legacy',
             'features_used': {
                 'category': place.category,
                 'district': place.district,
@@ -866,40 +1034,84 @@ def register_view(request):
     return render(request, 'register.html')
 
 def predict_crowd_for_place(place, time_slot='morning'):
-    model_path = 'crowd_prediction_model.pkl'
-    if model_path not in MODEL_CACHE:
-        if not os.path.exists(model_path):
-            return 0
-        model_data = joblib.load(model_path)
-        MODEL_CACHE[model_path] = model_data
-    else:
-        model_data = MODEL_CACHE[model_path]
-    model = model_data['model']
-    encoders = model_data['label_encoders']
-    now = datetime.now()
-    day_of_week = now.weekday()
-    month = now.month
-    season = get_current_season()
-    is_weekend = 1 if day_of_week >= 5 else 0
-    is_holiday = 0
-    weather = get_current_weather()
+    """Predict crowd level using the improved model"""
     try:
-        features = [
-            place.id,
-            encoders['category'].transform([place.category])[0],
-            encoders['district'].transform([place.district])[0],
-            encoders['time_slot'].transform([time_slot])[0],
-            day_of_week,
-            month,
-            encoders['season'].transform([season])[0],
-            is_weekend,
-            is_holiday,
-            encoders['weather_condition'].transform([weather])[0]
-        ]
-        predicted_crowd = model.predict([features])[0]
-        return float(max(0, min(100, round(predicted_crowd, 1))))
+        # Try to load the improved model first
+        improved_model_path = 'improved_crowd_prediction_model.pkl'
+        if os.path.exists(improved_model_path):
+            # Use improved model
+            from backend.improved_ml_model import ImprovedCrowdPredictionModel
+            model = ImprovedCrowdPredictionModel()
+            if model.load_model():
+                now = datetime.now()
+                day_of_week = now.weekday()
+                month = now.month
+                season = get_current_season()
+                is_weekend = 1 if day_of_week >= 5 else 0
+                is_holiday = 0
+                weather = get_current_weather()
+                
+                # Get hour for time slot
+                if time_slot == 'morning':
+                    hour = 9
+                elif time_slot == 'afternoon':
+                    hour = 14
+                else:  # evening
+                    hour = 19
+                
+                predicted_crowd = model.predict(
+                    place_id=place.id,
+                    category=place.category,
+                    district=place.district,
+                    time_slot=time_slot,
+                    day_of_week=day_of_week,
+                    month=month,
+                    season=season,
+                    is_weekend=is_weekend,
+                    is_holiday=is_holiday,
+                    weather_condition=weather,
+                    hour=hour
+                )
+                return float(predicted_crowd)
+        
+        # Fallback to old model if improved model not available
+        model_path = 'crowd_prediction_model.pkl'
+        if model_path not in MODEL_CACHE:
+            if not os.path.exists(model_path):
+                return 0
+            model_data = joblib.load(model_path)
+            MODEL_CACHE[model_path] = model_data
+        else:
+            model_data = MODEL_CACHE[model_path]
+        model = model_data['model']
+        encoders = model_data['label_encoders']
+        now = datetime.now()
+        day_of_week = now.weekday()
+        month = now.month
+        season = get_current_season()
+        is_weekend = 1 if day_of_week >= 5 else 0
+        is_holiday = 0
+        weather = get_current_weather()
+        try:
+            features = [
+                place.id,
+                encoders['category'].transform([place.category])[0],
+                encoders['district'].transform([place.district])[0],
+                encoders['time_slot'].transform([time_slot])[0],
+                day_of_week,
+                month,
+                encoders['season'].transform([season])[0],
+                is_weekend,
+                is_holiday,
+                encoders['weather_condition'].transform([weather])[0]
+            ]
+            predicted_crowd = model.predict([features])[0]
+            return float(max(0, min(100, round(predicted_crowd, 1))))
+        except Exception as e:
+            print(f"[DEBUG] Model prediction error for place {place.name}: {e}")
+            return 0
     except Exception as e:
-        print(f"[DEBUG] Model prediction error for place {place.name}: {e}")
+        print(f"[DEBUG] Improved model prediction error for place {place.name}: {e}")
         return 0
 
 # Utility to save search history
@@ -952,3 +1164,213 @@ def api_update_place(request, place_id):
     except Exception as e:
         print(f"[DEBUG] Error updating place {place_id}: {str(e)}")
         return Response({"error": f"An error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def improved_crowd_predictions(request):
+    """
+    Get improved crowd predictions using the enhanced model with Nepal-specific behavioral patterns
+    """
+    try:
+        # Get query parameters
+        district = request.GET.get('district')
+        category = request.GET.get('category')
+        time_slot = request.GET.get('time_slot')
+        weather = request.GET.get('weather', 'Sunny')
+        
+        # Determine current time slot if not provided
+        if not time_slot:
+            now = datetime.now()
+            hour = now.hour
+            if 5 <= hour < 12:
+                time_slot = 'morning'
+            elif 12 <= hour < 17:
+                time_slot = 'afternoon'
+            elif 17 <= hour < 21:
+                time_slot = 'evening'
+            else:
+                time_slot = 'morning'
+        
+        # Filter places based on parameters
+        places = Place.objects.all()
+        if district:
+            places = places.filter(district__iexact=district)
+        if category:
+            places = places.filter(category__iexact=category)
+        
+        # Filter by approval status based on user permissions
+        if not request.user.is_superuser:
+            places = places.filter(is_approved=True)
+        
+        if not places.exists():
+            return JsonResponse({
+                'error': 'No places found for the given criteria'
+            }, status=404)
+        
+        # Try to use improved model
+        improved_model_path = 'improved_crowd_prediction_model.pkl'
+        if not os.path.exists(improved_model_path):
+            return JsonResponse({
+                'error': 'Improved model not found. Please train the improved model first.'
+            }, status=500)
+        
+        try:
+            from backend.improved_ml_model import ImprovedCrowdPredictionModel
+            model = ImprovedCrowdPredictionModel()
+            if not model.load_model():
+                return JsonResponse({
+                    'error': 'Failed to load improved model.'
+                }, status=500)
+            
+            # Get current context
+            now = datetime.now()
+            day_of_week = now.weekday()
+            month = now.month
+            season = get_current_season()
+            is_weekend = 1 if day_of_week >= 5 else 0
+            is_holiday = 0
+            
+            # Get hour for time slot
+            if time_slot == 'morning':
+                hour = 9
+            elif time_slot == 'afternoon':
+                hour = 14
+            else:  # evening
+                hour = 19
+            
+            # Get predictions for all places
+            places_data = []
+            for place in places:
+                try:
+                    predicted_crowd = model.predict(
+                        place_id=place.id,
+                        category=place.category,
+                        district=place.district,
+                        time_slot=time_slot,
+                        day_of_week=day_of_week,
+                        month=month,
+                        season=season,
+                        is_weekend=is_weekend,
+                        is_holiday=is_holiday,
+                        weather_condition=weather,
+                        hour=hour
+                    )
+                    
+                    # Determine crowd status
+                    if predicted_crowd > 70:
+                        status = 'High'
+                        color = 'red'
+                    elif predicted_crowd > 30:
+                        status = 'Medium'
+                        color = 'orange'
+                    else:
+                        status = 'Low'
+                        color = 'green'
+                    
+                    places_data.append({
+                        'id': place.id,
+                        'name': place.name,
+                        'description': place.description,
+                        'category': place.category,
+                        'district': place.district,
+                        'latitude': place.latitude,
+                        'longitude': place.longitude,
+                        'crowdlevel': predicted_crowd,
+                        'status': status,
+                        'color': color,
+                        'time_slot': time_slot,
+                        'weather': weather,
+                        'is_weekend': is_weekend,
+                        'season': season
+                    })
+                except Exception as e:
+                    print(f"[DEBUG] Prediction error for place {place.name}: {e}")
+                    continue
+            
+            # Sort by crowd level (highest first)
+            places_data.sort(key=lambda x: x['crowdlevel'], reverse=True)
+            
+            return JsonResponse({
+                'places': places_data,
+                'model_used': 'improved',
+                'total_places': len(places_data),
+                'filters_applied': {
+                    'district': district,
+                    'category': category,
+                    'time_slot': time_slot,
+                    'weather': weather
+                },
+                'context': {
+                    'current_time': now.strftime('%Y-%m-%d %H:%M:%S'),
+                    'day_of_week': day_of_week,
+                    'is_weekend': is_weekend,
+                    'season': season
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'error': f'Improved model prediction failed: {str(e)}'
+            }, status=500)
+            
+    except Exception as e:
+        return JsonResponse({
+            'error': f'Request failed: {str(e)}'
+        }, status=500)
+
+@login_required
+def pending_places(request):
+    """View for admins to see places pending approval"""
+    if not request.user.is_superuser:
+        messages.error(request, "You don't have permission to view pending places.")
+        return redirect('home')
+    
+    pending_places = Place.objects.filter(is_approved=False).order_by('-id')
+    
+    return render(request, 'pending_places.html', {
+        'pending_places': pending_places,
+        'total_pending': pending_places.count()
+    })
+
+@api_view(['POST'])
+@login_required
+def admin_approve_place(request, place_id):
+    """API endpoint for admins to approve a place"""
+    if not request.user.is_superuser:
+        return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
+    
+    try:
+        place = get_object_or_404(Place, id=place_id)
+        place.is_approved = True
+        place.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Place "{place.name}" has been approved successfully.'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'An error occurred: {str(e)}'
+        }, status=500)
+
+@api_view(['POST'])
+@login_required
+def admin_reject_place(request, place_id):
+    """API endpoint for admins to reject a place"""
+    if not request.user.is_superuser:
+        return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
+    
+    try:
+        place = get_object_or_404(Place, id=place_id)
+        place_name = place.name
+        place.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Place "{place_name}" has been rejected and deleted.'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'An error occurred: {str(e)}'
+        }, status=500)

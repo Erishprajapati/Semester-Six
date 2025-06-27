@@ -229,6 +229,43 @@
                     <label class="form-label">Crowd Level (0-100)</label>
                     <input type="number" class="form-control" id="crowdlevel" name="crowdlevel" min="0" max="100" required value="{{ place.crowddata_set.last.crowdlevel|default:'' }}">
                 </div>
+                
+                <!-- Entry Fee Section -->
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="has_entry_fee" name="has_entry_fee" style="margin-right: 8px;" {% if place.has_entry_fee %}checked{% endif %}>
+                        This place has an entry fee
+                    </label>
+                </div>
+                
+                <div id="entry_fee_fields" style="display: {% if place.has_entry_fee %}block{% else %}none{% endif %};">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="tourist_fee_npr" class="form-label">Foreign Tourist Fee (NPR)</label>
+                                <input type="number" class="form-control" id="tourist_fee_npr" name="tourist_fee_npr" min="0" step="0.01" placeholder="e.g., 1000" value="{{ place.tourist_fee_npr|default:'' }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="tourist_fee_usd" class="form-label">Foreign Tourist Fee (USD)</label>
+                                <input type="number" class="form-control" id="tourist_fee_usd" name="tourist_fee_usd" min="0" step="0.01" placeholder="e.g., 10" value="{{ place.tourist_fee_usd|default:'' }}">
+                            </div>
+                        </div>
+                        <div class="form-col">
+                            <div class="form-group">
+                                <label for="saarc_fee_npr" class="form-label">SAARC Nationals Fee (NPR)</label>
+                                <input type="number" class="form-control" id="saarc_fee_npr" name="saarc_fee_npr" min="0" step="0.01" placeholder="e.g., 500" value="{{ place.saarc_fee_npr|default:'' }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="local_fee_npr" class="form-label">Local Resident Fee (NPR)</label>
+                                <input type="number" class="form-control" id="local_fee_npr" name="local_fee_npr" min="0" step="0.01" placeholder="e.g., 0 (free)" value="{{ place.local_fee_npr|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fee_description" class="form-label">Fee Description/Notes</label>
+                        <textarea class="form-control" id="fee_description" name="fee_description" placeholder="Additional information about fees, discounts, or special conditions...">{{ place.fee_description|default:'' }}</textarea>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="form-group">
@@ -333,6 +370,15 @@
                 placeholder: 'Select tags',
                 allowClear: true,
                 width: 'resolve'
+            });
+            
+            // Entry fee checkbox functionality
+            $('#has_entry_fee').change(function() {
+                if (this.checked) {
+                    $('#entry_fee_fields').show();
+                } else {
+                    $('#entry_fee_fields').hide();
+                }
             });
         });
         // File input handling

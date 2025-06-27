@@ -33,6 +33,9 @@ urlpatterns = [
     path('places-by-tag/<str:tag_name>/', views.places_by_tag, name='places_by_tag'),
     path('place-details/<int:place_id>/', views.place_details, name='place_details'),
     path('place-details/<int:place_id>/delete/', views.delete_place, name='delete_place'),
+    # Admin approval URLs - using different prefix to avoid conflict with Django admin
+    path('approve-place/<int:place_id>/', views.admin_approve_place, name='admin_approve_place'),
+    path('reject-place/<int:place_id>/', views.admin_reject_place, name='admin_reject_place'),
 ] 
 
 if settings.DEBUG:

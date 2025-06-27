@@ -467,6 +467,67 @@
         border-radius: 12px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
+
+    /* Entry Fee Section Styles */
+    .entry-fee-section {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .entry-fee-section h5 {
+        color: #1e40af;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .fee-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .fee-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .fee-card .card-header {
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 0.75rem 1rem;
+    }
+    
+    .fee-card .card-body {
+        padding: 1rem;
+    }
+    
+    .fee-card .card-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+    
+    .fee-card .text-muted {
+        font-size: 0.85rem;
+    }
+    
+    .free-entry-alert {
+        background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+        border: 1px solid #86efac;
+        color: #166534;
+    }
+    
+    .fee-notes {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border: 1px solid #93c5fd;
+        color: #1e40af;
+    }
 </style>
 
 <!-- Main content -->
@@ -482,6 +543,11 @@
                     <div>
                         <h2>{{ place.name }}</h2>
                         <p class="text-muted"><i class="bi bi-tag"></i> {{ place.category }}</p>
+                        {% if not place.is_approved and user.is_authenticated and place.added_by == user %}
+                        <div class="alert alert-warning" role="alert">
+                            <i class="bi bi-clock"></i> <strong>Pending Approval:</strong> This place is awaiting admin verification and is not yet visible to the public.
+                        </div>
+                        {% endif %}
                     </div>
                     {% if user.is_authenticated and place.added_by == user or user.is_superuser %}
                     <div class="d-flex gap-2">
@@ -505,6 +571,28 @@
                 <p><strong>Popular For:</strong> {{ place.popular_for }}</p>
                 <p><strong>District:</strong> {{ place.district }}</p>
                 <p><strong>Location:</strong> {{ place.location }}</p>
+                {% if place.has_entry_fee %}
+                <p><strong>Entry Fees:</strong></p>
+                <ul style="margin-bottom: 0.5rem;">
+                    {% if place.tourist_fee_npr %}
+                        <li>Foreign Tourists: ₹{{ place.tourist_fee_npr|floatformat:0 }} NPR{% if place.tourist_fee_usd %} (≈ ${{ place.tourist_fee_usd|floatformat:2 }} USD){% endif %}</li>
+                    {% endif %}
+                    {% if place.saarc_fee_npr %}
+                        <li>SAARC Nationals: ₹{{ place.saarc_fee_npr|floatformat:0 }} NPR</li>
+                    {% endif %}
+                    {% if place.local_fee_npr and place.local_fee_npr|floatformat:0 != '0' %}
+                        <li>Local Residents: ₹{{ place.local_fee_npr|floatformat:0 }} NPR</li>
+                    {% else %}
+                        <li>Local Residents: FREE</li>
+                    {% endif %}
+                    {% if place.fee_description %}
+                        <li>Notes: {{ place.fee_description }}</li>
+                    {% endif %}
+                </ul>
+                {% else %}
+                <p><strong>Entry Fees:</strong> Free Entry</p>
+                {% endif %}
+                <p><strong>Crowd Level:</strong> {{ crowdlevel }}%</p>
                 <div class="mt-3">
                     <strong>Tags:</strong>
                     {% for tag in place.tags.all %}
@@ -1051,8 +1139,8 @@
                         const data = await response.json();
 
                         if (data.success) {
-                            alert(data.message);
-                            window.location.href = data.redirect_url;
+                            alert("Place deleted!");
+                            window.location.href = '/'; // Redirect to home page instead of reloading
                         } else {
                             alert(`Error: ${data.error || 'An unknown error occurred.'}`);
                         }
