@@ -571,6 +571,25 @@
                 <p><strong>Popular For:</strong> {{ place.popular_for }}</p>
                 <p><strong>District:</strong> {{ place.district }}</p>
                 <p><strong>Location:</strong> {{ place.location }}</p>
+                {% if place.opening_time or place.closing_time %}
+                <p><strong>Opening Hours:</strong>
+                    {% if place.opening_time %}{{ place.opening_time|time:'H:i' }}{% else %}?{% endif %} - 
+                    {% if place.closing_time %}{{ place.closing_time|time:'H:i' }}{% else %}?{% endif %}
+                </p>
+                {% endif %}
+                {% if place.best_time_to_visit %}
+                <p><strong>Best Time to Visit:</strong> {{ place.best_time_to_visit }}</p>
+                {% endif %}
+                {% if place.closed_dates %}
+                {% if closed_list %}
+                    {% for closed in closed_list %}
+                        {% if closed == today %}
+                            <p style="color:red;"><strong>Closed Today!</strong></p>
+                        {% endif %}
+                    {% endfor %}
+                    <p><strong>Closed Dates/Festivals:</strong> {{ place.closed_dates }}</p>
+                {% endif %}
+                {% endif %}
                 {% if place.has_entry_fee %}
                 <p><strong>Entry Fees:</strong></p>
                 <ul style="margin-bottom: 0.5rem;">

@@ -1,6 +1,6 @@
 import random
 import json
-from django.utils.timezone import now
+from django.utils.timezone import now, timezone
 from django.shortcuts import render, get_object_or_404,redirect
 from django.http import JsonResponse
 from rest_framework.response import Response
@@ -343,9 +343,15 @@ def place_details(request, place_id):
     if crowdlevel is None:
         crowd_data = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
         crowdlevel = crowd_data.crowdlevel if crowd_data else 'N/A'
+    today = timezone.now().date().isoformat()  # e.g., '2025-06-27'
+    closed_list = []
+    if place.closed_dates:
+        closed_list = [d.strip() for d in place.closed_dates.split(',') if d.strip()]
     return render(request, 'placedetails.html', {
         'place': place,
-        'crowdlevel': crowdlevel
+        'crowdlevel': crowdlevel,
+        'today': today,
+        'closed_list': closed_list,
     })
 
 def place_list(request):
@@ -552,6 +558,10 @@ def add_place(request):
             image = request.FILES.get('image')
             tags = request.POST.getlist('tags')
             crowdlevel = request.POST.get('crowdlevel')
+            opening_time = request.POST.get('opening_time')
+            closing_time = request.POST.get('closing_time')
+            best_time_to_visit = request.POST.get('best_time_to_visit')
+            closed_dates = request.POST.get('closed_dates')
             
             # Entry fee fields
             has_entry_fee = request.POST.get('has_entry_fee') == 'on'
@@ -609,7 +619,11 @@ def add_place(request):
                 tourist_fee_usd=tourist_fee_usd if tourist_fee_usd else None,
                 saarc_fee_npr=saarc_fee_npr if saarc_fee_npr else None,
                 local_fee_npr=local_fee_npr if local_fee_npr else None,
-                fee_description=fee_description if fee_description else ''
+                fee_description=fee_description if fee_description else '',
+                opening_time=opening_time if opening_time else None,
+                closing_time=closing_time if closing_time else None,
+                best_time_to_visit=best_time_to_visit if best_time_to_visit else '',
+                closed_dates=closed_dates if closed_dates else ''
             )
 
             # Add tags
@@ -823,6 +837,20 @@ def save_place(request, place_id):
         place.saarc_fee_npr = request.POST.get('saarc_fee_npr') if request.POST.get('saarc_fee_npr') else None
         place.local_fee_npr = request.POST.get('local_fee_npr') if request.POST.get('local_fee_npr') else None
         place.fee_description = request.POST.get('fee_description', '')
+        
+        # Update opening hours fields
+        opening_time = request.POST.get('opening_time')
+        closing_time = request.POST.get('closing_time')
+        if opening_time:
+            place.opening_time = opening_time
+        else:
+            place.opening_time = None
+        if closing_time:
+            place.closing_time = closing_time
+        else:
+            place.closing_time = None
+        place.best_time_to_visit = request.POST.get('best_time_to_visit', '')
+        place.closed_dates = request.POST.get('closed_dates', '')
         
         # Update coordinates if provided
         latitude = request.POST.get('latitude')

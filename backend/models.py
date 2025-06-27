@@ -31,6 +31,11 @@ class Place(models.Model):
     fee_description = models.TextField(blank=True, help_text="Additional information about fees, discounts, or special conditions")
     has_entry_fee = models.BooleanField(default=False, help_text="Whether this place has an entry fee")
 
+    opening_time = models.TimeField(null=True, blank=True, help_text="Opening time (e.g., 09:00)")
+    closing_time = models.TimeField(null=True, blank=True, help_text="Closing time (e.g., 17:00)")
+    best_time_to_visit = models.CharField(max_length=100, blank=True, help_text="Best time to visit (e.g., Morning, Evening, Spring)")
+    closed_dates = models.CharField(max_length=255, blank=True, help_text="Comma-separated dates or festival names when closed (e.g., 2025-10-24, Holi)")
+
     class Meta:
         unique_together = ('name', 'district')
 
