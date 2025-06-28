@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/search-history/', views.get_search_history, name='api_get_search_history'),
     path('predict-crowd/', views.predict_crowd, name='predict_crowd'),
     path('improved-crowd-predictions/', views.improved_crowd_predictions, name='improved_crowd_predictions'),
+    path('tourism-crowd-charts/', views.tourism_crowd_data_for_charts, name='tourism_crowd_charts'),
     path('place/<int:place_id>/', views.api_update_place, name='api_update_place'),
     # Admin approval URLs
     path('pending-places/', views.pending_places, name='pending_places'),

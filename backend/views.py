@@ -1402,3 +1402,167 @@ def admin_reject_place(request, place_id):
             'success': False,
             'error': f'An error occurred: {str(e)}'
         }, status=500)
+
+@api_view(['GET'])
+def tourism_crowd_data_for_charts(request):
+    """
+    Get tourism-based crowd data specifically for bar graph visualization
+    This uses the trained tourism model to provide realistic crowd predictions
+    """
+    try:
+        # Get query parameters
+        district = request.GET.get('district')
+        category = request.GET.get('category')
+        time_slot = request.GET.get('time_slot')
+        limit = int(request.GET.get('limit', 10))  # Number of places to show in chart
+        
+        # Determine current time slot if not provided
+        if not time_slot:
+            now = datetime.now()
+            hour = now.hour
+            if 5 <= hour < 12:
+                time_slot = 'morning'
+            elif 12 <= hour < 17:
+                time_slot = 'afternoon'
+            elif 17 <= hour < 21:
+                time_slot = 'evening'
+            else:
+                time_slot = 'morning'
+        
+        # Filter places based on parameters
+        places = Place.objects.all()
+        if district:
+            places = places.filter(district__iexact=district)
+        if category:
+            places = places.filter(category__iexact=category)
+        
+        # Filter by approval status based on user permissions
+        if not request.user.is_superuser:
+            places = places.filter(is_approved=True)
+        
+        if not places.exists():
+            return JsonResponse({
+                'error': 'No places found for the given criteria'
+            }, status=404)
+        
+        # Use the improved tourism model
+        improved_model_path = 'improved_crowd_prediction_model.pkl'
+        if not os.path.exists(improved_model_path):
+            return JsonResponse({
+                'error': 'Tourism model not found. Please train the model first.'
+            }, status=500)
+        
+        try:
+            from backend.improved_ml_model import ImprovedCrowdPredictionModel
+            model = ImprovedCrowdPredictionModel()
+            if not model.load_model():
+                return JsonResponse({
+                    'error': 'Failed to load tourism model.'
+                }, status=500)
+            
+            # Get current context for tourism predictions
+            now = datetime.now()
+            day_of_week = now.weekday()
+            month = now.month
+            season = get_current_season()
+            is_weekend = 1 if day_of_week >= 5 else 0
+            is_holiday = 0
+            
+            # Get hour for time slot
+            if time_slot == 'morning':
+                hour = 9
+            elif time_slot == 'afternoon':
+                hour = 14
+            else:  # evening
+                hour = 19
+            
+            # Get predictions for all places
+            places_data = []
+            for place in places:
+                try:
+                    predicted_crowd = model.predict(
+                        place_id=place.id,
+                        category=place.category,
+                        district=place.district,
+                        time_slot=time_slot,
+                        day_of_week=day_of_week,
+                        month=month,
+                        season=season,
+                        is_weekend=is_weekend,
+                        is_holiday=is_holiday,
+                        weather_condition='Sunny',  # Default weather
+                        hour=hour
+                    )
+                    
+                    # Determine crowd status
+                    if predicted_crowd > 70:
+                        status = 'High'
+                        color = 'red'
+                    elif predicted_crowd > 30:
+                        status = 'Medium'
+                        color = 'orange'
+                    else:
+                        status = 'Low'
+                        color = 'green'
+                    
+                    places_data.append({
+                        'id': place.id,
+                        'name': place.name,
+                        'description': place.description,
+                        'category': place.category,
+                        'district': place.district,
+                        'latitude': place.latitude,
+                        'longitude': place.longitude,
+                        'crowdlevel': predicted_crowd,
+                        'status': status,
+                        'color': color,
+                        'time_slot': time_slot,
+                        'is_weekend': is_weekend,
+                        'season': season
+                    })
+                except Exception as e:
+                    print(f"[DEBUG] Tourism prediction error for place {place.name}: {e}")
+                    continue
+            
+            # Sort by crowd level (highest first) and limit results
+            places_data.sort(key=lambda x: x['crowdlevel'], reverse=True)
+            places_data = places_data[:limit]
+            
+            # Prepare data specifically for bar charts
+            chart_data = {
+                'labels': [place['name'] for place in places_data],
+                'crowdlevels': [place['crowdlevel'] for place in places_data],
+                'colors': [place['color'] for place in places_data],
+                'categories': [place['category'] for place in places_data],
+                'districts': [place['district'] for place in places_data],
+                'place_ids': [place['id'] for place in places_data]
+            }
+            
+            return JsonResponse({
+                'places': places_data,
+                'chart_data': chart_data,
+                'model_used': 'tourism_improved',
+                'total_places': len(places_data),
+                'filters_applied': {
+                    'district': district,
+                    'category': category,
+                    'time_slot': time_slot
+                },
+                'context': {
+                    'current_time': now.strftime('%Y-%m-%d %H:%M:%S'),
+                    'day_of_week': day_of_week,
+                    'is_weekend': is_weekend,
+                    'season': season,
+                    'tourist_season': 'Peak' if month in [10, 11, 4, 5] else 'Shoulder' if month in [3, 9, 12] else 'Low'
+                }
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'error': f'Tourism model prediction failed: {str(e)}'
+            }, status=500)
+            
+    except Exception as e:
+        return JsonResponse({
+            'error': f'Request failed: {str(e)}'
+        }, status=500)
