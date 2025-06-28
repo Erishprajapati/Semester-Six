@@ -238,29 +238,64 @@
   </main>
 
   <script>
-    // Function to show navbar search bar only if location is set
+    // Global authentication state management
+    window.authState = {
+      isAuthenticated: {% if user.is_authenticated %}true{% else %}false{% endif %},
+      username: '{% if user.is_authenticated %}{{ user.username }}{% endif %}'
+    };
+
+    // Function to show navbar search bar based on authentication and location
     function showNavbarSearchBarIfAllowed() {
       const searchForm = document.getElementById('navbar-search-form');
       if (!searchForm) return;
-      const userLat = localStorage.getItem('user_lat');
-      const userLng = localStorage.getItem('user_lng');
-      const locationDenied = localStorage.getItem('location_denied');
-      // Show if both lat/lng are set and not empty, or if denied is true
-      const hasLocation = userLat !== null && userLat !== '' && userLng !== null && userLng !== '';
-      const denied = locationDenied === 'true';
-      console.log('userLat:', userLat, 'userLng:', userLng, 'locationDenied:', locationDenied, 'hasLocation:', hasLocation, 'denied:', denied);
-      if (hasLocation || denied) {
+      
+      // Always show search bar if user is authenticated
+      if (window.authState.isAuthenticated) {
         searchForm.style.display = 'flex';
+        console.log('Search bar shown - user is authenticated');
       } else {
         searchForm.style.display = 'none';
+        console.log('Search bar hidden - user not authenticated');
       }
     }
 
-    // Listen for location set event
-    window.addEventListener('userLocationSet', showNavbarSearchBarIfAllowed);
+    // Function to update authentication state
+    function updateAuthState(isAuthenticated, username = '') {
+      window.authState.isAuthenticated = isAuthenticated;
+      window.authState.username = username;
+      
+      // Update search bar visibility immediately
+      showNavbarSearchBarIfAllowed();
+      
+      // Show/hide profile dropdown
+      const profileDropdown = document.querySelector('.profile-dropdown');
+      const navLinks = document.querySelector('.nav-links');
+      
+      if (isAuthenticated) {
+        if (profileDropdown) profileDropdown.style.display = 'block';
+        if (navLinks) navLinks.style.display = 'none';
+      } else {
+        if (profileDropdown) profileDropdown.style.display = 'none';
+        if (navLinks) navLinks.style.display = 'block';
+      }
+    }
+
+    // Listen for location set event (for location-specific features)
+    window.addEventListener('userLocationSet', function() {
+      console.log('Location set event received');
+      // The search bar should already be visible if user is authenticated
+      // This event can be used for additional location-dependent features
+    });
+
+    // Listen for authentication state changes
+    window.addEventListener('authStateChanged', function(event) {
+      console.log('Auth state changed:', event.detail);
+      updateAuthState(event.detail.isAuthenticated, event.detail.username);
+    });
 
     // Ensure search bar is shown/hidden correctly on every page load
     document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM loaded, auth state:', window.authState);
       showNavbarSearchBarIfAllowed();
     });
 
@@ -336,10 +371,17 @@
             alert('Please enter a search term.');
             return;
           }
-          if (typeof userLatLng === 'undefined' || !userLatLng) {
-            alert('Please set your location first.');
+          
+          // Check if location is available for search functionality
+          const userLat = localStorage.getItem('user_lat');
+          const userLng = localStorage.getItem('user_lng');
+          const locationDenied = localStorage.getItem('location_denied');
+          
+          if ((!userLat || !userLng) && locationDenied !== 'true') {
+            alert('Please set your location first to enable search functionality.');
             return;
           }
+          
           if (input.startsWith('#')) {
             const category = input.slice(1);
             await fetchPlacesByCategory(category);

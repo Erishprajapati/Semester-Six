@@ -13,6 +13,7 @@ from django.utils import timezone
 import joblib
 import os
 from datetime import datetime
+from django.urls import reverse
 
 # Create your views here.
 def register_user(request):
@@ -90,6 +91,8 @@ def login_user(request):
             username = user_check.username
         except User.DoesNotExist:
             print("User does not exist!")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Invalid email or password'})
             messages.error(request, 'Invalid email or password')
             return redirect('login')
 
@@ -99,8 +102,19 @@ def login_user(request):
             login(request, user)
             # Set initial session activity time
             request.session['last_activity'] = timezone.now().isoformat()
+            
+            # Check if this is an AJAX request
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True, 
+                    'redirect_url': reverse('dashboard'),
+                    'username': user.username
+                })
+            
             return redirect('dashboard')  # <- make sure this matches your URL name
         else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Invalid email or password'})
             messages.error(request, 'Invalid email or password')
             return redirect('login')
 
