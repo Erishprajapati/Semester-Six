@@ -176,3 +176,4 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/python
 
 crowd_prediction_model.pkl
+improved_crowd_prediction_model.pkl
