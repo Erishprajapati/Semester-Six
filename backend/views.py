@@ -1145,11 +1145,25 @@ def predict_crowd_for_place(place, time_slot='morning'):
 # Utility to save search history
 def save_search_history(user, query, search_type):
     if user.is_authenticated:
-        SearchHistory.objects.create(
+        # Check if the same search was already saved recently (within the last minute)
+        from datetime import timedelta
+        from django.utils import timezone
+        
+        one_minute_ago = timezone.now() - timedelta(minutes=1)
+        recent_search = SearchHistory.objects.filter(
             user=user,
             search_query=query,
-            search_type=search_type
-        )
+            search_type=search_type,
+            timestamp__gte=one_minute_ago
+        ).first()
+        
+        # Only save if this is not a duplicate recent search
+        if not recent_search:
+            SearchHistory.objects.create(
+                user=user,
+                search_query=query,
+                search_type=search_type
+            )
 
 def get_crowd_pattern_from_db(place):
     pattern = []
@@ -1204,6 +1218,12 @@ def improved_crowd_predictions(request):
         category = request.GET.get('category')
         time_slot = request.GET.get('time_slot')
         weather = request.GET.get('weather', 'Sunny')
+        
+        # Save search history
+        if district:
+            save_search_history(request.user, district, 'district')
+        elif category:
+            save_search_history(request.user, category, 'category')
         
         # Determine current time slot if not provided
         if not time_slot:
@@ -1415,6 +1435,12 @@ def tourism_crowd_data_for_charts(request):
         category = request.GET.get('category')
         time_slot = request.GET.get('time_slot')
         limit = int(request.GET.get('limit', 7))  # Number of places to show in chart (changed from 10 to 7)
+        
+        # Save search history
+        if district:
+            save_search_history(request.user, district, 'district')
+        elif category:
+            save_search_history(request.user, category, 'category')
         
         # Determine current time slot if not provided
         if not time_slot:

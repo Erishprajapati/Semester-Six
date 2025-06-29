@@ -1075,27 +1075,33 @@
               routeWhileDragging: false,
               createMarker: function(i, wp) {
                 if (i === 0) {
-                  // User location marker (red)
-                  if (userMarker) map.removeLayer(userMarker);
-                  userMarker = L.marker(wp.latLng, {
-                    icon: redIcon,
-                    draggable: true
-                  }).bindPopup("Your Location").addTo(map);
-                  
-                  userMarker.on('dragend', async function(e) {
-                    const newPos = e.target.getLatLng();
-                    userLatLng = [newPos.lat, newPos.lng];
-                    const locationName = await reverseGeocode(newPos.lat, newPos.lng);
+                  // User location marker (red) - preserve existing marker
+                  if (userMarker && map.hasLayer(userMarker)) {
+                    // Update existing marker position if needed
+                    userMarker.setLatLng(wp.latLng);
+                    return userMarker;
+                  } else {
+                    // Create new user marker only if it doesn't exist
+                    userMarker = L.marker(wp.latLng, {
+                      icon: redIcon,
+                      draggable: true
+                    }).bindPopup("Your Location").addTo(map);
                     
-                    // Validate that the dragged location is within allowed districts
-                    if (!validateDistrictLocation(locationName)) {
-                      return;
-                    }
-                    
-                    userMarker.bindPopup(`<b>Current Location:</b><br>${locationName}`).openPopup();
-                    console.log("Updated user location:", locationName, userLatLng);
-                  });
-                  return userMarker;
+                    userMarker.on('dragend', async function(e) {
+                      const newPos = e.target.getLatLng();
+                      userLatLng = [newPos.lat, newPos.lng];
+                      const locationName = await reverseGeocode(newPos.lat, newPos.lng);
+                      
+                      // Validate that the dragged location is within allowed districts
+                      if (!validateDistrictLocation(locationName)) {
+                        return;
+                      }
+                      
+                      userMarker.bindPopup(`<b>Current Location:</b><br>${locationName}`).openPopup();
+                      console.log("Updated user location:", locationName, userLatLng);
+                    });
+                    return userMarker;
+                  }
                 } else {
                   // Place marker (blue)
                   const blueIcon = new L.Icon({
@@ -1396,9 +1402,121 @@ async function fetchPlacesByCategory(category) {
   }
 }
 
+// Function to clear all map data, routes, and place info
+function clearMapData() {
+  console.log('Clearing all map data...');
+  
+  // Clear routing
+  if (routingControl) {
+    map.removeControl(routingControl);
+    routingControl = null;
+  }
+  if (window.activeRouteLine) {
+    map.removeLayer(window.activeRouteLine);
+    window.activeRouteLine = null;
+  }
+  
+  // Clear route click markers
+  routeClicks.forEach(m => map.removeLayer(m));
+  routeClicks = [];
+  routeClickCount = 1;
+  
+  // Clear only place markers (preserve user marker)
+  if (window.placeMarkers) {
+    window.placeMarkers.forEach(marker => {
+      // Only remove if it's not the user marker
+      if (marker !== userMarker) {
+        map.removeLayer(marker);
+      }
+    });
+    window.placeMarkers = [];
+  }
+  
+  // Clear place info box
+  const infoBox = document.getElementById("place-info-box");
+  if (infoBox) {
+    infoBox.classList.remove('visible');
+    infoBox.classList.add('hidden');
+    setTimeout(() => {
+      infoBox.classList.remove('hidden');
+    }, 300);
+  }
+  
+  // Clear chart
+  if (window.barChart) {
+    window.barChart.destroy();
+    window.barChart = null;
+  }
+  
+  // Hide chart wrapper
+  const chartWrapper = document.getElementById("chart-wrapper");
+  if (chartWrapper) {
+    chartWrapper.style.display = "none";
+  }
+  
+  // Ensure user marker is still visible
+  if (userLatLng && userMarker) {
+    if (!map.hasLayer(userMarker)) {
+      console.log('Re-adding user location marker...');
+      map.addLayer(userMarker);
+    }
+  }
+  
+  console.log('Map data cleared successfully (user location preserved)');
+}
+
+// Function to show loading indicator
+function showLoadingIndicator() {
+  const chartWrapper = document.getElementById("chart-wrapper");
+  if (chartWrapper) {
+    // Create loading overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.id = 'loading-overlay';
+    loadingOverlay.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.9);
+      z-index: 10;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    `;
+    loadingOverlay.innerHTML = `
+      <div style="text-align: center;">
+        <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px;"></div>
+        <p style="color: #666; margin: 0;">Loading places...</p>
+      </div>
+    `;
+    
+    // Make chart wrapper relative positioned if not already
+    chartWrapper.style.position = 'relative';
+    
+    // Add loading overlay
+    chartWrapper.appendChild(loadingOverlay);
+    chartWrapper.style.display = "block";
+  }
+}
+
+// Function to hide loading indicator
+function hideLoadingIndicator() {
+  const loadingOverlay = document.getElementById('loading-overlay');
+  if (loadingOverlay) {
+    loadingOverlay.remove();
+  }
+}
+
 // Original tourism functions (renamed)
 async function fetchPlacesByDistrictTourism(district) {
   try {
+    // Clear all existing map data first
+    clearMapData();
+    
+    // Show loading indicator
+    showLoadingIndicator();
+    
     const now = new Date();
     const hour = now.getHours();
     const time_slot = getTimeSlotFromHour(hour);
@@ -1407,12 +1525,14 @@ async function fetchPlacesByDistrictTourism(district) {
     // Use the new tourism crowd data API
     const tourismData = await fetchTourismCrowdData(district, null, time_slot);
     if (!tourismData) {
+      hideLoadingIndicator();
       return;
     }
 
     console.log("Tourism API Response Data:", tourismData);
 
     if (!tourismData.places || !tourismData.places.length) {
+      hideLoadingIndicator();
       alert("No tourism data found for this district.");
       return;
     }
@@ -1446,7 +1566,10 @@ async function fetchPlacesByDistrictTourism(district) {
     if (tourismData.context?.tourist_season) {
       console.log(`Current tourist season: ${tourismData.context.tourist_season}`);
     }
+    
+    hideLoadingIndicator();
   } catch (error) {
+    hideLoadingIndicator();
     console.error("Error fetching tourism data by district:", error);
     alert("Error loading tourism data. Please try again.");
   }
@@ -1455,6 +1578,12 @@ async function fetchPlacesByDistrictTourism(district) {
 // Original tourism category function (renamed)
 async function fetchPlacesByCategoryTourism(category) {
   try {
+    // Clear all existing map data first
+    clearMapData();
+    
+    // Show loading indicator
+    showLoadingIndicator();
+    
     const now = new Date();
     const hour = now.getHours();
     const time_slot = getTimeSlotFromHour(hour);
@@ -1463,12 +1592,14 @@ async function fetchPlacesByCategoryTourism(category) {
     // Use the new tourism crowd data API
     const tourismData = await fetchTourismCrowdData(null, category, time_slot);
     if (!tourismData) {
+      hideLoadingIndicator();
       return;
     }
     
     console.log("Tourism API Response Data:", tourismData);
     
     if (!tourismData.places || !tourismData.places.length) {
+      hideLoadingIndicator();
       alert("No tourism data found in this category.");
       return;
     }
@@ -1489,7 +1620,10 @@ async function fetchPlacesByCategoryTourism(category) {
     if (tourismData.context?.tourist_season) {
       console.log(`Current tourist season: ${tourismData.context.tourist_season}`);
     }
+    
+    hideLoadingIndicator();
   } catch (error) {
+    hideLoadingIndicator();
     console.error("Error fetching tourism data by category:", error);
     alert("An error occurred while fetching tourism data. Please try again.");
   }
@@ -1498,6 +1632,12 @@ async function fetchPlacesByCategoryTourism(category) {
 // Regular model functions
 async function fetchPlacesByDistrictRegular(district) {
   try {
+    // Clear all existing map data first
+    clearMapData();
+    
+    // Show loading indicator
+    showLoadingIndicator();
+    
     const now = new Date();
     const hour = now.getHours();
     const time_slot = getTimeSlotFromHour(hour);
@@ -1512,6 +1652,7 @@ async function fetchPlacesByDistrictRegular(district) {
     console.log("Regular API Response Data:", data);
 
     if (!data.places || !data.places.length) {
+      hideLoadingIndicator();
       alert("No places found for this district.");
       return;
     }
@@ -1540,7 +1681,10 @@ async function fetchPlacesByDistrictRegular(district) {
     if (data.model_used) {
       console.log(`Using ${data.model_used} model for predictions`);
     }
+    
+    hideLoadingIndicator();
   } catch (error) {
+    hideLoadingIndicator();
     console.error("Error fetching regular data by district:", error);
     alert("Error loading places. Please try again.");
   }
@@ -1548,6 +1692,12 @@ async function fetchPlacesByDistrictRegular(district) {
 
 async function fetchPlacesByCategoryRegular(category) {
   try {
+    // Clear all existing map data first
+    clearMapData();
+    
+    // Show loading indicator
+    showLoadingIndicator();
+    
     const now = new Date();
     const hour = now.getHours();
     const time_slot = getTimeSlotFromHour(hour);
@@ -1562,6 +1712,7 @@ async function fetchPlacesByCategoryRegular(category) {
     console.log("Regular API Response Data:", data);
     
     if (!data.places || !data.places.length) {
+      hideLoadingIndicator();
       alert("No places found in this category.");
       return;
     }
@@ -1577,7 +1728,10 @@ async function fetchPlacesByCategoryRegular(category) {
     if (data.model_used) {
       console.log(`Using ${data.model_used} model for predictions`);
     }
+    
+    hideLoadingIndicator();
   } catch (error) {
+    hideLoadingIndicator();
     console.error("Error fetching regular data by category:", error);
     alert("An error occurred while fetching places. Please try again.");
   }

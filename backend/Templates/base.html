@@ -333,19 +333,30 @@
           const historyList = document.getElementById('searchHistoryList');
           if (historyList) {
             if (data.searches && data.searches.length > 0) {
-              historyList.innerHTML = data.searches.map(search => `
-                <div style="padding: 10px; border-bottom: 1px solid #eee;">
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                      <strong>${search.search_query}</strong>
-                      <span style="background-color: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 8px;">
-                        ${search.search_type}
-                      </span>
+              historyList.innerHTML = data.searches.map(search => {
+                // Format the search query based on type
+                let displayQuery = search.search_query;
+                if (search.search_type === 'category') {
+                  displayQuery = `#${search.search_query}`;
+                }
+                
+                return `
+                  <div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; transition: background-color 0.2s;" 
+                       onmouseover="this.style.backgroundColor='#f8f9fa'" 
+                       onmouseout="this.style.backgroundColor='white'"
+                       onclick="reSearch('${search.search_query}', '${search.search_type}')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <div>
+                        <strong>${displayQuery}</strong>
+                        <span style="background-color: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; margin-left: 8px;">
+                          ${search.search_type}
+                        </span>
+                      </div>
+                      <small style="color: #666;">${search.timestamp}</small>
                     </div>
-                    <small style="color: #666;">${search.timestamp}</small>
                   </div>
-                </div>
-              `).join('');
+                `;
+              }).join('');
             } else {
               historyList.innerHTML = '<p style="text-align: center; color: #666;">No search history available.</p>';
             }
@@ -358,6 +369,49 @@
               '<p style="text-align: center; color: #666;">Error loading search history.</p>';
           }
         });
+    }
+
+    // Function to re-search when clicking on history items
+    function reSearch(query, searchType) {
+      // Close the modal
+      const modal = document.getElementById('searchHistoryModal');
+      if (modal) {
+        modal.style.display = 'none';
+      }
+      
+      // Navigate to map page if not already there
+      if (window.location.pathname !== '/') {
+        window.location.href = '/';
+        return;
+      }
+      
+      // Wait a bit for the page to load, then perform the search
+      setTimeout(() => {
+        if (searchType === 'category') {
+          // For category searches, use the tourism model by default
+          if (typeof fetchPlacesByCategoryTourism === 'function') {
+            fetchPlacesByCategoryTourism(query);
+          } else {
+            // Fallback to regular category search
+            window.location.href = `/places-by-category/${query}/`;
+          }
+        } else if (searchType === 'district') {
+          // For district searches, use the tourism model by default
+          if (typeof fetchPlacesByDistrictTourism === 'function') {
+            fetchPlacesByDistrictTourism(query);
+          } else {
+            // Fallback to regular district search
+            window.location.href = `/places-by-district/${query}/`;
+          }
+        } else {
+          // For place searches, use the search API
+          if (typeof fetchPlaceByName === 'function') {
+            fetchPlaceByName(query);
+          } else {
+            window.location.href = `/search/?q=${encodeURIComponent(query)}`;
+          }
+        }
+      }, 500);
     }
 
     // Navbar search bar logic (works like Map.html)
