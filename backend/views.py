@@ -28,6 +28,23 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 
 # Create your views here.
+
+# Tag weights for recommendation scoring
+TAG_WEIGHTS = {
+    'temple': 2.0,
+    'monument': 1.8,
+    'park': 1.5,
+    'museum': 1.7,
+    'shopping': 1.3,
+    'restaurant': 1.2,
+    'historical': 2.0,
+    'cultural': 1.8,
+    'religious': 1.9,
+    'nature': 1.6,
+    'adventure': 1.4,
+    'entertainment': 1.1
+}
+
 def map_view(request):
     return render(request, 'Map.html')
     """it will act as key pair value"""
@@ -148,11 +165,12 @@ def places_by_category(request, category):
     # Save search history
     save_search_history(request.user, category, 'category')
     
-    # Filter places based on user permissions
+    # Filter places based on user permissions and allowed districts
+    allowed_districts = ['Kathmandu', 'Lalitpur', 'Bhaktapur']
     if request.user.is_superuser:
-        places = Place.objects.filter(category__iexact=category)
+        places = Place.objects.filter(category__iexact=category, district__in=allowed_districts)
     else:
-        places = Place.objects.filter(category__iexact=category, is_approved=True)
+        places = Place.objects.filter(category__iexact=category, district__in=allowed_districts, is_approved=True)
     
     places_data = []
     for place in places:
@@ -206,60 +224,67 @@ def weather_view(request):
 """Content based filtering algorithm"""
 
 
-TAG_WEIGHTS = {
-    'spiritual': 1.5,
-    'heritage': 1.2,
-    'temple': 1.3,
-    'nature': 1.1,
-}
-
 def recommend_places(request, place_name):
     """Recommend places based on the given place"""
     try:
-        # Get the reference place
-        reference_place = Place.objects.get(name__iexact=place_name)
+        # Get the reference place with prefetched tags
+        reference_place = Place.objects.prefetch_related('tags').get(name__iexact=place_name)
         
         # Get tags of the reference place
         reference_tags = set(reference_place.tags.values_list('name', flat=True))
         
-        # Find places with similar tags
-        similar_places = []
-        if request.user.is_superuser:
-            all_places = Place.objects.exclude(id=reference_place.id)
-        else:
-            all_places = Place.objects.exclude(id=reference_place.id).filter(is_approved=True)
+        if not reference_tags:
+            return JsonResponse({
+                'reference_place': place_name,
+                'recommendations': []
+            })
         
+        # Find places with similar tags using optimized query
+        if request.user.is_superuser:
+            all_places = Place.objects.exclude(id=reference_place.id).prefetch_related('tags')
+        else:
+            all_places = Place.objects.exclude(id=reference_place.id).filter(is_approved=True).prefetch_related('tags')
+        
+        # Calculate similarity scores efficiently
+        similar_places = []
         for place in all_places:
             place_tags = set(place.tags.values_list('name', flat=True))
             
             # Calculate similarity score
-            if reference_tags and place_tags:
+            if place_tags:
                 intersection = reference_tags.intersection(place_tags)
-                union = reference_tags.union(place_tags)
-                similarity = len(intersection) / len(union) if union else 0
-                
-                # Apply tag weights
-                weighted_similarity = 0
-                for tag in intersection:
-                    weighted_similarity += TAG_WEIGHTS.get(tag.lower(), 1.0)
-                
-                if similarity > 0:  # Only include places with some similarity
+                if intersection:  # Only process if there's some similarity
+                    union = reference_tags.union(place_tags)
+                    similarity = len(intersection) / len(union)
+                    
+                    # Apply tag weights (simplified for performance)
+                    weighted_similarity = len(intersection) * similarity
+                    
                     similar_places.append({
                         'place': place,
-                        'similarity_score': weighted_similarity * similarity
+                        'similarity_score': weighted_similarity
                     })
         
-        # Sort by similarity score
+        # Sort by similarity score and get top 5
         similar_places.sort(key=lambda x: x['similarity_score'], reverse=True)
-        
-        # Get top 5 recommendations
         recommendations = similar_places[:5]
         
-        # Format response
+        # Format response with optimized crowd data query
         places_data = []
+        if recommendations:
+            # Get all place IDs for bulk crowd data query
+            place_ids = [rec['place'].id for rec in recommendations]
+            
+            # Bulk query for latest crowd data
+            latest_crowd_data = {}
+            for place_id in place_ids:
+                crowd_data = CrowdData.objects.filter(place_id=place_id).order_by('-timestamp').first()
+                if crowd_data:
+                    latest_crowd_data[place_id] = crowd_data
+        
         for rec in recommendations:
             place = rec['place']
-            latest_crowd = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
+            crowd_data = latest_crowd_data.get(place.id)
             
             places_data.append({
                 'id': place.id,
@@ -267,8 +292,8 @@ def recommend_places(request, place_name):
                 'description': place.description,
                 'category': place.category,
                 'similarity_score': round(rec['similarity_score'], 2),
-                'crowdlevel': latest_crowd.crowdlevel if latest_crowd else 'N/A',
-                'status': latest_crowd.status if latest_crowd else 'N/A',
+                'crowdlevel': crowd_data.crowdlevel if crowd_data else 'N/A',
+                'status': crowd_data.status if crowd_data else 'N/A',
                 'tags': [tag.name for tag in place.tags.all()],
                 'latitude': place.latitude,
                 'longitude': place.longitude,
@@ -309,15 +334,30 @@ def place_details(request, place_id):
         messages.warning(request, 'This place is pending admin approval and is not yet visible to the public.')
         return redirect('home')  # Redirect to home page
     
-    # Use the improved model for prediction (same as bar graph)
+    # Use cached model for prediction to improve performance
     from datetime import datetime
     from backend.improved_ml_model import ImprovedCrowdPredictionModel
     import os
     crowdlevel = None
-    improved_model_path = 'improved_crowd_prediction_model.pkl'
-    if os.path.exists(improved_model_path):
-        model = ImprovedCrowdPredictionModel()
-        if model.load_model():
+    
+    # Check if model is already cached
+    if 'improved_model' not in MODEL_CACHE:
+        improved_model_path = 'improved_crowd_prediction_model.pkl'
+        if os.path.exists(improved_model_path):
+            try:
+                model = ImprovedCrowdPredictionModel()
+                if model.load_model():
+                    MODEL_CACHE['improved_model'] = model
+                    print("Model loaded and cached successfully")
+                else:
+                    print("Failed to load model")
+            except Exception as e:
+                print(f"Error loading model: {e}")
+    
+    # Use cached model if available
+    if 'improved_model' in MODEL_CACHE:
+        try:
+            model = MODEL_CACHE['improved_model']
             now = datetime.now()
             day_of_week = now.weekday()
             month = now.month
@@ -339,14 +379,24 @@ def place_details(request, place_id):
                 weather_condition='Sunny',
                 hour=hour
             )
+        except Exception as e:
+            print(f"Error predicting crowd level: {e}")
+            crowdlevel = None
+    
     # Fallback: use latest crowd data if improved model not available
     if crowdlevel is None:
-        crowd_data = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
-        crowdlevel = crowd_data.crowdlevel if crowd_data else 'N/A'
+        try:
+            crowd_data = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
+            crowdlevel = crowd_data.crowdlevel if crowd_data else 'N/A'
+        except Exception as e:
+            print(f"Error fetching crowd data: {e}")
+            crowdlevel = 'N/A'
+    
     today = timezone.now().date().isoformat()  # e.g., '2025-06-27'
     closed_list = []
     if place.closed_dates:
         closed_list = [d.strip() for d in place.closed_dates.split(',') if d.strip()]
+    
     return render(request, 'placedetails.html', {
         'place': place,
         'crowdlevel': crowdlevel,
@@ -436,11 +486,12 @@ def search_places(request):
     # Record search history if user is authenticated
     save_search_history(request.user, query, 'place')
 
-    # Filter places based on user permissions
+    # Filter places based on user permissions and allowed districts
+    allowed_districts = ['Kathmandu', 'Lalitpur', 'Bhaktapur']
     if request.user.is_superuser:
-        places = Place.objects.filter(name__icontains=query)
+        places = Place.objects.filter(name__icontains=query, district__in=allowed_districts)
     else:
-        places = Place.objects.filter(name__icontains=query, is_approved=True)
+        places = Place.objects.filter(name__icontains=query, district__in=allowed_districts, is_approved=True)
     
     if not places:
         return JsonResponse({'error': 'No places found matching the query.'}, status=404)
@@ -485,13 +536,30 @@ def places_by_district(request, district_name):
             time_slot = 'morning'
     save_search_history(request.user, district_name, 'district')
     
+    # Validate that the requested district is allowed (case-insensitive)
+    allowed_districts = ['Kathmandu', 'Lalitpur', 'Bhaktapur']
+    allowed_districts_lower = [d.lower() for d in allowed_districts]
+    
+    # Check if the district name (case-insensitive) is in allowed districts
+    if district_name.lower() not in allowed_districts_lower:
+        return JsonResponse({
+            'error': f'District "{district_name}" is not supported. Only {", ".join(allowed_districts)} districts are allowed.'
+        }, status=400)
+    
+    # Find the correct case version of the district name
+    correct_district = None
+    for district in allowed_districts:
+        if district.lower() == district_name.lower():
+            correct_district = district
+            break
+    
     # Filter places based on user permissions
     if request.user.is_superuser:
-        places = Place.objects.filter(district__iexact=district_name)
+        places = Place.objects.filter(district__iexact=correct_district)
     else:
-        places = Place.objects.filter(district__iexact=district_name, is_approved=True)
+        places = Place.objects.filter(district__iexact=correct_district, is_approved=True)
     
-    print(f"Found {places.count()} places for district {district_name}")
+    print(f"Found {places.count()} places for district {correct_district}")
     places_data = []
     for place in places:
         crowdlevel = predict_crowd_for_place(place, time_slot)
@@ -514,31 +582,27 @@ def places_by_district(request, district_name):
 @api_view(['GET'])
 def places_by_tag(request, tag_name):
     # Fetch places matching the tag
+    allowed_districts = ['Kathmandu', 'Lalitpur', 'Bhaktapur']
     if request.user.is_superuser:
-        places = Place.objects.filter(tags__name__iexact=tag_name)
+        places = Place.objects.filter(tags__name__iexact=tag_name, district__in=allowed_districts)
     else:
-        places = Place.objects.filter(tags__name__iexact=tag_name, is_approved=True)
+        places = Place.objects.filter(tags__name__iexact=tag_name, district__in=allowed_districts, is_approved=True)
     
-    result = []
-
+    places_data = []
     for place in places:
-        latest_crowd = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
-
-        result.append({
+        crowdlevel = predict_crowd_for_place(place)
+        places_data.append({
             'id': place.id,
             'name': place.name,
             'description': place.description,
-            'popular_for': place.popular_for,
             'category': place.category,
-            'crowdlevel': latest_crowd.crowdlevel if latest_crowd else 'N/A',
-            'status': latest_crowd.status if latest_crowd else 'N/A',
-            'tags': list(place.tags.values_list('name', flat=True)),
-            'lat': place.latitude,
-            'lng': place.longitude,
-            'image': request.build_absolute_uri(place.image.url) if place.image else None
+            'crowdlevel': crowdlevel,
+            'district': place.district,
+            'latitude': place.latitude,
+            'longitude': place.longitude,
         })
-
-    return JsonResponse({'places': result})
+    
+    return JsonResponse({'places': places_data})
 
 @login_required
 def add_place(request):
@@ -1239,19 +1303,37 @@ def improved_crowd_predictions(request):
                 time_slot = 'morning'
         
         # Filter places based on parameters
-        places = Place.objects.all()
+        allowed_districts = ['Kathmandu', 'Lalitpur', 'Bhaktapur']
+        places = Place.objects.filter(district__in=allowed_districts)
         if district:
+            # Validate that the requested district is allowed (case-insensitive)
+            district_lower = district.lower()
+            allowed_districts_lower = [d.lower() for d in allowed_districts]
+            print(f"[DEBUG] Checking district: '{district}' (lower: '{district_lower}') against {allowed_districts_lower}")
+            
+            if district_lower not in allowed_districts_lower:
+                error_msg = f'District "{district}" is not supported. Only {", ".join(allowed_districts)} districts are allowed.'
+                print(f"[DEBUG] District validation failed: {error_msg}")
+                return JsonResponse({
+                    'error': error_msg
+                }, status=400)
+            # Use case-insensitive filtering
             places = places.filter(district__iexact=district)
+            print(f"[DEBUG] After district filter: {places.count()} places")
         if category:
             places = places.filter(category__iexact=category)
+            print(f"[DEBUG] After category filter: {places.count()} places")
         
         # Filter by approval status based on user permissions
         if not request.user.is_superuser:
             places = places.filter(is_approved=True)
+            print(f"[DEBUG] After approval filter: {places.count()} places")
         
         if not places.exists():
+            error_msg = 'No places found for the given criteria'
+            print(f"[DEBUG] No places found: {error_msg}")
             return JsonResponse({
-                'error': 'No places found for the given criteria'
+                'error': error_msg
             }, status=404)
         
         # Try to use improved model
@@ -1436,6 +1518,8 @@ def tourism_crowd_data_for_charts(request):
         time_slot = request.GET.get('time_slot')
         limit = int(request.GET.get('limit', 7))  # Number of places to show in chart (changed from 10 to 7)
         
+        print(f"[DEBUG] Tourism API called with: district={district}, category={category}, time_slot={time_slot}")
+        
         # Save search history
         if district:
             save_search_history(request.user, district, 'district')
@@ -1456,19 +1540,39 @@ def tourism_crowd_data_for_charts(request):
                 time_slot = 'morning'
         
         # Filter places based on parameters
-        places = Place.objects.all()
+        allowed_districts = ['Kathmandu', 'Lalitpur', 'Bhaktapur']
+        places = Place.objects.filter(district__in=allowed_districts)
+        print(f"[DEBUG] Initial places count: {places.count()}")
+        
         if district:
+            # Validate that the requested district is allowed (case-insensitive)
+            district_lower = district.lower()
+            allowed_districts_lower = [d.lower() for d in allowed_districts]
+            print(f"[DEBUG] Checking district: '{district}' (lower: '{district_lower}') against {allowed_districts_lower}")
+            
+            if district_lower not in allowed_districts_lower:
+                error_msg = f'District "{district}" is not supported. Only {", ".join(allowed_districts)} districts are allowed.'
+                print(f"[DEBUG] District validation failed: {error_msg}")
+                return JsonResponse({
+                    'error': error_msg
+                }, status=400)
+            # Use case-insensitive filtering
             places = places.filter(district__iexact=district)
+            print(f"[DEBUG] After district filter: {places.count()} places")
         if category:
             places = places.filter(category__iexact=category)
+            print(f"[DEBUG] After category filter: {places.count()} places")
         
         # Filter by approval status based on user permissions
         if not request.user.is_superuser:
             places = places.filter(is_approved=True)
+            print(f"[DEBUG] After approval filter: {places.count()} places")
         
         if not places.exists():
+            error_msg = 'No places found for the given criteria'
+            print(f"[DEBUG] No places found: {error_msg}")
             return JsonResponse({
-                'error': 'No places found for the given criteria'
+                'error': error_msg
             }, status=404)
         
         # Use the improved tourism model

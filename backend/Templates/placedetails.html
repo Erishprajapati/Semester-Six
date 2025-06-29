@@ -21,87 +21,59 @@
         font-family: 'Poppins', sans-serif;
         color: var(--text-primary);
         line-height: 1.6;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
     }
 
+    /* Full-width layout without side white gaps */
     .container-fluid {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 2rem;
+        width: 100vw;
+        max-width: 100vw;
+        padding: 0;
+        margin: 0;
+        box-sizing: border-box;
     }
 
-    .main-row {
-        display: flex;
+    /* Layout Grid */
+    .place-layout-container {
+        display: grid;
+        grid-template-columns: 70% 30%;
+        grid-template-rows: auto auto;
+        grid-template-areas:
+            "placedetails nearbyplaces"
+            "similarplaces nearbyplaces";
+        width: 100vw;
+        margin: 0;
+        padding: 0;
         gap: 2rem;
-        flex-wrap: nowrap;
+        background: var(--background);
+        box-sizing: border-box;
     }
 
-    .main-left {
-        flex: 0 0 70%;
-        max-width: 70%;
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
+    /* Section Styles */
+    .placedetails-section {
+        grid-area: placedetails;
+        padding: 2rem 2rem 1rem 2rem;
+        background: none;
     }
 
-    .main-right {
-        flex: 0 0 30%;
-        max-width: 30%;
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
+    .similarplaces-section {
+        grid-area: similarplaces;
+        padding: 1rem 2rem 2rem 2rem;
+        background: none;
     }
 
-    /* Main Content Card */
-    .big-left-card {
+    .nearbyplaces-section {
+        grid-area: nearbyplaces;
+        padding: 2rem 2rem 2rem 0;
         background: var(--card-background);
-        border-radius: 1.25rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        overflow: hidden;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-left: 1px solid var(--border-color);
+        box-shadow: 0 0 10px rgba(0,0,0,0.03);
+        border-radius: 1rem 0 0 1rem;
     }
 
-    .big-left-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    }
-
-    .place-hero-img {
-        height: 450px;
-        width: 100%;
-        background-size: cover;
-        background-position: center;
-        position: relative;
-    }
-
-    .place-hero-img::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 50%;
-        background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-    }
-
-    .place-content {
-        padding: 2rem;
-    }
-
-    .place-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        margin-bottom: 1rem;
-    }
-
-    .place-description {
-        font-size: 1.1rem;
-        color: var(--text-secondary);
-        margin-bottom: 2rem;
-        line-height: 1.8;
-    }
-
-    /* Tags */
+    /* Tag Badges */
     .tag-badge {
         background-color: var(--primary-color);
         color: white;
@@ -113,119 +85,63 @@
         display: inline-block;
         transition: all 0.3s ease;
     }
-
     .tag-badge:hover {
         background-color: var(--primary-hover);
         transform: translateY(-2px);
     }
 
-    /* Map */
-    #leaflet-map {
-        height: 400px;
-        border-radius: 1rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        margin-top: 2rem;
-    }
-
-    /* Right Side Card */
+    /* Cards */
+    .big-left-card,
     .right-side-card {
+        background: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .card,
+    .place-item {
         background: var(--card-background);
-        border-radius: 1.25rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        padding: 2rem;
-        height: 100%;
+        border-radius: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid var(--border-color);
+        padding: 1.25rem;
+        margin-bottom: 1rem;
     }
 
-    .right-side-card h4 {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid var(--border-color);
+    /* Hero Image */
+    .place-hero-img {
+        height: 450px;
+        width: 100%;
+        background-size: cover;
+        background-position: center;
         position: relative;
     }
-
-    .right-side-card h4::after {
+    .place-hero-img::after {
         content: '';
         position: absolute;
-        bottom: -2px;
+        bottom: 0;
         left: 0;
-        width: 60px;
-        height: 2px;
-        background-color: var(--primary-color);
+        right: 0;
+        height: 50%;
+        background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
     }
 
-    /* Recommendations */
-    #recommendations {
-        display: grid;
-        gap: 1.5rem;
-        padding-right: 1rem;
+    /* Place Content */
+    .place-content {
+        padding: 2rem;
     }
-
-    #recommendations .card {
-        display: flex;
-        align-items: center;
-        background: var(--card-background);
-        border-radius: 1rem;
-        padding: 1.25rem;
-        border: 1px solid var(--border-color);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    #recommendations .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        border-color: var(--primary-color);
-    }
-
-    #recommendations img {
-        width: 120px;
-        height: 120px;
-        object-fit: cover;
-        border-radius: 0.75rem;
-        margin-right: 1.5rem;implem
-        transition: transform 0.3s ease;
-    }
-
-    #recommendations .card:hover img {
-        transform: scale(1.05);
-    }
-
-    #recommendations .card-content {
-        flex: 1;
-    }
-
-    #recommendations h6 {
-        font-size: 1.2rem;
-        font-weight: 600;
-        margin: 0 0 0.5rem 0;
+    .place-title {
+        font-size: 2.5rem;
+        font-weight: 700;
         color: var(--text-primary);
+        margin-bottom: 1rem;
     }
-
-    #recommendations h6 a {
-        color: inherit;
-        text-decoration: none;
-        transition: color 0.3s ease;
-    }
-
-    #recommendations h6 a:hover {
-        color: var(--primary-color);
-    }
-
-    #recommendations .category {
+    .place-description {
+        font-size: 1.1rem;
         color: var(--text-secondary);
-        font-size: 0.95rem;
-        margin-bottom: 0.75rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    #recommendations .category i {
-        color: var(--primary-color);
+        margin-bottom: 2rem;
+        line-height: 1.8;
     }
 
     /* Stats Section */
@@ -235,45 +151,120 @@
         gap: 1.5rem;
         margin: 2rem 0;
     }
-
     .stat-card {
         background: var(--card-background);
         padding: 1.5rem;
         border-radius: 1rem;
         text-align: center;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        transition: transform 0.3s ease;
     }
-
     .stat-card:hover {
         transform: translateY(-5px);
     }
-
     .stat-value {
         font-size: 2rem;
         font-weight: 700;
         color: var(--primary-color);
         margin-bottom: 0.5rem;
     }
-
     .stat-label {
         color: var(--text-secondary);
         font-size: 0.95rem;
     }
 
-    /* Responsive Design */
-    @media (max-width: 992px) {
-        .main-row {
-            flex-direction: column;
+    /* Recommendations & Places */
+    #recommendations,
+    .place-list {
+        display: grid;
+        gap: 1.5rem;
+        padding: 0;
+        margin: 0;
+    }
+
+    .card img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 0.75rem;
+        margin-right: 1rem;
+    }
+    .card-content {
+        flex: 1;
+    }
+    .card-content h6 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+        color: var(--text-primary);
+    }
+    .card-content a {
+        color: inherit;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+    .card-content a:hover {
+        color: var(--primary-color);
+    }
+
+    /* Nearby icon & place info */
+    .place-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        color: white;
+        font-size: 1.2rem;
+    }
+    .place-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 0.25rem 0;
+    }
+    .place-details {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+    .place-distance {
+        font-size: 0.85rem;
+        color: var(--primary-color);
+        font-weight: 500;
+    }
+    .place-type {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        background: var(--background);
+        padding: 0.2rem 0.5rem;
+        border-radius: 1rem;
+        margin-left: 0.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+        .place-layout-container {
+            grid-template-columns: 1fr;
+            grid-template-areas:
+                "placedetails"
+                "nearbyplaces"
+                "similarplaces";
             gap: 1rem;
         }
-        .main-left, .main-right {
-            max-width: 100%;
-            flex: 1 1 100%;
+
+        .placedetails-section,
+        .similarplaces-section,
+        .nearbyplaces-section {
+            padding: 1.5rem;
+            border: none;
+            box-shadow: none;
         }
-        #nearby-restaurants {
-            margin-top: 1rem;
-            max-height: none;
+
+        .nearbyplaces-section {
+            background: var(--card-background);
+            border-radius: 0.75rem;
+            border-left: none;
         }
     }
 
@@ -531,109 +522,107 @@
 </style>
 
 <!-- Main content -->
-<div class="container-fluid my-5">
-    {% csrf_token %}
-    <div class="main-center">
-        <div class="big-left-card">
-            {% if place.image %}
-                <div class="place-hero-img" style="background-image: url('{{ place.image.url }}');"></div>
+<div class="place-layout-container">
+    <div class="placedetails-section">
+        {% if place.image %}
+            <div class="place-hero-img" style="background-image: url('{{ place.image.url }}');"></div>
+        {% endif %}
+        <div class="p-5">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2>{{ place.name }}</h2>
+                    <p class="text-muted"><i class="bi bi-tag"></i> {{ place.category }}</p>
+                    {% if not place.is_approved and user.is_authenticated and place.added_by == user %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="bi bi-clock"></i> <strong>Pending Approval:</strong> This place is awaiting admin verification and is not yet visible to the public.
+                    </div>
+                    {% endif %}
+                </div>
+                {% if user.is_authenticated and place.added_by == user or user.is_superuser %}
+                <div class="d-flex gap-2">
+                    <a href="{% url 'save_place' place.id %}" class="btn btn-warning" style="margin-right: 10px;">
+                        <i class="bi bi-pencil-square"></i> Update Place
+                    </a>
+                    <button id="delete-place-btn" 
+                            data-url="{% url 'delete_place' place.id %}" 
+                            data-place-name="{{ place.name }}" 
+                            data-place-district="{{ place.district }}"
+                            class="btn btn-danger" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#deleteConfirmModal"
+                            style="background: linear-gradient(135deg, #dc3545, #c82333); border: none; box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3); font-weight: 600; transition: all 0.3s ease;">
+                        <i class="bi bi-trash"></i> Delete Place
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            <p><strong>Description:</strong> {{ place.description }}</p>
+            <p><strong>Popular For:</strong> {{ place.popular_for }}</p>
+            <p><strong>District:</strong> {{ place.district }}</p>
+            <p><strong>Location:</strong> {{ place.location }}</p>
+            {% if place.opening_time or place.closing_time %}
+            <p><strong>Opening Hours:</strong>
+                {% if place.opening_time %}{{ place.opening_time|time:'H:i' }}{% else %}?{% endif %} - 
+                {% if place.closing_time %}{{ place.closing_time|time:'H:i' }}{% else %}?{% endif %}
+            </p>
             {% endif %}
-            <div class="p-5">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h2>{{ place.name }}</h2>
-                        <p class="text-muted"><i class="bi bi-tag"></i> {{ place.category }}</p>
-                        {% if not place.is_approved and user.is_authenticated and place.added_by == user %}
-                        <div class="alert alert-warning" role="alert">
-                            <i class="bi bi-clock"></i> <strong>Pending Approval:</strong> This place is awaiting admin verification and is not yet visible to the public.
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% if user.is_authenticated and place.added_by == user or user.is_superuser %}
-                    <div class="d-flex gap-2">
-                        <a href="{% url 'save_place' place.id %}" class="btn btn-warning" style="margin-right: 10px;">
-                            <i class="bi bi-pencil-square"></i> Update Place
-                        </a>
-                        <button id="delete-place-btn" 
-                                data-url="{% url 'delete_place' place.id %}" 
-                                data-place-name="{{ place.name }}" 
-                                data-place-district="{{ place.district }}"
-                                class="btn btn-danger" 
-                                data-bs-toggle="modal" 
-                                data-bs-target="#deleteConfirmModal"
-                                style="background: linear-gradient(135deg, #dc3545, #c82333); border: none; box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3); font-weight: 600; transition: all 0.3s ease;">
-                            <i class="bi bi-trash"></i> Delete Place
-                        </button>
-                    </div>
+            {% if place.best_time_to_visit %}
+            <p><strong>Best Time to Visit:</strong> {{ place.best_time_to_visit }}</p>
+            {% endif %}
+            {% if place.closed_dates %}
+            {% if closed_list %}
+                {% for closed in closed_list %}
+                    {% if closed == today %}
+                        <p style="color:red;"><strong>Closed Today!</strong></p>
                     {% endif %}
-                </div>
-                <p><strong>Description:</strong> {{ place.description }}</p>
-                <p><strong>Popular For:</strong> {{ place.popular_for }}</p>
-                <p><strong>District:</strong> {{ place.district }}</p>
-                <p><strong>Location:</strong> {{ place.location }}</p>
-                {% if place.opening_time or place.closing_time %}
-                <p><strong>Opening Hours:</strong>
-                    {% if place.opening_time %}{{ place.opening_time|time:'H:i' }}{% else %}?{% endif %} - 
-                    {% if place.closing_time %}{{ place.closing_time|time:'H:i' }}{% else %}?{% endif %}
-                </p>
+                {% endfor %}
+                <p><strong>Closed Dates/Festivals:</strong> {{ place.closed_dates }}</p>
+            {% endif %}
+            {% endif %}
+            {% if place.has_entry_fee %}
+            <p><strong>Entry Fees:</strong></p>
+            <ul style="margin-bottom: 0.5rem;">
+                {% if place.tourist_fee_npr %}
+                    <li>Foreign Tourists: ₹{{ place.tourist_fee_npr|floatformat:0 }} NPR{% if place.tourist_fee_usd %} (≈ ${{ place.tourist_fee_usd|floatformat:2 }} USD){% endif %}</li>
                 {% endif %}
-                {% if place.best_time_to_visit %}
-                <p><strong>Best Time to Visit:</strong> {{ place.best_time_to_visit }}</p>
+                {% if place.saarc_fee_npr %}
+                    <li>SAARC Nationals: ₹{{ place.saarc_fee_npr|floatformat:0 }} NPR</li>
                 {% endif %}
-                {% if place.closed_dates %}
-                {% if closed_list %}
-                    {% for closed in closed_list %}
-                        {% if closed == today %}
-                            <p style="color:red;"><strong>Closed Today!</strong></p>
-                        {% endif %}
-                    {% endfor %}
-                    <p><strong>Closed Dates/Festivals:</strong> {{ place.closed_dates }}</p>
-                {% endif %}
-                {% endif %}
-                {% if place.has_entry_fee %}
-                <p><strong>Entry Fees:</strong></p>
-                <ul style="margin-bottom: 0.5rem;">
-                    {% if place.tourist_fee_npr %}
-                        <li>Foreign Tourists: ₹{{ place.tourist_fee_npr|floatformat:0 }} NPR{% if place.tourist_fee_usd %} (≈ ${{ place.tourist_fee_usd|floatformat:2 }} USD){% endif %}</li>
-                    {% endif %}
-                    {% if place.saarc_fee_npr %}
-                        <li>SAARC Nationals: ₹{{ place.saarc_fee_npr|floatformat:0 }} NPR</li>
-                    {% endif %}
-                    {% if place.local_fee_npr and place.local_fee_npr|floatformat:0 != '0' %}
-                        <li>Local Residents: ₹{{ place.local_fee_npr|floatformat:0 }} NPR</li>
-                    {% else %}
-                        <li>Local Residents: FREE</li>
-                    {% endif %}
-                    {% if place.fee_description %}
-                        <li>Notes: {{ place.fee_description }}</li>
-                    {% endif %}
-                </ul>
+                {% if place.local_fee_npr and place.local_fee_npr|floatformat:0 != '0' %}
+                    <li>Local Residents: ₹{{ place.local_fee_npr|floatformat:0 }} NPR</li>
                 {% else %}
-                <p><strong>Entry Fees:</strong> Free Entry</p>
+                    <li>Local Residents: FREE</li>
                 {% endif %}
-                <p><strong>Crowd Level:</strong> {{ crowdlevel }}%</p>
-                <div class="mt-3">
-                    <strong>Tags:</strong>
-                    {% for tag in place.tags.all %}
-                        <span class="badge tag-badge">{{ tag.name }}</span>
-                    {% empty %}
-                        <span>No tags available.</span>
-                    {% endfor %}
-                    <div class="mt-4" id="weather-info">
-                        <h5><i class="bi bi-cloud-sun-fill me-2"></i> Current Weather</h5>
-                        <p class="text-muted">Fetching weather data...</p>
-                    </div>
-                    
+                {% if place.fee_description %}
+                    <li>Notes: {{ place.fee_description }}</li>
+                {% endif %}
+            </ul>
+            {% else %}
+            <p><strong>Entry Fees:</strong> Free Entry</p>
+            {% endif %}
+            <p><strong>Crowd Level:</strong> {{ crowdlevel }}%</p>
+            <div class="mt-3">
+                <strong>Tags:</strong>
+                {% for tag in place.tags.all %}
+                    <span class="badge tag-badge">{{ tag.name }}</span>
+                {% empty %}
+                    <span>No tags available.</span>
+                {% endfor %}
+                <div class="mt-4" id="weather-info">
+                    <h5><i class="bi bi-cloud-sun-fill me-2"></i> Current Weather</h5>
+                    <p class="text-muted">Fetching weather data...</p>
                 </div>
-                <div id="leaflet-map"></div>
-                <div id="distance-info" class="mt-3"></div>
+            </div>
+            <div id="leaflet-map"></div>
+            <div id="distance-info" class="mt-3"></div>
+            <div class="similarplaces-section">
+                <h4>Similar Places</h4>
+                <div id="recommendations"></div>
             </div>
         </div>
-        <div class="right-side-card p-4 mt-4">
-            <h4>Similar Places</h4>
-            <div id="recommendations"></div>
-        </div>
-        <div id="nearby-places" class="mt-4">
+    </div>
+    <div class="nearbyplaces-section">
+        <div id="nearby-places">
             <h5><i class="bi bi-geo-alt me-2"></i>Nearby Places</h5>
             <div class="place-list" id="place-list"></div>
         </div>
@@ -954,94 +943,106 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        // First get user's location
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function (position) {
-                    const userLat = position.coords.latitude;
-                    const userLng = position.coords.longitude;
+        // Show loading indicator for recommendations
+        const container = document.getElementById("recommendations");
+        container.innerHTML = `
+            <div class="loading-recommendations">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading recommendations...</p>
+            </div>
+        `;
+        
+        // Load recommendations asynchronously after a short delay
+        setTimeout(() => {
+            // First get user's location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        const userLat = position.coords.latitude;
+                        const userLng = position.coords.longitude;
 
-                    // Then fetch recommendations
-                    fetch(`/api/recommend/{{ place.name }}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            console.log("Recommendations API response:", data);
-                            const container = document.getElementById("recommendations");
-                            container.innerHTML = ''; // Clear existing content
-                            
-                            if(data.recommendations && data.recommendations.length > 0) {
-                                console.log("Found recommendations:", data.recommendations.length);
-                                // Calculate distance for each place and sort
-                                const placesWithDistance = data.recommendations.map(place => {
-                                    const distance = calculateDistance(
-                                        userLat, 
-                                        userLng, 
-                                        place.latitude, 
-                                        place.longitude
-                                    );
-                                    return { ...place, distance };
-                                });
+                        // Then fetch recommendations
+                        fetch(`/api/recommend/{{ place.name }}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log("Recommendations API response:", data);
+                                container.innerHTML = ''; // Clear loading content
+                                
+                                if(data.recommendations && data.recommendations.length > 0) {
+                                    console.log("Found recommendations:", data.recommendations.length);
+                                    // Calculate distance for each place and sort
+                                    const placesWithDistance = data.recommendations.map(place => {
+                                        const distance = calculateDistance(
+                                            userLat, 
+                                            userLng, 
+                                            place.latitude, 
+                                            place.longitude
+                                        );
+                                        return { ...place, distance };
+                                    });
 
-                                // Sort places by distance
-                                placesWithDistance.sort((a, b) => a.distance - b.distance);
+                                    // Sort places by distance
+                                    placesWithDistance.sort((a, b) => a.distance - b.distance);
 
-                                // Display sorted places
-                                placesWithDistance.forEach(place => {
-                                    const card = `
-                                        <div class="card">
-                                            <img src="${place.image || 'https://via.placeholder.com/120x120?text=No+Image'}" alt="${place.name}" class="img-fluid">
-                                            <div class="card-content">
-                                                <h6>
-                                                    <a href="/place-details/${place.id}/">${place.name}</a>
-                                                </h6>
-                                                <div class="category">
-                                                    <i class="bi bi-tag"></i>
-                                                    ${place.category}
-                                                </div>
-                                                <div class="visitor-count">
-                                                    <i class="bi bi-people"></i>
-                                                    ${place.crowdlevel}% crowd level
-                                                </div>
-                                                <div class="distance">
-                                                    <i class="bi bi-geo-alt"></i>
-                                                    ${place.distance.toFixed(1)} km away
+                                    // Display sorted places
+                                    placesWithDistance.forEach(place => {
+                                        const card = `
+                                            <div class="card">
+                                                <img src="${place.image || 'https://via.placeholder.com/120x120?text=No+Image'}" alt="${place.name}" class="img-fluid">
+                                                <div class="card-content">
+                                                    <h6>
+                                                        <a href="/place-details/${place.id}/">${place.name}</a>
+                                                    </h6>
+                                                    <div class="category">
+                                                        <i class="bi bi-tag"></i>
+                                                        ${place.category}
+                                                    </div>
+                                                    <div class="visitor-count">
+                                                        <i class="bi bi-people"></i>
+                                                        ${place.crowdlevel}% crowd level
+                                                    </div>
+                                                    <div class="distance">
+                                                        <i class="bi bi-geo-alt"></i>
+                                                        ${place.distance.toFixed(1)} km away
+                                                    </div>
                                                 </div>
                                             </div>
+                                        `;
+                                        container.innerHTML += card;
+                                    });
+                                } else {
+                                    console.log("No recommendations found");
+                                    container.innerHTML = `
+                                        <div class="no-results">
+                                            <i class="bi bi-emoji-frown"></i>
+                                            <p>No similar places found.</p>
                                         </div>
                                     `;
-                                    container.innerHTML += card;
-                                });
-                            } else {
-                                console.log("No recommendations found");
+                                }
+                            })
+                            .catch(error => {
+                                console.error("Error fetching recommendations:", error);
                                 container.innerHTML = `
                                     <div class="no-results">
-                                        <i class="bi bi-emoji-frown"></i>
-                                        <p>No similar places found.</p>
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                        <p>Failed to load recommendations.</p>
                                     </div>
                                 `;
-                            }
-                        })
-                        .catch(error => {
-                            console.error("Error fetching recommendations:", error);
-                            const container = document.getElementById("recommendations");
-                            container.innerHTML = `
-                                <div class="no-results">
-                                    <i class="bi bi-exclamation-triangle"></i>
-                                    <p>Failed to load recommendations.</p>
-                                </div>
-                            `;
-                        });
-                },
-                function (error) {
-                    console.warn("Geolocation error:", error.message);
-                    // If geolocation fails, show recommendations without sorting
-                    fetchRecommendationsWithoutLocation();
-                }
-            );
-        } else {
-            // If geolocation is not supported, show recommendations without sorting
-            fetchRecommendationsWithoutLocation();
-        }
+                            });
+                    },
+                    function (error) {
+                        console.warn("Geolocation error:", error.message);
+                        // If geolocation fails, show recommendations without sorting
+                        fetchRecommendationsWithoutLocation();
+                    }
+                );
+            } else {
+                // If geolocation is not supported, show recommendations without sorting
+                fetchRecommendationsWithoutLocation();
+            }
+        }, 100); // Small delay to let the page load first
 
         // Function to fetch recommendations without location sorting
         function fetchRecommendationsWithoutLocation() {
@@ -1049,7 +1050,6 @@
                 .then(response => response.json())
                 .then(data => {
                     console.log("Recommendations API response (no location):", data);
-                    const container = document.getElementById("recommendations");
                     container.innerHTML = '';
                     
                     if(data.recommendations && data.recommendations.length > 0) {
@@ -1087,7 +1087,6 @@
                 })
                 .catch(error => {
                     console.error("Error fetching recommendations:", error);
-                    const container = document.getElementById("recommendations");
                     container.innerHTML = `
                         <div class="no-results">
                             <i class="bi bi-exclamation-triangle"></i>

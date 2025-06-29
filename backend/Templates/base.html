@@ -438,16 +438,38 @@
           
           if (input.startsWith('#')) {
             const category = input.slice(1);
-            await fetchPlacesByCategory(category);
+            await fetchPlacesByCategoryTourism(category);
           } else {
-            // Try district first
-            let districtResponse = await fetch(`/places-by-district/${input}/`);
-            let districtData = await districtResponse.json();
-            if (districtData.places && districtData.places.length > 0) {
-              await fetchPlacesByDistrict(input);
+            // First, try to search for places by name to see if it's a specific place
+            const placeResponse = await fetch(`/api/search/?q=${encodeURIComponent(input)}`);
+            const placeData = await placeResponse.json();
+            
+            if (placeData.places && placeData.places.length > 0) {
+              // If we found places by name, check if it's an exact match for a district
+              const inputLower = input.toLowerCase();
+              const allowedDistricts = ['kathmandu', 'lalitpur', 'bhaktapur'];
+              
+              if (allowedDistricts.includes(inputLower)) {
+                // It's a district search, show bar graph
+                await fetchPlacesByDistrictTourism(input);
+              } else {
+                // It's a place name search, redirect to place details
+                const place = placeData.places[0];
+                if (place.id) {
+                  window.location.href = `/place-details/${place.id}/`;
+                } else {
+                  alert('No place ID found for that name.');
+                }
+              }
             } else {
-              // If not found as district, try as place name
-              await fetchPlaceByName(input);
+              // No places found by name, try as district
+              let districtResponse = await fetch(`/places-by-district/${input}/`);
+              let districtData = await districtResponse.json();
+              if (districtData.places && districtData.places.length > 0) {
+                await fetchPlacesByDistrictTourism(input);
+              } else {
+                alert('No places or districts found matching your search.');
+              }
             }
           }
         }

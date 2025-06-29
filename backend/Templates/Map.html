@@ -613,13 +613,6 @@
     <div id="chart-wrapper" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h3 id="chart-title">Popular Places in Selected District</h3>
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <label for="data-source-toggle" style="font-size: 14px; font-weight: 500;">Data Source:</label>
-          <select id="data-source-toggle" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-            <option value="tourism">Tourism Model</option>
-            <option value="regular">Regular Model</option>
-          </select>
-        </div>
       </div>
       <canvas id="bar-chart" width="600" height="300"></canvas>
       <div id="chart-note" style="margin-top: 10px; font-size: 14px; color: #666; text-align: center;"></div>
@@ -664,13 +657,6 @@
     <div id="chart-wrapper" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h3 id="chart-title">Popular Places in Selected District</h3>
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <label for="data-source-toggle" style="font-size: 14px; font-weight: 500;">Data Source:</label>
-          <select id="data-source-toggle" style="padding: 5px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-            <option value="tourism">Tourism Model</option>
-            <option value="regular">Regular Model</option>
-          </select>
-        </div>
       </div>
       <canvas id="bar-chart" width="600" height="300"></canvas>
       <div id="chart-note" style="margin-top: 10px; font-size: 14px; color: #666; text-align: center;"></div>
@@ -713,7 +699,7 @@
   });
 
   // Global variables for data management
-  let currentDataMode = 'tourism'; // Default to tourism data
+  let currentDataMode = 'tourism'; // Always use tourism data
   let lastDistrict = null;
   let lastCategory = null;
   let lastTimeSlot = null;
@@ -752,8 +738,8 @@
 
   // Wait for DOM and styles to be fully loaded
   document.addEventListener('DOMContentLoaded', function() {
-    // Initialize data source toggle
-    handleDataSourceToggle();
+    // Initialize data source toggle - removed since we always use tourism model
+    // handleDataSourceToggle();
     
     // Show the location prompt after a small delay to ensure styles are applied
     const locationPrompt = document.getElementById("location-access-prompt");
@@ -856,14 +842,36 @@
             const category = input.slice(1);
             await fetchPlacesByCategory(category);
           } else {
-            // Try district first
-            let districtResponse = await fetch(`/places-by-district/${input}/`);
-            let districtData = await districtResponse.json();
-            if (districtData.places && districtData.places.length > 0) {
-              await fetchPlacesByDistrict(input);
+            // First, try to search for places by name to see if it's a specific place
+            const placeResponse = await fetch(`/api/search/?q=${encodeURIComponent(input)}`);
+            const placeData = await placeResponse.json();
+            
+            if (placeData.places && placeData.places.length > 0) {
+              // If we found places by name, check if it's an exact match for a district
+              const inputLower = input.toLowerCase();
+              const allowedDistricts = ['kathmandu', 'lalitpur', 'bhaktapur'];
+              
+              if (allowedDistricts.includes(inputLower)) {
+                // It's a district search, show bar graph
+                await fetchPlacesByDistrict(input);
+              } else {
+                // It's a place name search, redirect to place details
+                const place = placeData.places[0];
+                if (place.id) {
+                  window.location.href = `/place-details/${place.id}/`;
+                } else {
+                  showError('No place ID found for that name.');
+                }
+              }
             } else {
-              // If not found as district, try as place name
-              await fetchPlaceByName(input);
+              // No places found by name, try as district
+              let districtResponse = await fetch(`/places-by-district/${input}/`);
+              let districtData = await districtResponse.json();
+              if (districtData.places && districtData.places.length > 0) {
+                await fetchPlacesByDistrict(input);
+              } else {
+                showError('No places or districts found matching your search.');
+              }
             }
           }
           showSuccess('Search completed successfully');
@@ -1222,23 +1230,17 @@
     }
   
     const chartData = selectedPlaces.map(place => place.crowdlevel);
-    // Create better labels with additional info
-    const labels = selectedPlaces.map(place => {
-      let label = place.name;
-      if (place.status) {
-        label += ` (${place.status})`;
-      }
-      return label;
-    });
+    // Show only place names without status
+    const labels = selectedPlaces.map(place => place.name);
   
-    // Updated color scheme as requested: High-Red, Medium-Green, Low-Yellow
-    const getColor = (crowdLevel, status) => {
-      if (crowdLevel > 70 || status === 'High') return '#FF0000'; // High crowd - Red
-      else if (crowdLevel >= 30 || status === 'Medium') return '#4CAF50'; // Medium crowd - Green
-      else return '#FFEB3B'; // Low crowd - Yellow
+    // Google Maps style color scheme: High-Red, Medium-Orange, Low-Green
+    const getColor = (crowdLevel) => {
+      if (crowdLevel > 70) return '#EA4335'; // High crowd - Red (Google Maps red)
+      else if (crowdLevel >= 30) return '#FBBC04'; // Medium crowd - Orange (Google Maps yellow)
+      else return '#34A853'; // Low crowd - Green (Google Maps green)
     };
   
-    const backgroundColors = selectedPlaces.map(place => getColor(place.crowdlevel, place.status));
+    const backgroundColors = selectedPlaces.map(place => getColor(place.crowdlevel));
   
     window.selectedPlaces = selectedPlaces; // Store the places data globally
     console.log('Stored in window.selectedPlaces:', window.selectedPlaces);
@@ -1265,93 +1267,82 @@
       chartTitle.textContent = title;
     }
     
-    // Add note about filtering if applicable
+    // Add simple note
     const chartNote = document.getElementById('chart-note');
     if (chartNote) {
-      if (totalPlaces > selectedPlaces.length) {
-        chartNote.innerHTML = `<i class="bi bi-info-circle"></i> Showing top places by crowd level (3 High, 2 Medium, 2 Low). Click on bars to view place details.`;
-      } else {
         chartNote.innerHTML = `<i class="bi bi-info-circle"></i> Click on bars to view place details.`;
-      }
     }
-  
+    
+    // Create the chart
     window.barChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Crowd Level (%)',
-          data: chartData,
-          backgroundColor: backgroundColors,
-          borderColor: '#388E3C',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        onClick: function (evt, activeEls, chart) {
-          console.log('Chart clicked:', evt);
-          const elements = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
-          console.log('Chart elements:', elements);
-          if (elements.length > 0) {
-            const index = elements[0].index;
-            console.log('Clicked index:', index);
-            console.log('Available places:', window.selectedPlaces);
-            const selectedPlace = window.selectedPlaces[index];
-            console.log('Selected place:', selectedPlace);
-            if (selectedPlace && selectedPlace.id) {
-              console.log('Redirecting to:', `/place-details/${selectedPlace.id}/`);
-              window.location.href = `/place-details/${selectedPlace.id}/`;
-            }
-          } else {
-            alert('No chart element found for click.');
-          }
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Crowd Level',
+                data: selectedPlaces.map(p => p.crowdlevel),
+                backgroundColor: backgroundColors,
+                borderColor: '#4285F4',
+                borderWidth: 1
+            }]
         },
-        responsive: true,
-        plugins: {
-          legend: {
-            display: false
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const place = selectedPlaces[context.dataIndex];
-                let tooltip = `Crowd Level: ${context.parsed.y}%`;
-                if (place.status) {
-                  tooltip += ` (${place.status})`;
+        options: {
+            onClick: function (evt, activeEls, chart) {
+                const elements = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
+                if (elements.length > 0) {
+                    const index = elements[0].index;
+                    const selectedPlace = window.selectedPlaces[index];
+                    if (selectedPlace && selectedPlace.id) {
+                        window.location.href = `/place-details/${selectedPlace.id}/`;
+                    }
                 }
-                if (place.category) {
-                  tooltip += `\nCategory: ${place.category}`;
+            },
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const place = selectedPlaces[context.dataIndex];
+                            let tooltip = `Crowd Level: ${context.parsed.y}%`;
+                            if (place.category) tooltip += `\nCategory: ${place.category}`;
+                            if (place.district) tooltip += `\nDistrict: ${place.district}`;
+                            return tooltip;
+                        }
+                    }
                 }
-                if (place.district) {
-                  tooltip += `\nDistrict: ${place.district}`;
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: { display: true, text: 'Crowd Level (%)' }
+                },
+                x: {
+                    title: { display: true, text: 'Places' }
                 }
-                return tooltip;
-              }
             }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 100,
-            title: {
-              display: true,
-              text: 'Crowd Level (%)'
-            }
-          },
-          x: {
-            title: {
-              display: true,
-              text: 'Places'
-            }
-          }
         }
-      }
     });
     
     return selectedPlaces;
   }
-  
+
+  // Function to get current season
+  function getCurrentSeason() {
+    const month = new Date().getMonth() + 1; // getMonth() returns 0-11
+    
+    if (month >= 3 && month <= 5) {
+      return 'Spring';
+    } else if (month >= 6 && month <= 8) {
+      return 'Summer';
+    } else if (month >= 9 && month <= 11) {
+      return 'Autumn';
+    } else {
+      return 'Winter';
+    }
+  }
+
 // Utility: Map hour to time slot
 function getTimeSlotFromHour(hour) {
   if (hour >= 5 && hour < 12) return 'morning';
@@ -1383,11 +1374,8 @@ async function fetchPlacesByDistrict(district) {
   lastDistrict = district;
   lastCategory = null;
   
-  if (currentDataMode === 'tourism') {
-    await fetchPlacesByDistrictTourism(district);
-  } else {
-    await fetchPlacesByDistrictRegular(district);
-  }
+  // Always use tourism model
+  await fetchPlacesByDistrictTourism(district);
 }
 
 // Modified function to fetch places by category with data source support
@@ -1395,11 +1383,8 @@ async function fetchPlacesByCategory(category) {
   lastCategory = category;
   lastDistrict = null;
   
-  if (currentDataMode === 'tourism') {
-    await fetchPlacesByCategoryTourism(category);
-  } else {
-    await fetchPlacesByCategoryRegular(category);
-  }
+  // Always use tourism model
+  await fetchPlacesByCategoryTourism(category);
 }
 
 // Function to clear all map data, routes, and place info
@@ -2034,23 +2019,17 @@ async function fetchPlacesByCategoryRegular(category) {
         window.barChart.destroy();
     }
     
-    // Create labels with tourism context
-    const labels = selectedPlaces.map(place => {
-        let label = place.name;
-        if (place.status) {
-            label += ` (${place.status})`;
-        }
-        return label;
-    });
+    // Show only place names without status
+    const labels = selectedPlaces.map(place => place.name);
     
-    // Updated color scheme as requested: High-Red, Medium-Green, Low-Yellow
-    const getTourismColor = (crowdLevel, status) => {
-        if (crowdLevel > 70 || status === 'High') return '#FF0000'; // High crowd - Red
-        else if (crowdLevel >= 30 || status === 'Medium') return '#4CAF50'; // Medium crowd - Green
-        else return '#FFEB3B'; // Low crowd - Yellow
+    // Google Maps style color scheme: High-Red, Medium-Orange, Low-Green
+    const getTourismColor = (crowdLevel) => {
+        if (crowdLevel > 70) return '#EA4335'; // High crowd - Red (Google Maps red)
+        else if (crowdLevel >= 30) return '#FBBC04'; // Medium crowd - Orange (Google Maps yellow)
+        else return '#34A853'; // Low crowd - Green (Google Maps green)
     };
     
-    const backgroundColors = selectedPlaces.map(place => getTourismColor(place.crowdlevel, place.status));
+    const backgroundColors = selectedPlaces.map(place => getTourismColor(place.crowdlevel));
     
     window.selectedPlaces = selectedPlaces; // Store the places data globally
     
@@ -2058,14 +2037,15 @@ async function fetchPlacesByCategoryRegular(category) {
     const chartTitle = document.getElementById('chart-title');
     if (chartTitle && selectedPlaces.length > 0) {
         const firstPlace = selectedPlaces[0];
-        let title = 'Tourism-Based Crowd Levels';
+        let title = 'Crowd Levels';
         if (firstPlace.time_slot) {
             title += ` (${firstPlace.time_slot.charAt(0).toUpperCase() + firstPlace.time_slot.slice(1)})`;
         }
         
-        // Add tourism season information
-        if (firstPlace.tourism_context?.tourist_season) {
-            title += ` - ${firstPlace.tourism_context.tourist_season} Season`;
+        // Add current season information
+        const currentSeason = getCurrentSeason();
+        if (currentSeason) {
+            title += ` - ${currentSeason} Season`;
         }
         
         // Add count information
@@ -2078,68 +2058,46 @@ async function fetchPlacesByCategoryRegular(category) {
         chartTitle.textContent = title;
     }
     
-    // Add tourism note
+    // Add simple note
     const chartNote = document.getElementById('chart-note');
     if (chartNote) {
-        let note = `<i class="bi bi-info-circle"></i> Tourism model predictions (3 High, 2 Medium, 2 Low). Click on bars to view place details.`;
-        if (selectedPlaces[0]?.tourism_context?.tourist_season) {
-            note += ` Current: ${selectedPlaces[0].tourism_context.tourist_season} tourist season.`;
-        }
-        chartNote.innerHTML = note;
+        chartNote.innerHTML = `<i class="bi bi-info-circle"></i> Click on bars to view place details.`;
     }
     
+    // Create the chart
     window.barChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-                label: 'Tourism Crowd Level (%)',
+                label: 'Crowd Level',
                 data: selectedPlaces.map(p => p.crowdlevel),
                 backgroundColor: backgroundColors,
-                borderColor: '#2E7D32',
-                borderWidth: 2
+                borderColor: '#4285F4',
+                borderWidth: 1
             }]
         },
         options: {
             onClick: function (evt, activeEls, chart) {
-                console.log('Tourism Chart clicked:', evt);
                 const elements = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
-                console.log('Chart elements:', elements);
                 if (elements.length > 0) {
                     const index = elements[0].index;
-                    console.log('Clicked index:', index);
                     const selectedPlace = window.selectedPlaces[index];
-                    console.log('Selected place:', selectedPlace);
                     if (selectedPlace && selectedPlace.id) {
-                        console.log('Redirecting to:', `/place-details/${selectedPlace.id}/`);
                         window.location.href = `/place-details/${selectedPlace.id}/`;
                     }
-                } else {
-                    alert('No chart element found for click.');
                 }
             },
             responsive: true,
             plugins: {
-                legend: {
-                    display: false
-                },
+                legend: { display: false },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
                             const place = selectedPlaces[context.dataIndex];
-                            let tooltip = `Tourism Crowd Level: ${context.parsed.y}%`;
-                            if (place.status) {
-                                tooltip += ` (${place.status})`;
-                            }
-                            if (place.category) {
-                                tooltip += `\nCategory: ${place.category}`;
-                            }
-                            if (place.district) {
-                                tooltip += `\nDistrict: ${place.district}`;
-                            }
-                            if (place.tourism_context?.tourist_season) {
-                                tooltip += `\nSeason: ${place.tourism_context.tourist_season}`;
-                            }
+                            let tooltip = `Crowd Level: ${context.parsed.y}%`;
+                            if (place.category) tooltip += `\nCategory: ${place.category}`;
+                            if (place.district) tooltip += `\nDistrict: ${place.district}`;
                             return tooltip;
                         }
                     }
@@ -2149,16 +2107,10 @@ async function fetchPlacesByCategoryRegular(category) {
                 y: {
                     beginAtZero: true,
                     max: 100,
-                    title: {
-                        display: true,
-                        text: 'Tourism Crowd Level (%)'
-                    }
+                    title: { display: true, text: 'Crowd Level (%)' }
                 },
                 x: {
-                    title: {
-                        display: true,
-                        text: 'Places'
-                    }
+                    title: { display: true, text: 'Places' }
                 }
             }
         }
