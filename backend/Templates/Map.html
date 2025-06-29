@@ -699,6 +699,9 @@
 
 <script>
   let map, userLatLng = null, userMarker, routePolyline = null;
+  let routingControl = null;
+  let routeClicks = [];
+  let routeClickCount = 1;
 
   const redIcon = new L.Icon({
     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
@@ -1013,6 +1016,20 @@
     return null;
   }
 
+  async function reverseGeocode(lat, lng) {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const data = await res.json();
+      if (data.display_name) {
+        return data.display_name;
+      }
+      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    } catch (error) {
+      console.error('Reverse geocoding error:', error);
+      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+  }
+
   function displayPlacesOnMap(places) {
     if (window.placeMarkers) {
       window.placeMarkers.forEach(marker => map.removeLayer(marker));
@@ -1024,8 +1041,11 @@
         const marker = L.marker([place.latitude, place.longitude]).addTo(map)
           .bindPopup(`<b>${place.name}</b><br>${place.description || "No description"}`);
         window.placeMarkers.push(marker);
+        
         marker.on('click', () => {
           showPlaceInfo(place);
+          
+          // Clear any existing routing
           if (routingControl) {
             map.removeControl(routingControl);
             routingControl = null;
@@ -1034,23 +1054,34 @@
             map.removeLayer(window.activeRouteLine);
             window.activeRouteLine = null;
           }
+          
+          // Clear any existing route click markers
           routeClicks.forEach(m => map.removeLayer(m));
           routeClicks = [];
           routeClickCount = 1;
+          
+          // Only create route if user location is available
           if (userLatLng) {
+            console.log('Creating route from user location to:', place.name);
+            console.log('User location:', userLatLng);
+            console.log('Place location:', [place.latitude, place.longitude]);
+            
             const userLocation = L.latLng(userLatLng[0], userLatLng[1]);
             const placeLocation = L.latLng(place.latitude, place.longitude);
+            
             routingControl = L.Routing.control({
               waypoints: [userLocation, placeLocation],
               draggableWaypoints: true,
               routeWhileDragging: false,
               createMarker: function(i, wp) {
                 if (i === 0) {
+                  // User location marker (red)
                   if (userMarker) map.removeLayer(userMarker);
                   userMarker = L.marker(wp.latLng, {
                     icon: redIcon,
                     draggable: true
                   }).bindPopup("Your Location").addTo(map);
+                  
                   userMarker.on('dragend', async function(e) {
                     const newPos = e.target.getLatLng();
                     userLatLng = [newPos.lat, newPos.lng];
@@ -1066,6 +1097,7 @@
                   });
                   return userMarker;
                 } else {
+                  // Place marker (blue)
                   const blueIcon = new L.Icon({
                     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
                     shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -1078,12 +1110,52 @@
                 }
               }
             }).addTo(map);
+            
+            // Handle route found event
             routingControl.on('routesfound', function(e) {
+              console.log('Route found:', e);
               if (window.activeRouteLine) {
                 map.removeLayer(window.activeRouteLine);
               }
-              window.activeRouteLine = L.polyline(e.routes[0].coordinates, { color: 'blue' }).addTo(map);
+              if (e.routes && e.routes.length > 0) {
+                window.activeRouteLine = L.polyline(e.routes[0].coordinates, { 
+                  color: 'blue',
+                  weight: 5,
+                  opacity: 0.7
+                }).addTo(map);
+                
+                // Show route information
+                const route = e.routes[0];
+                const distance = (route.summary.totalDistance / 1000).toFixed(2); // Convert to km
+                const duration = Math.round(route.summary.totalTime / 60); // Convert to minutes
+                
+                console.log(`Route to ${place.name}: ${distance} km, ${duration} minutes`);
+                
+                // Update place info with route details
+                const placeInfo = document.getElementById('place-info-box');
+                if (placeInfo) {
+                  const routeInfo = document.createElement('div');
+                  routeInfo.innerHTML = `
+                    <div style="background: #e3f2fd; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                      <strong>Route Information:</strong><br>
+                      Distance: ${distance} km<br>
+                      Estimated Time: ${duration} minutes
+                    </div>
+                  `;
+                  placeInfo.appendChild(routeInfo);
+                }
+              }
             });
+            
+            // Handle routing errors
+            routingControl.on('routingerror', function(e) {
+              console.error('Routing error:', e);
+              alert('Unable to calculate route. Please check your location and try again.');
+            });
+            
+          } else {
+            console.log('No user location available for routing');
+            alert('Please allow location access or set your location manually to see routes.');
           }
         });
       } else {
@@ -1111,17 +1183,27 @@
     let selectedPlaces;
     const totalPlaces = places.length;
     
-    // If we have 7 or fewer places, show all of them
+    // Always show exactly 6-7 places with specific distribution
     if (totalPlaces <= 7) {
       selectedPlaces = places;
     } else {
-      // Filter places by crowd level with thresholds only when we have many places
-      const highCrowd = places.filter(p => p.crowdlevel > 70).slice(0, 3);
-      const mediumCrowd = places.filter(p => p.crowdlevel >= 30 && p.crowdlevel <= 70).slice(0, 2);
-      const lowCrowd = places.filter(p => p.crowdlevel < 30).slice(0, 2);
+      // Filter places by crowd level with specific thresholds for exactly 7 places
+      const highCrowd = places.filter(p => p.crowdlevel > 70).slice(0, 3); // 3 crowded places
+      const mediumCrowd = places.filter(p => p.crowdlevel >= 30 && p.crowdlevel <= 70).slice(0, 2); // 2 medium crowded
+      const lowCrowd = places.filter(p => p.crowdlevel < 30).slice(0, 2); // 2 less crowded
       
-      // Combine them
+      // Combine them - this will give us exactly 7 places if available
       selectedPlaces = [...highCrowd, ...mediumCrowd, ...lowCrowd];
+      
+      // If we don't have enough places in each category, fill with the next best available
+      if (selectedPlaces.length < 7) {
+        const remainingPlaces = places.filter(p => !selectedPlaces.includes(p));
+        const needed = 7 - selectedPlaces.length;
+        selectedPlaces = [...selectedPlaces, ...remainingPlaces.slice(0, needed)];
+      }
+      
+      // Limit to exactly 7 places maximum
+      selectedPlaces = selectedPlaces.slice(0, 7);
     }
     
     console.log('Filtered Selected Places:', selectedPlaces);
@@ -1143,10 +1225,11 @@
       return label;
     });
   
+    // Updated color scheme as requested: High-Red, Medium-Green, Low-Yellow
     const getColor = (crowdLevel, status) => {
       if (crowdLevel > 70 || status === 'High') return '#FF0000'; // High crowd - Red
-      else if (crowdLevel >= 30 || status === 'Medium') return '#FFEB3B'; // Medium crowd - Yellow
-      else return '#4CAF50'; // Low crowd - Green
+      else if (crowdLevel >= 30 || status === 'Medium') return '#4CAF50'; // Medium crowd - Green
+      else return '#FFEB3B'; // Low crowd - Yellow
     };
   
     const backgroundColors = selectedPlaces.map(place => getColor(place.crowdlevel, place.status));
@@ -1180,7 +1263,7 @@
     const chartNote = document.getElementById('chart-note');
     if (chartNote) {
       if (totalPlaces > selectedPlaces.length) {
-        chartNote.innerHTML = `<i class="bi bi-info-circle"></i> Showing top places by crowd level. Click on bars to view place details.`;
+        chartNote.innerHTML = `<i class="bi bi-info-circle"></i> Showing top places by crowd level (3 High, 2 Medium, 2 Low). Click on bars to view place details.`;
       } else {
         chartNote.innerHTML = `<i class="bi bi-info-circle"></i> Click on bars to view place details.`;
       }
@@ -1516,6 +1599,12 @@ async function fetchPlacesByCategoryRegular(category) {
   function showPlaceInfo(place) {
     const infoBox = document.getElementById("place-info-box");
     
+    // Clear any existing route information
+    const existingRouteInfo = infoBox.querySelector('[style*="background: #e3f2fd"]');
+    if (existingRouteInfo) {
+      existingRouteInfo.remove();
+    }
+    
     // Add close button if not exists
     if (!document.querySelector('.close-info')) {
       const closeBtn = document.createElement('button');
@@ -1712,7 +1801,7 @@ async function fetchPlacesByCategoryRegular(category) {
         if (district) params.append('district', district);
         if (category) params.append('category', category);
         params.append('time_slot', current_time_slot);
-        params.append('limit', '10'); // Show top 10 places
+        params.append('limit', '7'); // Show top 7 places (changed from 10 to 7)
         
         // Use the new tourism crowd data endpoint
         const response = await fetch(`/api/tourism-crowd-charts/?${params.toString()}`);
@@ -1755,6 +1844,36 @@ async function fetchPlacesByCategoryRegular(category) {
     // Sort by crowdlevel descending
     places.sort((a, b) => b.crowdlevel - a.crowdlevel);
     
+    // Apply the same 6-7 places logic as regular bar chart
+    let selectedPlaces;
+    const totalPlaces = places.length;
+    
+    // Always show exactly 6-7 places with specific distribution
+    if (totalPlaces <= 7) {
+      selectedPlaces = places;
+    } else {
+      // Filter places by crowd level with specific thresholds for exactly 7 places
+      const highCrowd = places.filter(p => p.crowdlevel > 70).slice(0, 3); // 3 crowded places
+      const mediumCrowd = places.filter(p => p.crowdlevel >= 30 && p.crowdlevel <= 70).slice(0, 2); // 2 medium crowded
+      const lowCrowd = places.filter(p => p.crowdlevel < 30).slice(0, 2); // 2 less crowded
+      
+      // Combine them - this will give us exactly 7 places if available
+      selectedPlaces = [...highCrowd, ...mediumCrowd, ...lowCrowd];
+      
+      // If we don't have enough places in each category, fill with the next best available
+      if (selectedPlaces.length < 7) {
+        const remainingPlaces = places.filter(p => !selectedPlaces.includes(p));
+        const needed = 7 - selectedPlaces.length;
+        selectedPlaces = [...selectedPlaces, ...remainingPlaces.slice(0, needed)];
+      }
+      
+      // Limit to exactly 7 places maximum
+      selectedPlaces = selectedPlaces.slice(0, 7);
+    }
+    
+    console.log('Tourism Filtered Selected Places:', selectedPlaces);
+    console.log('Total tourism places available:', totalPlaces, 'Displayed:', selectedPlaces.length);
+    
     const ctx = document.getElementById('bar-chart').getContext('2d');
     
     if (window.barChart) {
@@ -1762,7 +1881,7 @@ async function fetchPlacesByCategoryRegular(category) {
     }
     
     // Create labels with tourism context
-    const labels = places.map(place => {
+    const labels = selectedPlaces.map(place => {
         let label = place.name;
         if (place.status) {
             label += ` (${place.status})`;
@@ -1770,20 +1889,21 @@ async function fetchPlacesByCategoryRegular(category) {
         return label;
     });
     
+    // Updated color scheme as requested: High-Red, Medium-Green, Low-Yellow
     const getTourismColor = (crowdLevel, status) => {
-        if (crowdLevel > 70 || status === 'High') return '#FF4444'; // High crowd - Red
-        else if (crowdLevel >= 30 || status === 'Medium') return '#FFA726'; // Medium crowd - Orange
-        else return '#66BB6A'; // Low crowd - Green
+        if (crowdLevel > 70 || status === 'High') return '#FF0000'; // High crowd - Red
+        else if (crowdLevel >= 30 || status === 'Medium') return '#4CAF50'; // Medium crowd - Green
+        else return '#FFEB3B'; // Low crowd - Yellow
     };
     
-    const backgroundColors = places.map(place => getTourismColor(place.crowdlevel, place.status));
+    const backgroundColors = selectedPlaces.map(place => getTourismColor(place.crowdlevel, place.status));
     
-    window.selectedPlaces = places; // Store the places data globally
+    window.selectedPlaces = selectedPlaces; // Store the places data globally
     
     // Update chart title with tourism context
     const chartTitle = document.getElementById('chart-title');
-    if (chartTitle && places.length > 0) {
-        const firstPlace = places[0];
+    if (chartTitle && selectedPlaces.length > 0) {
+        const firstPlace = selectedPlaces[0];
         let title = 'Tourism-Based Crowd Levels';
         if (firstPlace.time_slot) {
             title += ` (${firstPlace.time_slot.charAt(0).toUpperCase() + firstPlace.time_slot.slice(1)})`;
@@ -1795,7 +1915,11 @@ async function fetchPlacesByCategoryRegular(category) {
         }
         
         // Add count information
-        title += ` - ${places.length} places`;
+        if (totalPlaces > selectedPlaces.length) {
+            title += ` - Showing ${selectedPlaces.length} of ${totalPlaces} places`;
+        } else {
+            title += ` - ${totalPlaces} places`;
+        }
         
         chartTitle.textContent = title;
     }
@@ -1803,9 +1927,9 @@ async function fetchPlacesByCategoryRegular(category) {
     // Add tourism note
     const chartNote = document.getElementById('chart-note');
     if (chartNote) {
-        let note = `<i class="bi bi-info-circle"></i> Tourism model predictions. Click on bars to view place details.`;
-        if (places[0]?.tourism_context?.tourist_season) {
-            note += ` Current: ${places[0].tourism_context.tourist_season} tourist season.`;
+        let note = `<i class="bi bi-info-circle"></i> Tourism model predictions (3 High, 2 Medium, 2 Low). Click on bars to view place details.`;
+        if (selectedPlaces[0]?.tourism_context?.tourist_season) {
+            note += ` Current: ${selectedPlaces[0].tourism_context.tourist_season} tourist season.`;
         }
         chartNote.innerHTML = note;
     }
@@ -1816,7 +1940,7 @@ async function fetchPlacesByCategoryRegular(category) {
             labels: labels,
             datasets: [{
                 label: 'Tourism Crowd Level (%)',
-                data: places.map(p => p.crowdlevel),
+                data: selectedPlaces.map(p => p.crowdlevel),
                 backgroundColor: backgroundColors,
                 borderColor: '#2E7D32',
                 borderWidth: 2
@@ -1848,7 +1972,7 @@ async function fetchPlacesByCategoryRegular(category) {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            const place = places[context.dataIndex];
+                            const place = selectedPlaces[context.dataIndex];
                             let tooltip = `Tourism Crowd Level: ${context.parsed.y}%`;
                             if (place.status) {
                                 tooltip += ` (${place.status})`;
@@ -1886,7 +2010,7 @@ async function fetchPlacesByCategoryRegular(category) {
         }
     });
     
-    return places;
+    return selectedPlaces;
   }
 </script>
 {% endblock %}

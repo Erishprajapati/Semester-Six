@@ -1414,7 +1414,7 @@ def tourism_crowd_data_for_charts(request):
         district = request.GET.get('district')
         category = request.GET.get('category')
         time_slot = request.GET.get('time_slot')
-        limit = int(request.GET.get('limit', 10))  # Number of places to show in chart
+        limit = int(request.GET.get('limit', 7))  # Number of places to show in chart (changed from 10 to 7)
         
         # Determine current time slot if not provided
         if not time_slot:
@@ -1494,16 +1494,16 @@ def tourism_crowd_data_for_charts(request):
                         hour=hour
                     )
                     
-                    # Determine crowd status
+                    # Determine crowd status with updated color scheme: High-Red, Medium-Green, Low-Yellow
                     if predicted_crowd > 70:
                         status = 'High'
                         color = 'red'
-                    elif predicted_crowd > 30:
+                    elif predicted_crowd >= 30:
                         status = 'Medium'
-                        color = 'orange'
+                        color = 'green'
                     else:
                         status = 'Low'
-                        color = 'green'
+                        color = 'yellow'
                     
                     places_data.append({
                         'id': place.id,
