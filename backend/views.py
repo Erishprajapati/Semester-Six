@@ -1336,11 +1336,11 @@ def improved_crowd_predictions(request):
                 'error': error_msg
             }, status=404)
         
-        # Try to use improved model
-        improved_model_path = 'improved_crowd_prediction_model.pkl'
+        # Use the improved tourism model
+        improved_model_path = os.path.join(os.path.dirname(__file__), 'crowd_prediction_model.joblib')
         if not os.path.exists(improved_model_path):
             return JsonResponse({
-                'error': 'Improved model not found. Please train the improved model first.'
+                'error': 'Tourism model not found. Please train the model first.'
             }, status=500)
         
         try:
@@ -1348,10 +1348,10 @@ def improved_crowd_predictions(request):
             model = ImprovedCrowdPredictionModel()
             if not model.load_model():
                 return JsonResponse({
-                    'error': 'Failed to load improved model.'
+                    'error': 'Failed to load tourism model.'
                 }, status=500)
             
-            # Get current context
+            # Get current context for tourism predictions
             now = datetime.now()
             day_of_week = now.weekday()
             month = now.month
@@ -1371,30 +1371,38 @@ def improved_crowd_predictions(request):
             places_data = []
             for place in places:
                 try:
-                    predicted_crowd = model.predict(
-                        place_id=place.id,
-                        category=place.category,
-                        district=place.district,
-                        time_slot=time_slot,
-                        day_of_week=day_of_week,
-                        month=month,
-                        season=season,
-                        is_weekend=is_weekend,
-                        is_holiday=is_holiday,
-                        weather_condition=weather,
-                        hour=hour
-                    )
+                    # Construct all required features for the model
+                    features = {
+                        'place_id': place.id,
+                        'category': place.category or 'Unknown',
+                        'district': place.district or 'Unknown',
+                        'time_slot': time_slot or 'morning',
+                        'day_of_week': day_of_week,
+                        'month': month,
+                        'season': season or 'Unknown',
+                        'is_weekend': is_weekend,
+                        'is_holiday': is_holiday,
+                        'weather_condition': 'Sunny',  # Default weather
+                        'hour': hour
+                    }
+                    # Log all features for debugging
+                    print(f"[DEBUG] Features for place {place.name} (ID {place.id}): {features}")
+                    # Check for missing/None features
+                    missing = [k for k, v in features.items() if v is None]
+                    if missing:
+                        print(f"[DEBUG] Missing features for place {place.name}: {missing}")
+                    predicted_crowd = model.predict(**features)
                     
-                    # Determine crowd status
+                    # Determine crowd status with updated color scheme: High-Red, Medium-Green, Low-Yellow
                     if predicted_crowd > 70:
                         status = 'High'
                         color = 'red'
-                    elif predicted_crowd > 30:
+                    elif predicted_crowd >= 30:
                         status = 'Medium'
-                        color = 'orange'
+                        color = 'green'
                     else:
                         status = 'Low'
-                        color = 'green'
+                        color = 'yellow'
                     
                     places_data.append({
                         'id': place.id,
@@ -1408,38 +1416,49 @@ def improved_crowd_predictions(request):
                         'status': status,
                         'color': color,
                         'time_slot': time_slot,
-                        'weather': weather,
                         'is_weekend': is_weekend,
                         'season': season
                     })
                 except Exception as e:
-                    print(f"[DEBUG] Prediction error for place {place.name}: {e}")
+                    print(f"[DEBUG] Tourism prediction error for place {place.name}: {e}")
                     continue
             
-            # Sort by crowd level (highest first)
+            # Sort by crowd level (highest first) and limit results
             places_data.sort(key=lambda x: x['crowdlevel'], reverse=True)
+            places_data = places_data[:7]
+            
+            # Prepare data specifically for bar charts
+            chart_data = {
+                'labels': [place['name'] for place in places_data],
+                'crowdlevels': [place['crowdlevel'] for place in places_data],
+                'colors': [place['color'] for place in places_data],
+                'categories': [place['category'] for place in places_data],
+                'districts': [place['district'] for place in places_data],
+                'place_ids': [place['id'] for place in places_data]
+            }
             
             return JsonResponse({
                 'places': places_data,
-                'model_used': 'improved',
+                'chart_data': chart_data,
+                'model_used': 'tourism_improved',
                 'total_places': len(places_data),
                 'filters_applied': {
                     'district': district,
                     'category': category,
-                    'time_slot': time_slot,
-                    'weather': weather
+                    'time_slot': time_slot
                 },
                 'context': {
                     'current_time': now.strftime('%Y-%m-%d %H:%M:%S'),
                     'day_of_week': day_of_week,
                     'is_weekend': is_weekend,
-                    'season': season
+                    'season': season,
+                    'tourist_season': 'Peak' if month in [10, 11, 4, 5] else 'Shoulder' if month in [3, 9, 12] else 'Low'
                 }
             })
             
         except Exception as e:
             return JsonResponse({
-                'error': f'Improved model prediction failed: {str(e)}'
+                'error': f'Tourism model prediction failed: {str(e)}'
             }, status=500)
             
     except Exception as e:
@@ -1576,7 +1595,7 @@ def tourism_crowd_data_for_charts(request):
             }, status=404)
         
         # Use the improved tourism model
-        improved_model_path = 'improved_crowd_prediction_model.pkl'
+        improved_model_path = os.path.join(os.path.dirname(__file__), 'crowd_prediction_model.joblib')
         if not os.path.exists(improved_model_path):
             return JsonResponse({
                 'error': 'Tourism model not found. Please train the model first.'
@@ -1610,19 +1629,27 @@ def tourism_crowd_data_for_charts(request):
             places_data = []
             for place in places:
                 try:
-                    predicted_crowd = model.predict(
-                        place_id=place.id,
-                        category=place.category,
-                        district=place.district,
-                        time_slot=time_slot,
-                        day_of_week=day_of_week,
-                        month=month,
-                        season=season,
-                        is_weekend=is_weekend,
-                        is_holiday=is_holiday,
-                        weather_condition='Sunny',  # Default weather
-                        hour=hour
-                    )
+                    # Construct all required features for the model
+                    features = {
+                        'place_id': place.id,
+                        'category': place.category or 'Unknown',
+                        'district': place.district or 'Unknown',
+                        'time_slot': time_slot or 'morning',
+                        'day_of_week': day_of_week,
+                        'month': month,
+                        'season': season or 'Unknown',
+                        'is_weekend': is_weekend,
+                        'is_holiday': is_holiday,
+                        'weather_condition': 'Sunny',  # Default weather
+                        'hour': hour
+                    }
+                    # Log all features for debugging
+                    print(f"[DEBUG] Features for place {place.name} (ID {place.id}): {features}")
+                    # Check for missing/None features
+                    missing = [k for k, v in features.items() if v is None]
+                    if missing:
+                        print(f"[DEBUG] Missing features for place {place.name}: {missing}")
+                    predicted_crowd = model.predict(**features)
                     
                     # Determine crowd status with updated color scheme: High-Red, Medium-Green, Low-Yellow
                     if predicted_crowd > 70:

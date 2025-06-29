@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 import sys
 import os
+import pandas as pd
 
 # Add the backend directory to Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -14,147 +15,204 @@ class Command(BaseCommand):
         parser.add_argument(
             '--csv-file',
             type=str,
-            default='improved_crowd_training_data.csv',
-            help='Path to the CSV file for training (default: improved_crowd_training_data.csv)'
+            default='nepal_tourism_crowd_data.csv',
+            help='Path to the CSV file for training (default: nepal_tourism_crowd_data.csv)'
         )
         parser.add_argument(
             '--force-retrain',
             action='store_true',
-            help='Force retraining even if model exists'
+            help='Force retraining even if model already exists'
         )
         parser.add_argument(
-            '--install-deps',
-            action='store_true',
-            help='Install optional dependencies (XGBoost, SHAP)'
+            '--model-output',
+            type=str,
+            default='crowd_prediction_model.joblib',
+            help='Path to save the trained model (default: crowd_prediction_model.joblib)'
         )
 
     def handle(self, *args, **options):
         csv_file = options['csv_file']
         force_retrain = options['force_retrain']
-        install_deps = options['install_deps']
+        model_output = options['model_output']
         
-        self.stdout.write('🚀 Starting enhanced crowd prediction model training...')
-        
-        # Check if training data exists
+        # Check if CSV file exists
         if not os.path.exists(csv_file):
             self.stdout.write(
-                self.style.ERROR(f'❌ Training data file {csv_file} not found!')
+                self.style.ERROR(f'❌ CSV file "{csv_file}" not found!')
             )
-            self.stdout.write('Please run the improved data generator first:')
-            self.stdout.write('python manage.py export_enhanced_crowd_data')
+            self.stdout.write(
+                self.style.WARNING(f'Available CSV files:')
+            )
+            for file in os.listdir('.'):
+                if file.endswith('.csv'):
+                    self.stdout.write(f'  • {file}')
             return
         
-        # Install optional dependencies if requested
-        if install_deps:
-            self.stdout.write('📦 Installing optional dependencies...')
-            try:
-                import subprocess
-                subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'xgboost', 'shap'])
-                self.stdout.write(self.style.SUCCESS('✅ Dependencies installed successfully!'))
-            except Exception as e:
-                self.stdout.write(
-                    self.style.WARNING(f'⚠️ Could not install dependencies: {e}')
-                )
+        # Check if model already exists
+        if os.path.exists(model_output) and not force_retrain:
+            self.stdout.write(
+                self.style.WARNING(f'⚠️ Model already exists at "{model_output}"')
+            )
+            self.stdout.write(
+                self.style.WARNING(f'Use --force-retrain to retrain the model')
+            )
+            return
+        
+        self.stdout.write(
+            self.style.SUCCESS('🚀 Starting enhanced crowd prediction model training...')
+        )
+        self.stdout.write(
+            self.style.SUCCESS('🧠 Training enhanced model with advanced features...')
+        )
         
         try:
-            # Initialize enhanced model
-            model = ImprovedCrowdPredictionModel()
+            # Initialize the enhanced model
+            model = ImprovedCrowdPredictionModel(model_output)
             
-            # Check if model already exists and user doesn't want to retrain
-            if not force_retrain and model.load_model():
-                self.stdout.write(
-                    self.style.WARNING('⚠️ Model already exists. Use --force-retrain to retrain.')
-                )
+            # Train the model
+            success = model.train_model(csv_file)
+            
+            if success:
+                # Get model info
                 info = model.get_model_info()
-                self.stdout.write(f"📊 Current model: {info['model_name']}")
-                self.stdout.write(f"🎯 R² Score: {info['r2_score']:.4f}")
-                self.stdout.write(f"📏 MAE: {info['mae']:.2f}")
-                self.stdout.write(f"🔍 SHAP Available: {info['shap_available']}")
-                return
-            
-            self.stdout.write('🧠 Training enhanced model with advanced features...')
-            mse, mae, r2 = model.train(csv_file)
-            
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f'🎉 Enhanced model training completed successfully!\n'
-                    f'🤖 Model: {model.best_model_name}\n'
-                    f'📊 Mean Squared Error: {mse:.2f}\n'
-                    f'📏 Mean Absolute Error: {mae:.2f}\n'
-                    f'🎯 R² Score: {r2:.4f}'
+                
+                self.stdout.write(
+                    self.style.SUCCESS('🎉 Enhanced model training completed successfully!')
                 )
-            )
-            
-            # Test predictions
-            self.stdout.write('\n🧪 Testing predictions...')
-            from datetime import datetime
-            
-            # Test case 1: Temple on weekend morning
-            test_prediction1 = model.predict(
-                place_id=1,
-                category='Temple',
-                district='Kathmandu',
-                time_slot='morning',
-                day_of_week=6,  # Sunday
-                month=datetime.now().month,
-                season='Spring',
-                is_weekend=1,
-                is_holiday=0,
-                weather_condition='Sunny'
-            )
-            self.stdout.write(f'🕍 Test 1 (Temple, Sunday morning, sunny): {test_prediction1}% crowd level')
-            
-            # Test case 2: Market on weekday afternoon
-            test_prediction2 = model.predict(
-                place_id=2,
-                category='Market',
-                district='Kathmandu',
-                time_slot='afternoon',
-                day_of_week=2,  # Wednesday
-                month=datetime.now().month,
-                season='Spring',
-                is_weekend=0,
-                is_holiday=0,
-                weather_condition='Cloudy'
-            )
-            self.stdout.write(f'🛒 Test 2 (Market, Wednesday afternoon, cloudy): {test_prediction2}% crowd level')
-            
-            # Test case 3: Park on weekend evening
-            test_prediction3 = model.predict(
-                place_id=3,
-                category='Park',
-                district='Kathmandu',
-                time_slot='evening',
-                day_of_week=5,  # Saturday
-                month=datetime.now().month,
-                season='Spring',
-                is_weekend=1,
-                is_holiday=0,
-                weather_condition='Sunny'
-            )
-            self.stdout.write(f'🌳 Test 3 (Park, Saturday evening, sunny): {test_prediction3}% crowd level')
-            
-            # Show feature importance if available
-            if model.feature_importance is not None:
-                self.stdout.write('\n🏆 Top 5 Most Important Features:')
-                for idx, row in model.feature_importance.head().iterrows():
-                    self.stdout.write(f'  📈 {row["feature"]}: {row["importance"]:.4f}')
-            
-            # Show SHAP availability
-            if model.shap_explainer is not None:
-                self.stdout.write('\n🔍 SHAP explainability is available for model interpretation!')
+                self.stdout.write(
+                    self.style.SUCCESS(f'🤖 Model: {info.get("model_name", "Unknown")}')
+                )
+                self.stdout.write(
+                    self.style.SUCCESS(f'📊 Mean Squared Error: {info.get("mse", 0):.2f}')
+                )
+                self.stdout.write(
+                    self.style.SUCCESS(f'📏 Mean Absolute Error: {info.get("mae", 0):.2f}')
+                )
+                self.stdout.write(
+                    self.style.SUCCESS(f'🎯 R² Score: {info.get("r2_score", 0):.4f}')
+                )
+                self.stdout.write(
+                    self.style.SUCCESS(f'📈 Data Source: {info.get("data_source", "Unknown")}')
+                )
+                self.stdout.write(
+                    self.style.SUCCESS(f'📊 Total Samples: {info.get("total_samples", 0):,}')
+                )
+                self.stdout.write(
+                    self.style.SUCCESS(f'🔧 Total Features: {info.get("total_features", 0)}')
+                )
+                
+                # Test predictions
+                self.stdout.write(
+                    self.style.SUCCESS('\n🧪 Testing predictions...')
+                )
+                
+                test_cases = [
+                    {
+                        'name': 'Temple, Sunday morning, sunny',
+                        'params': {
+                            'place_id': 1,
+                            'category': 'Religious',
+                            'district': 'Kathmandu',
+                            'time_slot': 'morning',
+                            'day_of_week': 6,
+                            'month': 12,
+                            'season': 'Winter',
+                            'is_weekend': 1,
+                            'is_holiday': 0,
+                            'weather_condition': 'Sunny'
+                        }
+                    },
+                    {
+                        'name': 'Market, Wednesday afternoon, cloudy',
+                        'params': {
+                            'place_id': 2,
+                            'category': 'Market',
+                            'district': 'Kathmandu',
+                            'time_slot': 'afternoon',
+                            'day_of_week': 2,
+                            'month': 6,
+                            'season': 'Summer',
+                            'is_weekend': 0,
+                            'is_holiday': 0,
+                            'weather_condition': 'Cloudy'
+                        }
+                    },
+                    {
+                        'name': 'Park, Saturday evening, sunny',
+                        'params': {
+                            'place_id': 3,
+                            'category': 'Park',
+                            'district': 'Lalitpur',
+                            'time_slot': 'evening',
+                            'day_of_week': 5,
+                            'month': 4,
+                            'season': 'Spring',
+                            'is_weekend': 1,
+                            'is_holiday': 0,
+                            'weather_condition': 'Sunny'
+                        }
+                    }
+                ]
+                
+                for test_case in test_cases:
+                    try:
+                        prediction = model.predict(**test_case['params'])
+                        self.stdout.write(
+                            self.style.SUCCESS(f'🕍 {test_case["name"]}: {prediction:.1f}% crowd level')
+                        )
+                    except Exception as e:
+                        self.stdout.write(
+                            self.style.ERROR(f'❌ {test_case["name"]}: Error - {e}')
+                        )
+                
+                # Show feature importance if available
+                if hasattr(model.model, 'feature_importances_'):
+                    self.stdout.write(
+                        self.style.SUCCESS('\n🏆 Top 5 Most Important Features:')
+                    )
+                    feature_importance = model.model.feature_importances_
+                    feature_names = model.feature_names
+                    
+                    if feature_names and len(feature_names) == len(feature_importance):
+                        feature_importance_df = pd.DataFrame({
+                            'feature': feature_names,
+                            'importance': feature_importance
+                        }).sort_values('importance', ascending=False)
+                        
+                        for i, row in feature_importance_df.head(5).iterrows():
+                            self.stdout.write(
+                                self.style.SUCCESS(f'  📈 {row["feature"]}: {row["importance"]:.4f}')
+                            )
+                
+                if not info.get('shap_available', False):
+                    self.stdout.write(
+                        self.style.WARNING('\n⚠️ SHAP not available. Install with: pip install shap')
+                    )
+                
+                self.stdout.write(
+                    self.style.SUCCESS('\n📖 Model Usage:')
+                )
+                self.stdout.write(
+                    self.style.SUCCESS('  • The model is automatically used by the API endpoints')
+                )
+                self.stdout.write(
+                    self.style.SUCCESS('  • Use --force-retrain to update the model with new data')
+                )
+                self.stdout.write(
+                    self.style.SUCCESS('  • Check model performance with: python manage.py train_improved_crowd_model')
+                )
+                
             else:
-                self.stdout.write('\n⚠️ SHAP not available. Install with: pip install shap')
-            
-            # Model usage instructions
-            self.stdout.write('\n📖 Model Usage:')
-            self.stdout.write('  • The model is automatically used by the API endpoints')
-            self.stdout.write('  • Use --force-retrain to update the model with new data')
-            self.stdout.write('  • Check model performance with: python manage.py train_improved_crowd_model')
-            
+                self.stdout.write(
+                    self.style.ERROR('❌ Model training failed!')
+                )
+                
         except Exception as e:
             self.stdout.write(
-                self.style.ERROR(f'❌ Error training enhanced model: {str(e)}')
+                self.style.ERROR(f'❌ Error during training: {str(e)}')
             )
             import traceback
+            self.stdout.write(
+                self.style.ERROR(traceback.format_exc())
+            ) 
             self.stdout.write(traceback.format_exc()) 
