@@ -8,7 +8,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from .models import *
 from .serializers import PlaceSerializer, CrowdDataSerializer, TagSerializer
-from .utils import get_weather
+from .utils import get_weather, get_real_time_weather_for_place, get_weather_impact_on_crowd, cache_result
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Max
@@ -165,16 +165,66 @@ def places_by_category(request, category):
     # Save search history
     save_search_history(request.user, category, 'category')
     
-    # Filter places based on user permissions and allowed districts
+    # Filter places based on user permissions and allowed districts with optimized queries
     allowed_districts = ['Kathmandu', 'Lalitpur', 'Bhaktapur']
     if request.user.is_superuser:
-        places = Place.objects.filter(category__iexact=category, district__in=allowed_districts)
+        places = Place.objects.filter(
+            category__iexact=category, 
+            district__in=allowed_districts
+        ).prefetch_related('tags')
     else:
-        places = Place.objects.filter(category__iexact=category, district__in=allowed_districts, is_approved=True)
+        places = Place.objects.filter(
+            category__iexact=category, 
+            district__in=allowed_districts, 
+            is_approved=True
+        ).prefetch_related('tags')
     
+    # Optimize crowd predictions by batching them
     places_data = []
+    
+    # Use cached model if available for faster predictions
+    if 'improved_model' in MODEL_CACHE:
+        model = MODEL_CACHE['improved_model']
+        now = datetime.now()
+        day_of_week = now.weekday()
+        month = now.month
+        season = get_current_season()
+        is_weekend = 1 if day_of_week >= 5 else 0
+        is_holiday = 0
+        
+        for place in places:
+            try:
+                # Get real-time weather for this place
+                weather_condition = get_real_time_weather_for_place(place)
+                
+                # Use model prediction for faster results
+                predicted_crowd = model.predict(
+                    place_id=place.id,
+                    category=place.category,
+                    district=place.district,
+                    time_slot=time_slot,
+                    day_of_week=day_of_week,
+                    month=month,
+                    season=season,
+                    is_weekend=is_weekend,
+                    is_holiday=is_holiday,
+                    weather_condition=weather_condition,
+                    hour=int(hour) if hour else 14
+                )
+                
+                # Convert numpy float32 to regular Python float
+                crowdlevel = float(predicted_crowd)
+                
+            except Exception as e:
+                print(f"Error predicting crowd for {place.name}: {e}")
+                crowdlevel = 50  # Default fallback
+    else:
+        # Fallback to individual predictions
+        for place in places:
+            crowdlevel = predict_crowd_for_place(place, time_slot)
+    
+    # Build response data efficiently
     for place in places:
-        crowdlevel = predict_crowd_for_place(place, time_slot)
         places_data.append({
             'id': place.id,
             'name': place.name,
@@ -185,6 +235,7 @@ def places_by_category(request, category):
             'latitude': place.latitude,
             'longitude': place.longitude,
         })
+    
     return JsonResponse({'places': places_data})
 
 @api_view(['GET'])
@@ -321,7 +372,10 @@ def generate_fake_data(request):
 
 
 def place_details(request, place_id):
-    place = get_object_or_404(Place, id=place_id)
+    try:
+        place = Place.objects.get(id=place_id)
+    except Place.DoesNotExist:
+        return render(request, '404.html', status=404)
     
     # Check if user can view this place
     can_view = (
@@ -334,25 +388,10 @@ def place_details(request, place_id):
         messages.warning(request, 'This place is pending admin approval and is not yet visible to the public.')
         return redirect('home')  # Redirect to home page
     
-    # Use cached model for prediction to improve performance
-    from datetime import datetime
-    from backend.improved_ml_model import ImprovedCrowdPredictionModel
-    import os
+    # Initialize variables to prevent UnboundLocalError
     crowdlevel = None
-    
-    # Check if model is already cached
-    if 'improved_model' not in MODEL_CACHE:
-        improved_model_path = 'improved_crowd_prediction_model.pkl'
-        if os.path.exists(improved_model_path):
-            try:
-                model = ImprovedCrowdPredictionModel()
-                if model.load_model():
-                    MODEL_CACHE['improved_model'] = model
-                    print("Model loaded and cached successfully")
-                else:
-                    print("Failed to load model")
-            except Exception as e:
-                print(f"Error loading model: {e}")
+    weather_impact = None
+    weather_condition = None
     
     # Use cached model if available
     if 'improved_model' in MODEL_CACHE:
@@ -366,7 +405,12 @@ def place_details(request, place_id):
             is_holiday = 0
             # Use default hour for details page (e.g., 14 for afternoon)
             hour = 14
-            crowdlevel = model.predict(
+            
+            # Get real-time weather for this place
+            weather_condition = get_real_time_weather_for_place(place)
+            print(f"[DEBUG] Real-time weather for {place.name} in place details: {weather_condition}")
+            
+            base_crowdlevel = model.predict(
                 place_id=place.id,
                 category=place.category,
                 district=place.district,
@@ -376,9 +420,14 @@ def place_details(request, place_id):
                 season=season,
                 is_weekend=is_weekend,
                 is_holiday=is_holiday,
-                weather_condition='Sunny',
+                weather_condition=weather_condition,
                 hour=hour
             )
+            
+            # Apply weather impact adjustment
+            weather_impact = get_weather_impact_on_crowd(weather_condition)
+            crowdlevel = max(0, min(100, float(base_crowdlevel) + weather_impact))
+            
         except Exception as e:
             print(f"Error predicting crowd level: {e}")
             crowdlevel = None
@@ -402,6 +451,8 @@ def place_details(request, place_id):
         'crowdlevel': crowdlevel,
         'today': today,
         'closed_list': closed_list,
+        'weather_impact': weather_impact,
+        'weather_condition': weather_condition,
     })
 
 def place_list(request):
@@ -486,23 +537,57 @@ def search_places(request):
     # Record search history if user is authenticated
     save_search_history(request.user, query, 'place')
 
-    # Filter places based on user permissions and allowed districts
+    # Filter places based on user permissions and allowed districts with optimized queries
     allowed_districts = ['Kathmandu', 'Lalitpur', 'Bhaktapur']
     if request.user.is_superuser:
-        places = Place.objects.filter(name__icontains=query, district__in=allowed_districts)
+        places = Place.objects.filter(
+            name__icontains=query, 
+            district__in=allowed_districts
+        ).prefetch_related('tags').select_related()
     else:
-        places = Place.objects.filter(name__icontains=query, district__in=allowed_districts, is_approved=True)
+        places = Place.objects.filter(
+            name__icontains=query, 
+            district__in=allowed_districts, 
+            is_approved=True
+        ).prefetch_related('tags').select_related()
     
     if not places:
         return JsonResponse({'error': 'No places found matching the query.'}, status=404)
     
+    # Get all place IDs for bulk crowd data query
+    place_ids = list(places.values_list('id', flat=True))
+    
+    # Bulk query for latest crowd data - much more efficient
+    latest_crowd_data = {}
+    if place_ids:
+        # Get the latest timestamp for each place in one query
+        latest_timestamps = CrowdData.objects.filter(
+            place_id__in=place_ids
+        ).values('place_id').annotate(
+            max_timestamp=Max('timestamp')
+        )
+        
+        # Get all crowd data for these timestamps in one query
+        for item in latest_timestamps:
+            crowd_data = CrowdData.objects.filter(
+                place_id=item['place_id'],
+                timestamp=item['max_timestamp']
+            ).first()
+            if crowd_data:
+                latest_crowd_data[item['place_id']] = crowd_data
+    
     places_data = []
     
     for place in places:
-        latest_crowd_data = CrowdData.objects.filter(place=place).aggregate(max_timestamp=Max('timestamp'))
-        crowd_data = CrowdData.objects.filter(place=place, timestamp=latest_crowd_data['max_timestamp']).first()
-        tags = list(place.tags.values_list('name', flat=True))
+        # Get crowd data from our bulk query
+        crowd_data = latest_crowd_data.get(place.id)
+        
+        # Get tags efficiently (already prefetched)
+        tags = [tag.name for tag in place.tags.all()]
+        
+        # Get crowd pattern (cache this if it's slow)
         crowd_pattern = get_crowd_pattern_from_db(place)
+        
         places_data.append({
             'id': place.id,
             'name': place.name,
@@ -516,7 +601,8 @@ def search_places(request):
             'tags': tags,
             'image': request.build_absolute_uri(place.image.url) if place.image else None
         })
-    print(f"[DEBUG] search_places API response: {places_data}")
+    
+    print(f"[DEBUG] search_places API response: {len(places_data)} places found")
     return JsonResponse({'places': places_data}, safe=False)
 
 @api_view(['GET'])
@@ -553,16 +639,60 @@ def places_by_district(request, district_name):
             correct_district = district
             break
     
-    # Filter places based on user permissions
+    # Filter places based on user permissions with optimized queries
     if request.user.is_superuser:
-        places = Place.objects.filter(district__iexact=correct_district)
+        places = Place.objects.filter(district__iexact=correct_district).prefetch_related('tags')
     else:
-        places = Place.objects.filter(district__iexact=correct_district, is_approved=True)
+        places = Place.objects.filter(district__iexact=correct_district, is_approved=True).prefetch_related('tags')
     
     print(f"Found {places.count()} places for district {correct_district}")
+    
+    # Optimize crowd predictions by batching them
     places_data = []
+    
+    # Use cached model if available for faster predictions
+    if 'improved_model' in MODEL_CACHE:
+        model = MODEL_CACHE['improved_model']
+        now = datetime.now()
+        day_of_week = now.weekday()
+        month = now.month
+        season = get_current_season()
+        is_weekend = 1 if day_of_week >= 5 else 0
+        is_holiday = 0
+        
+        for place in places:
+            try:
+                # Get real-time weather for this place
+                weather_condition = get_real_time_weather_for_place(place)
+                
+                # Use model prediction for faster results
+                predicted_crowd = model.predict(
+                    place_id=place.id,
+                    category=place.category,
+                    district=place.district,
+                    time_slot=time_slot,
+                    day_of_week=day_of_week,
+                    month=month,
+                    season=season,
+                    is_weekend=is_weekend,
+                    is_holiday=is_holiday,
+                    weather_condition=weather_condition,
+                    hour=int(hour) if hour else 14
+                )
+                
+                # Convert numpy float32 to regular Python float
+                crowdlevel = float(predicted_crowd)
+                
+            except Exception as e:
+                print(f"Error predicting crowd for {place.name}: {e}")
+                crowdlevel = 50  # Default fallback
+    else:
+        # Fallback to individual predictions
+        for place in places:
+            crowdlevel = predict_crowd_for_place(place, time_slot)
+    
+    # Build response data efficiently
     for place in places:
-        crowdlevel = predict_crowd_for_place(place, time_slot)
         place_data = {
             'id': place.id,
             'name': place.name,
@@ -573,24 +703,75 @@ def places_by_district(request, district_name):
             'latitude': place.latitude,
             'longitude': place.longitude,
         }
-        print(f"Place data: {place_data}")
         places_data.append(place_data)
+    
     print(f"Sending {len(places_data)} places")
     return JsonResponse({'places': places_data})
 
 
 @api_view(['GET'])
 def places_by_tag(request, tag_name):
-    # Fetch places matching the tag
+    # Fetch places matching the tag with optimized queries
     allowed_districts = ['Kathmandu', 'Lalitpur', 'Bhaktapur']
     if request.user.is_superuser:
-        places = Place.objects.filter(tags__name__iexact=tag_name, district__in=allowed_districts)
+        places = Place.objects.filter(
+            tags__name__iexact=tag_name, 
+            district__in=allowed_districts
+        ).prefetch_related('tags')
     else:
-        places = Place.objects.filter(tags__name__iexact=tag_name, district__in=allowed_districts, is_approved=True)
+        places = Place.objects.filter(
+            tags__name__iexact=tag_name, 
+            district__in=allowed_districts, 
+            is_approved=True
+        ).prefetch_related('tags')
     
+    # Optimize crowd predictions by batching them
     places_data = []
+    
+    # Use cached model if available for faster predictions
+    if 'improved_model' in MODEL_CACHE:
+        model = MODEL_CACHE['improved_model']
+        now = datetime.now()
+        day_of_week = now.weekday()
+        month = now.month
+        season = get_current_season()
+        is_weekend = 1 if day_of_week >= 5 else 0
+        is_holiday = 0
+        time_slot = 'afternoon'  # Default time slot for tag searches
+        
+        for place in places:
+            try:
+                # Get real-time weather for this place
+                weather_condition = get_real_time_weather_for_place(place)
+                
+                # Use model prediction for faster results
+                predicted_crowd = model.predict(
+                    place_id=place.id,
+                    category=place.category,
+                    district=place.district,
+                    time_slot=time_slot,
+                    day_of_week=day_of_week,
+                    month=month,
+                    season=season,
+                    is_weekend=is_weekend,
+                    is_holiday=is_holiday,
+                    weather_condition=weather_condition,
+                    hour=14  # Default hour
+                )
+                
+                # Convert numpy float32 to regular Python float
+                crowdlevel = float(predicted_crowd)
+                
+            except Exception as e:
+                print(f"Error predicting crowd for {place.name}: {e}")
+                crowdlevel = 50  # Default fallback
+    else:
+        # Fallback to individual predictions
+        for place in places:
+            crowdlevel = predict_crowd_for_place(place)
+    
+    # Build response data efficiently
     for place in places:
-        crowdlevel = predict_crowd_for_place(place)
         places_data.append({
             'id': place.id,
             'name': place.name,
@@ -996,7 +1177,7 @@ def predict_crowd(request):
                     # Prepare features for improved model
                     day_of_week = date.weekday()
                     month = date.month
-                    season = get_season(month)
+                    season = get_current_season()
                     is_weekend = 1 if day_of_week >= 5 else 0
                     is_holiday = 0
                     
@@ -1021,6 +1202,9 @@ def predict_crowd(request):
                         weather_condition=weather_condition,
                         hour=hour
                     )
+                    
+                    # Convert numpy float32 to regular Python float for JSON serialization
+                    predicted_crowd = float(predicted_crowd)
                     
                     # Determine status
                     if predicted_crowd > 70:
@@ -1229,13 +1413,15 @@ def save_search_history(user, query, search_type):
                 search_type=search_type
             )
 
+@cache_result(timeout=3600)  # Cache for 1 hour since crowd patterns don't change frequently
 def get_crowd_pattern_from_db(place):
-    pattern = []
-    for hour in range(24):
-        cp = CrowdPattern.objects.filter(place=place, hour=hour).first()
-        crowd = cp.crowdlevel if cp else 0
-        pattern.append({'hour': hour, 'crowdlevel': crowd})
-    return pattern
+    """Get crowd pattern from database with caching for performance"""
+    try:
+        patterns = CrowdPattern.objects.filter(place=place).order_by('hour')
+        return [{'hour': p.hour, 'crowdlevel': p.crowdlevel} for p in patterns]
+    except Exception as e:
+        print(f"Error getting crowd pattern for {place.name}: {e}")
+        return []
 
 @api_view(["PUT", "PATCH"])
 @permission_classes([IsAuthenticated])
@@ -1371,6 +1557,10 @@ def improved_crowd_predictions(request):
             places_data = []
             for place in places:
                 try:
+                    # Get real-time weather for this specific place
+                    weather_condition = get_real_time_weather_for_place(place)
+                    print(f"[DEBUG] Real-time weather for {place.name}: {weather_condition}")
+                    
                     # Construct all required features for the model
                     features = {
                         'place_id': place.id,
@@ -1382,7 +1572,7 @@ def improved_crowd_predictions(request):
                         'season': season or 'Unknown',
                         'is_weekend': is_weekend,
                         'is_holiday': is_holiday,
-                        'weather_condition': 'Sunny',  # Default weather
+                        'weather_condition': weather_condition,
                         'hour': hour
                     }
                     # Log all features for debugging
@@ -1393,11 +1583,18 @@ def improved_crowd_predictions(request):
                         print(f"[DEBUG] Missing features for place {place.name}: {missing}")
                     predicted_crowd = model.predict(**features)
                     
+                    # Convert numpy float32 to regular Python float for JSON serialization
+                    predicted_crowd = float(predicted_crowd)
+                    
+                    # Apply weather impact adjustment
+                    weather_impact = get_weather_impact_on_crowd(weather_condition)
+                    adjusted_crowd = max(0, min(100, predicted_crowd + weather_impact))
+                    
                     # Determine crowd status with updated color scheme: High-Red, Medium-Green, Low-Yellow
-                    if predicted_crowd > 70:
+                    if adjusted_crowd > 70:
                         status = 'High'
                         color = 'red'
-                    elif predicted_crowd >= 30:
+                    elif adjusted_crowd >= 30:
                         status = 'Medium'
                         color = 'green'
                     else:
@@ -1412,12 +1609,15 @@ def improved_crowd_predictions(request):
                         'district': place.district,
                         'latitude': place.latitude,
                         'longitude': place.longitude,
-                        'crowdlevel': predicted_crowd,
+                        'crowdlevel': adjusted_crowd,
                         'status': status,
                         'color': color,
                         'time_slot': time_slot,
                         'is_weekend': is_weekend,
-                        'season': season
+                        'season': season,
+                        'weather_condition': weather_condition,
+                        'weather_impact': weather_impact,
+                        'base_prediction': predicted_crowd
                     })
                 except Exception as e:
                     print(f"[DEBUG] Tourism prediction error for place {place.name}: {e}")
@@ -1629,6 +1829,10 @@ def tourism_crowd_data_for_charts(request):
             places_data = []
             for place in places:
                 try:
+                    # Get real-time weather for this specific place
+                    weather_condition = get_real_time_weather_for_place(place)
+                    print(f"[DEBUG] Real-time weather for {place.name}: {weather_condition}")
+                    
                     # Construct all required features for the model
                     features = {
                         'place_id': place.id,
@@ -1640,7 +1844,7 @@ def tourism_crowd_data_for_charts(request):
                         'season': season or 'Unknown',
                         'is_weekend': is_weekend,
                         'is_holiday': is_holiday,
-                        'weather_condition': 'Sunny',  # Default weather
+                        'weather_condition': weather_condition,
                         'hour': hour
                     }
                     # Log all features for debugging
@@ -1651,11 +1855,18 @@ def tourism_crowd_data_for_charts(request):
                         print(f"[DEBUG] Missing features for place {place.name}: {missing}")
                     predicted_crowd = model.predict(**features)
                     
+                    # Convert numpy float32 to regular Python float for JSON serialization
+                    predicted_crowd = float(predicted_crowd)
+                    
+                    # Apply weather impact adjustment
+                    weather_impact = get_weather_impact_on_crowd(weather_condition)
+                    adjusted_crowd = max(0, min(100, predicted_crowd + weather_impact))
+                    
                     # Determine crowd status with updated color scheme: High-Red, Medium-Green, Low-Yellow
-                    if predicted_crowd > 70:
+                    if adjusted_crowd > 70:
                         status = 'High'
                         color = 'red'
-                    elif predicted_crowd >= 30:
+                    elif adjusted_crowd >= 30:
                         status = 'Medium'
                         color = 'green'
                     else:
@@ -1670,12 +1881,15 @@ def tourism_crowd_data_for_charts(request):
                         'district': place.district,
                         'latitude': place.latitude,
                         'longitude': place.longitude,
-                        'crowdlevel': predicted_crowd,
+                        'crowdlevel': adjusted_crowd,
                         'status': status,
                         'color': color,
                         'time_slot': time_slot,
                         'is_weekend': is_weekend,
-                        'season': season
+                        'season': season,
+                        'weather_condition': weather_condition,
+                        'weather_impact': weather_impact,
+                        'base_prediction': predicted_crowd
                     })
                 except Exception as e:
                     print(f"[DEBUG] Tourism prediction error for place {place.name}: {e}")

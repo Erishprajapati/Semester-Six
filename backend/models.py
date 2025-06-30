@@ -4,24 +4,24 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 class Tag(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, db_index=True)
     
     def __str__(self):
         return self.name
 
 class Place(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, db_index=True)
     description = models.TextField()
     popular_for = models.TextField()
-    category = models.CharField(max_length=50, default='Travel')
+    category = models.CharField(max_length=50, default='Travel', db_index=True)
     tags = models.ManyToManyField('Tag', blank=True)
     location = models.TextField(default="Unknown")
-    district = models.CharField(max_length=100, default="Unknown")
+    district = models.CharField(max_length=100, default="Unknown", db_index=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     image = models.ImageField(upload_to='place_images/', null=True, blank=True)
     added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    is_approved = models.BooleanField(default=False)
+    is_approved = models.BooleanField(default=False, db_index=True)
     
     # Entry fee fields
     tourist_fee_npr = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, help_text="Entry fee for foreign tourists in NPR")
@@ -38,6 +38,11 @@ class Place(models.Model):
 
     class Meta:
         unique_together = ('name', 'district')
+        indexes = [
+            models.Index(fields=['name', 'district']),
+            models.Index(fields=['category', 'district']),
+            models.Index(fields=['is_approved', 'district']),
+        ]
 
     def __str__(self):
         return f"{self.name}"
@@ -55,8 +60,8 @@ class CrowdData(models.Model):
         ('evening', 'Evening'),
     ]
     
-    place = models.ForeignKey(Place, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    place = models.ForeignKey(Place, on_delete=models.CASCADE, db_index=True)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     crowdlevel = models.IntegerField()  # 0 (low) to 100 (high)
     status = models.CharField(
         max_length=255, 
@@ -73,11 +78,17 @@ class CrowdData(models.Model):
         default='morning'
     )
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['place', 'timestamp']),
+            models.Index(fields=['timestamp']),
+        ]
+
     def __str__(self):
         return f"{self.place} - {self.date} {self.time_slot} - {self.status}"
 
 class UserLocation(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True)
     latitude = models.FloatField()
     longitude = models.FloatField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -86,32 +97,39 @@ class UserLocation(models.Model):
         return f"{self.user} at {self.latitude}, {self.longitude}"
 
 class UserPreference(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True)
     tags = models.ManyToManyField(Tag)
 
     def __str__(self):
         return f"{self.user} Preferences"
 
 class SearchHistory(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    search_query = models.CharField(max_length=255)
-    search_type = models.CharField(max_length=50)  # 'place', 'district', or 'category'
-    timestamp = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True)
+    search_query = models.CharField(max_length=255, db_index=True)
+    search_type = models.CharField(max_length=50, db_index=True)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
     
     class Meta:
         ordering = ['-timestamp']
         verbose_name_plural = 'Search Histories'
+        indexes = [
+            models.Index(fields=['user', 'timestamp']),
+            models.Index(fields=['search_type', 'timestamp']),
+        ]
     
     def __str__(self):
         return f"{self.user.username} searched for {self.search_query} at {self.timestamp}"
 
 class CrowdPattern(models.Model):
-    place = models.ForeignKey(Place, on_delete=models.CASCADE)
+    place = models.ForeignKey(Place, on_delete=models.CASCADE, db_index=True)
     hour = models.IntegerField()
     crowdlevel = models.FloatField()
 
     class Meta:
         unique_together = ('place', 'hour')
+        indexes = [
+            models.Index(fields=['place', 'hour']),
+        ]
 
     def __str__(self):
         return f"{self.place.name} - {self.hour}:00 ({self.crowdlevel})"

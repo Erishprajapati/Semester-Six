@@ -1307,6 +1307,17 @@
                             let tooltip = `Crowd Level: ${context.parsed.y}%`;
                             if (place.category) tooltip += `\nCategory: ${place.category}`;
                             if (place.district) tooltip += `\nDistrict: ${place.district}`;
+                            if (place.weather_condition) tooltip += `\nWeather: ${place.weather_condition}`;
+                            if (place.weather_impact !== undefined) {
+                                const impact = place.weather_impact;
+                                if (impact > 0) {
+                                    tooltip += `\nWeather Impact: +${impact}%`;
+                                } else if (impact < 0) {
+                                    tooltip += `\nWeather Impact: ${impact}%`;
+                                } else {
+                                    tooltip += `\nWeather Impact: No change`;
+                                }
+                            }
                             return tooltip;
                         }
                     }
@@ -2042,6 +2053,11 @@ async function fetchPlacesByCategoryRegular(category) {
             title += ` (${firstPlace.time_slot.charAt(0).toUpperCase() + firstPlace.time_slot.slice(1)})`;
         }
         
+        // Add weather information if available
+        if (firstPlace.weather_condition) {
+            title += ` - ${firstPlace.weather_condition}`;
+        }
+        
         // Add current season information
         const currentSeason = getCurrentSeason();
         if (currentSeason) {
@@ -2058,10 +2074,28 @@ async function fetchPlacesByCategoryRegular(category) {
         chartTitle.textContent = title;
     }
     
-    // Add simple note
+    // Add weather impact note
     const chartNote = document.getElementById('chart-note');
     if (chartNote) {
-        chartNote.innerHTML = `<i class="bi bi-info-circle"></i> Click on bars to view place details.`;
+        let note = `<i class="bi bi-info-circle"></i> Click on bars to view place details.`;
+        
+        // Add weather impact information if available
+        if (selectedPlaces.length > 0 && selectedPlaces[0].weather_condition) {
+            const weatherCondition = selectedPlaces[0].weather_condition;
+            let weatherNote = '';
+            
+            if (weatherCondition === 'Rainy') {
+                weatherNote = ` <i class="bi bi-cloud-rain"></i> Rainy weather may reduce crowds.`;
+            } else if (weatherCondition === 'Sunny') {
+                weatherNote = ` <i class="bi bi-sun"></i> Sunny weather may increase crowds.`;
+            } else if (weatherCondition === 'Foggy') {
+                weatherNote = ` <i class="bi bi-cloud-fog"></i> Foggy weather may slightly reduce crowds.`;
+            }
+            
+            note += weatherNote;
+        }
+        
+        chartNote.innerHTML = note;
     }
     
     // Create the chart
@@ -2098,6 +2132,17 @@ async function fetchPlacesByCategoryRegular(category) {
                             let tooltip = `Crowd Level: ${context.parsed.y}%`;
                             if (place.category) tooltip += `\nCategory: ${place.category}`;
                             if (place.district) tooltip += `\nDistrict: ${place.district}`;
+                            if (place.weather_condition) tooltip += `\nWeather: ${place.weather_condition}`;
+                            if (place.weather_impact !== undefined) {
+                                const impact = place.weather_impact;
+                                if (impact > 0) {
+                                    tooltip += `\nWeather Impact: +${impact}%`;
+                                } else if (impact < 0) {
+                                    tooltip += `\nWeather Impact: ${impact}%`;
+                                } else {
+                                    tooltip += `\nWeather Impact: No change`;
+                                }
+                            }
                             return tooltip;
                         }
                     }
