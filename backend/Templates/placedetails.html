@@ -1,6 +1,9 @@
 {% extends "base.html" %}
+{% with hide_navbar_search=True %}
 {% block content %}
+<form style="display:none;">{% csrf_token %}</form>
 
+{% with hide_navbar_search=True %}
 <!-- Styles -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -43,13 +46,13 @@
         grid-template-areas:
             "placedetails nearbyplaces"
             "similarplaces nearbyplaces";
-        width: 100vw;
+        width: 100%;
         margin: 0;
         padding: 0;
         gap: 2rem;
         background: var(--background);
         box-sizing: border-box;
-    }
+    }    
 
     /* Section Styles */
     .placedetails-section {
@@ -528,6 +531,7 @@
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 </style>
+{% endwith %}
 
 <!-- Main content -->
 <div class="place-layout-container">
@@ -1301,3 +1305,4 @@
 {% comment %} </script> {% endcomment %}
 
 {% endblock %}
+{% endwith %}

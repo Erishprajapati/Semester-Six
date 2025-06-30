@@ -160,7 +160,7 @@
     
     <div class="nav-right">
       {% if user.is_authenticated %}
-        <form id="navbar-search-form" style="display: none; align-items: center; justify-content: flex-start; background: transparent; border: none; box-shadow: none; margin-right: 1.2rem; min-width: 220px; max-width: 350px; height: 34px;" onsubmit="return false;">
+        <form id="navbar-search-form" {% if hide_navbar_search %}style="display: none !important;"{% else %}style="display: flex; align-items: center; justify-content: flex-start; background: transparent; border: none; box-shadow: none; margin-right: 1.2rem; min-width: 220px; max-width: 350px; height: 34px;"{% endif %} onsubmit="return false;">
           <div style="display: flex; width: 100%;">
             <input id="navbar-location-input" type="text" placeholder="Search..." style="
               flex: 1;
@@ -244,60 +244,8 @@
       username: '{% if user.is_authenticated %}{{ user.username }}{% endif %}'
     };
 
-    // Function to show navbar search bar based on authentication and location
-    function showNavbarSearchBarIfAllowed() {
-      const searchForm = document.getElementById('navbar-search-form');
-      if (!searchForm) return;
-      
-      // Always show search bar if user is authenticated
-      if (window.authState.isAuthenticated) {
-        searchForm.style.display = 'flex';
-        console.log('Search bar shown - user is authenticated');
-      } else {
-        searchForm.style.display = 'none';
-        console.log('Search bar hidden - user not authenticated');
-      }
-    }
-
-    // Function to update authentication state
-    function updateAuthState(isAuthenticated, username = '') {
-      window.authState.isAuthenticated = isAuthenticated;
-      window.authState.username = username;
-      
-      // Update search bar visibility immediately
-      showNavbarSearchBarIfAllowed();
-      
-      // Show/hide profile dropdown
-      const profileDropdown = document.querySelector('.profile-dropdown');
-      const navLinks = document.querySelector('.nav-links');
-      
-      if (isAuthenticated) {
-        if (profileDropdown) profileDropdown.style.display = 'block';
-        if (navLinks) navLinks.style.display = 'none';
-      } else {
-        if (profileDropdown) profileDropdown.style.display = 'none';
-        if (navLinks) navLinks.style.display = 'block';
-      }
-    }
-
-    // Listen for location set event (for location-specific features)
-    window.addEventListener('userLocationSet', function() {
-      console.log('Location set event received');
-      // The search bar should already be visible if user is authenticated
-      // This event can be used for additional location-dependent features
-    });
-
-    // Listen for authentication state changes
-    window.addEventListener('authStateChanged', function(event) {
-      console.log('Auth state changed:', event.detail);
-      updateAuthState(event.detail.isAuthenticated, event.detail.username);
-    });
-
-    // Ensure search bar is shown/hidden correctly on every page load
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('DOM loaded, auth state:', window.authState);
-      showNavbarSearchBarIfAllowed();
-    });
+    // Add this line at the top of the script block
+    var hideNavbarSearch = {{ hide_navbar_search|default:"false"|yesno:"true,false" }};
 
     // Get modal elements
     const modal = document.getElementById('searchHistoryModal');
