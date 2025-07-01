@@ -1334,8 +1334,11 @@
                 if (elements.length > 0) {
                     const index = elements[0].index;
                     const selectedPlace = window.selectedPlaces[index];
+                    console.log('Bar clicked:', selectedPlace); // Debug log
                     if (selectedPlace && selectedPlace.id) {
                         window.location.href = `/place-details/${selectedPlace.id}/`;
+                    } else {
+                        console.warn('Selected place missing id:', selectedPlace);
                     }
                 }
             },
@@ -2155,8 +2158,11 @@ async function fetchPlacesByCategoryRegular(category) {
                 if (elements.length > 0) {
                     const index = elements[0].index;
                     const selectedPlace = window.selectedPlaces[index];
+                    console.log('Bar clicked:', selectedPlace); // Debug log
                     if (selectedPlace && selectedPlace.id) {
                         window.location.href = `/place-details/${selectedPlace.id}/`;
+                    } else {
+                        console.warn('Selected place missing id:', selectedPlace);
                     }
                 }
             },
