@@ -1194,34 +1194,54 @@
     // Sort by crowdlevel descending
     places.sort((a, b) => b.crowdlevel - a.crowdlevel);
   
-    let selectedPlaces;
+    let selectedPlaces = [];
     const totalPlaces = places.length;
     
-    // Always show exactly 6-7 places with specific distribution
     if (totalPlaces <= 7) {
       selectedPlaces = places;
     } else {
-      // Filter places by crowd level with specific thresholds for exactly 7 places
-      const highCrowd = places.filter(p => p.crowdlevel > 70).slice(0, 3); // 3 crowded places
-      const mediumCrowd = places.filter(p => p.crowdlevel >= 30 && p.crowdlevel <= 70).slice(0, 2); // 2 medium crowded
-      const lowCrowd = places.filter(p => p.crowdlevel < 30).slice(0, 2); // 2 less crowded
+      // Categorize places by crowd level
+      const highCrowd = places.filter(p => p.crowdlevel > 70);
+      const mediumCrowd = places.filter(p => p.crowdlevel >= 30 && p.crowdlevel <= 70);
+      const lowCrowd = places.filter(p => p.crowdlevel < 30);
       
-      // Combine them - this will give us exactly 7 places if available
-      selectedPlaces = [...highCrowd, ...mediumCrowd, ...lowCrowd];
+      console.log('Categorized places:', {
+        high: highCrowd.length,
+        medium: mediumCrowd.length,
+        low: lowCrowd.length
+      });
       
-      // If we don't have enough places in each category, fill with the next best available
+      // Take exactly 3 high crowd places (or all if less than 3)
+      const selectedHigh = highCrowd.slice(0, 3);
+      
+      // Take exactly 2 medium crowd places (or all if less than 2)
+      const selectedMedium = mediumCrowd.slice(0, 2);
+      
+      // Take exactly 2 low crowd places (or all if less than 2)
+      const selectedLow = lowCrowd.slice(0, 2);
+      
+      // Combine all selected places
+      selectedPlaces = [...selectedHigh, ...selectedMedium, ...selectedLow];
+      
+      // If we still don't have 7 places, fill with remaining places from any category
       if (selectedPlaces.length < 7) {
         const remainingPlaces = places.filter(p => !selectedPlaces.includes(p));
         const needed = 7 - selectedPlaces.length;
         selectedPlaces = [...selectedPlaces, ...remainingPlaces.slice(0, needed)];
       }
       
-      // Limit to exactly 7 places maximum
+      // Ensure we don't exceed 7 places
       selectedPlaces = selectedPlaces.slice(0, 7);
     }
     
     console.log('Filtered Selected Places:', selectedPlaces);
     console.log('Total places available:', totalPlaces, 'Displayed:', selectedPlaces.length);
+    
+    // Log the distribution for debugging
+    const highCount = selectedPlaces.filter(p => p.crowdlevel > 70).length;
+    const mediumCount = selectedPlaces.filter(p => p.crowdlevel >= 30 && p.crowdlevel <= 70).length;
+    const lowCount = selectedPlaces.filter(p => p.crowdlevel < 30).length;
+    console.log('Final distribution:', { high: highCount, medium: mediumCount, low: lowCount });
   
     const ctx = document.getElementById('bar-chart').getContext('2d');
   
@@ -1233,11 +1253,11 @@
     // Show only place names without status
     const labels = selectedPlaces.map(place => place.name);
   
-    // Google Maps style color scheme: High-Red, Medium-Orange, Low-Green
+    // Enhanced color scheme with better contrast
     const getColor = (crowdLevel) => {
-      if (crowdLevel > 70) return '#EA4335'; // High crowd - Red (Google Maps red)
-      else if (crowdLevel >= 30) return '#FBBC04'; // Medium crowd - Orange (Google Maps yellow)
-      else return '#34A853'; // Low crowd - Green (Google Maps green)
+      if (crowdLevel > 70) return '#DC2626'; // High crowd - Bright Red
+      else if (crowdLevel >= 30) return '#F59E0B'; // Medium crowd - Amber/Orange
+      else return '#059669'; // Low crowd - Emerald Green
     };
   
     const backgroundColors = selectedPlaces.map(place => getColor(place.crowdlevel));
@@ -1267,10 +1287,32 @@
       chartTitle.textContent = title;
     }
     
-    // Add simple note
+    // Add legend and note
     const chartNote = document.getElementById('chart-note');
     if (chartNote) {
-        chartNote.innerHTML = `<i class="bi bi-info-circle"></i> Click on bars to view place details.`;
+        const highCount = selectedPlaces.filter(p => p.crowdlevel > 70).length;
+        const mediumCount = selectedPlaces.filter(p => p.crowdlevel >= 30 && p.crowdlevel <= 70).length;
+        const lowCount = selectedPlaces.filter(p => p.crowdlevel < 30).length;
+        
+        chartNote.innerHTML = `
+            <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; flex-wrap: wrap;">
+                <span style="display: flex; align-items: center; gap: 5px;">
+                    <div style="width: 12px; height: 12px; background-color: #DC2626; border-radius: 2px;"></div>
+                    <span>High Crowd (>70%): ${highCount}</span>
+                </span>
+                <span style="display: flex; align-items: center; gap: 5px;">
+                    <div style="width: 12px; height: 12px; background-color: #F59E0B; border-radius: 2px;"></div>
+                    <span>Medium Crowd (30-70%): ${mediumCount}</span>
+                </span>
+                <span style="display: flex; align-items: center; gap: 5px;">
+                    <div style="width: 12px; height: 12px; background-color: #059669; border-radius: 2px;"></div>
+                    <span>Low Crowd (<30%): ${lowCount}</span>
+                </span>
+            </div>
+            <div style="text-align: center; color: #666; font-size: 14px;">
+                <i class="bi bi-info-circle"></i> Click on bars to view place details.
+            </div>
+        `;
     }
     
     // Create the chart
@@ -1303,22 +1345,8 @@
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            const place = selectedPlaces[context.dataIndex];
-                            let tooltip = `Crowd Level: ${context.parsed.y}%`;
-                            if (place.category) tooltip += `\nCategory: ${place.category}`;
-                            if (place.district) tooltip += `\nDistrict: ${place.district}`;
-                            if (place.weather_condition) tooltip += `\nWeather: ${place.weather_condition}`;
-                            if (place.weather_impact !== undefined) {
-                                const impact = place.weather_impact;
-                                if (impact > 0) {
-                                    tooltip += `\nWeather Impact: +${impact}%`;
-                                } else if (impact < 0) {
-                                    tooltip += `\nWeather Impact: ${impact}%`;
-                                } else {
-                                    tooltip += `\nWeather Impact: No change`;
-                                }
-                            }
-                            return tooltip;
+                            // Only show crowd level with two decimals
+                            return `Crowd Level: ${context.parsed.y.toFixed(2)}%`;
                         }
                     }
                 }
@@ -1994,35 +2022,56 @@ async function fetchPlacesByCategoryRegular(category) {
     // Sort by crowdlevel descending
     places.sort((a, b) => b.crowdlevel - a.crowdlevel);
     
-    // Apply the same 6-7 places logic as regular bar chart
-    let selectedPlaces;
+    // Apply the same 3-2-2 distribution logic as regular bar chart
+    let selectedPlaces = [];
     const totalPlaces = places.length;
     
-    // Always show exactly 6-7 places with specific distribution
+    // Always show exactly 7 places with specific distribution (3 high, 2 medium, 2 low)
     if (totalPlaces <= 7) {
       selectedPlaces = places;
     } else {
-      // Filter places by crowd level with specific thresholds for exactly 7 places
-      const highCrowd = places.filter(p => p.crowdlevel > 70).slice(0, 3); // 3 crowded places
-      const mediumCrowd = places.filter(p => p.crowdlevel >= 30 && p.crowdlevel <= 70).slice(0, 2); // 2 medium crowded
-      const lowCrowd = places.filter(p => p.crowdlevel < 30).slice(0, 2); // 2 less crowded
+      // Categorize places by crowd level
+      const highCrowd = places.filter(p => p.crowdlevel > 70);
+      const mediumCrowd = places.filter(p => p.crowdlevel >= 30 && p.crowdlevel <= 70);
+      const lowCrowd = places.filter(p => p.crowdlevel < 30);
       
-      // Combine them - this will give us exactly 7 places if available
-      selectedPlaces = [...highCrowd, ...mediumCrowd, ...lowCrowd];
+      console.log('Tourism Categorized places:', {
+        high: highCrowd.length,
+        medium: mediumCrowd.length,
+        low: lowCrowd.length
+      });
       
-      // If we don't have enough places in each category, fill with the next best available
+      // Take exactly 3 high crowd places (or all if less than 3)
+      const selectedHigh = highCrowd.slice(0, 3);
+      
+      // Take exactly 2 medium crowd places (or all if less than 2)
+      const selectedMedium = mediumCrowd.slice(0, 2);
+      
+      // Take exactly 2 low crowd places (or all if less than 2)
+      const selectedLow = lowCrowd.slice(0, 2);
+      
+      // Combine all selected places
+      selectedPlaces = [...selectedHigh, ...selectedMedium, ...selectedLow];
+      
+      // If we still don't have 7 places, fill with remaining places from any category
       if (selectedPlaces.length < 7) {
         const remainingPlaces = places.filter(p => !selectedPlaces.includes(p));
         const needed = 7 - selectedPlaces.length;
         selectedPlaces = [...selectedPlaces, ...remainingPlaces.slice(0, needed)];
       }
       
-      // Limit to exactly 7 places maximum
+      // Ensure we don't exceed 7 places
       selectedPlaces = selectedPlaces.slice(0, 7);
     }
     
     console.log('Tourism Filtered Selected Places:', selectedPlaces);
     console.log('Total tourism places available:', totalPlaces, 'Displayed:', selectedPlaces.length);
+    
+    // Log the distribution for debugging
+    const highCount = selectedPlaces.filter(p => p.crowdlevel > 70).length;
+    const mediumCount = selectedPlaces.filter(p => p.crowdlevel >= 30 && p.crowdlevel <= 70).length;
+    const lowCount = selectedPlaces.filter(p => p.crowdlevel < 30).length;
+    console.log('Tourism Final distribution:', { high: highCount, medium: mediumCount, low: lowCount });
     
     const ctx = document.getElementById('bar-chart').getContext('2d');
     
@@ -2033,11 +2082,11 @@ async function fetchPlacesByCategoryRegular(category) {
     // Show only place names without status
     const labels = selectedPlaces.map(place => place.name);
     
-    // Google Maps style color scheme: High-Red, Medium-Orange, Low-Green
+    // Enhanced color scheme with better contrast
     const getTourismColor = (crowdLevel) => {
-        if (crowdLevel > 70) return '#EA4335'; // High crowd - Red (Google Maps red)
-        else if (crowdLevel >= 30) return '#FBBC04'; // Medium crowd - Orange (Google Maps yellow)
-        else return '#34A853'; // Low crowd - Green (Google Maps green)
+        if (crowdLevel > 70) return '#DC2626'; // High crowd - Bright Red
+        else if (crowdLevel >= 30) return '#F59E0B'; // Medium crowd - Amber/Orange
+        else return '#059669'; // Low crowd - Emerald Green
     };
     
     const backgroundColors = selectedPlaces.map(place => getTourismColor(place.crowdlevel));
@@ -2074,15 +2123,17 @@ async function fetchPlacesByCategoryRegular(category) {
         chartTitle.textContent = title;
     }
     
-    // Add weather impact note
+    // Add legend and weather impact note
     const chartNote = document.getElementById('chart-note');
     if (chartNote) {
-        let note = `<i class="bi bi-info-circle"></i> Click on bars to view place details.`;
+        const highCount = selectedPlaces.filter(p => p.crowdlevel > 70).length;
+        const mediumCount = selectedPlaces.filter(p => p.crowdlevel >= 30 && p.crowdlevel <= 70).length;
+        const lowCount = selectedPlaces.filter(p => p.crowdlevel < 30).length;
         
+        let weatherNote = '';
         // Add weather impact information if available
         if (selectedPlaces.length > 0 && selectedPlaces[0].weather_condition) {
             const weatherCondition = selectedPlaces[0].weather_condition;
-            let weatherNote = '';
             
             if (weatherCondition === 'Rainy') {
                 weatherNote = ` <i class="bi bi-cloud-rain"></i> Rainy weather may reduce crowds.`;
@@ -2091,11 +2142,27 @@ async function fetchPlacesByCategoryRegular(category) {
             } else if (weatherCondition === 'Foggy') {
                 weatherNote = ` <i class="bi bi-cloud-fog"></i> Foggy weather may slightly reduce crowds.`;
             }
-            
-            note += weatherNote;
         }
         
-        chartNote.innerHTML = note;
+        chartNote.innerHTML = `
+            <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; flex-wrap: wrap;">
+                <span style="display: flex; align-items: center; gap: 5px;">
+                    <div style="width: 12px; height: 12px; background-color: #DC2626; border-radius: 2px;"></div>
+                    <span>High Crowd (>70%): ${highCount}</span>
+                </span>
+                <span style="display: flex; align-items: center; gap: 5px;">
+                    <div style="width: 12px; height: 12px; background-color: #F59E0B; border-radius: 2px;"></div>
+                    <span>Medium Crowd (30-70%): ${mediumCount}</span>
+                </span>
+                <span style="display: flex; align-items: center; gap: 5px;">
+                    <div style="width: 12px; height: 12px; background-color: #059669; border-radius: 2px;"></div>
+                    <span>Low Crowd (<30%): ${lowCount}</span>
+                </span>
+            </div>
+            <div style="text-align: center; color: #666; font-size: 14px;">
+                <i class="bi bi-info-circle"></i> Click on bars to view place details.${weatherNote}
+            </div>
+        `;
     }
     
     // Create the chart
@@ -2128,22 +2195,8 @@ async function fetchPlacesByCategoryRegular(category) {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            const place = selectedPlaces[context.dataIndex];
-                            let tooltip = `Crowd Level: ${context.parsed.y}%`;
-                            if (place.category) tooltip += `\nCategory: ${place.category}`;
-                            if (place.district) tooltip += `\nDistrict: ${place.district}`;
-                            if (place.weather_condition) tooltip += `\nWeather: ${place.weather_condition}`;
-                            if (place.weather_impact !== undefined) {
-                                const impact = place.weather_impact;
-                                if (impact > 0) {
-                                    tooltip += `\nWeather Impact: +${impact}%`;
-                                } else if (impact < 0) {
-                                    tooltip += `\nWeather Impact: ${impact}%`;
-                                } else {
-                                    tooltip += `\nWeather Impact: No change`;
-                                }
-                            }
-                            return tooltip;
+                            // Only show crowd level with two decimals
+                            return `Crowd Level: ${context.parsed.y.toFixed(2)}%`;
                         }
                     }
                 }

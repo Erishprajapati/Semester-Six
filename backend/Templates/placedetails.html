@@ -1,7 +1,5 @@
 {% extends "base.html" %}
-{% with hide_navbar_search=True %}
 {% block content %}
-<form style="display:none;">{% csrf_token %}</form>
 
 {% with hide_navbar_search=True %}
 <!-- Styles -->
@@ -1198,6 +1196,13 @@
     });
 </script>
 
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var searchForm = document.getElementById("navbar-search-form");
+    if (searchForm) searchForm.style.display = "none";
+  });
+</script>
+
 {% comment %} <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -1305,4 +1310,3 @@
 {% comment %} </script> {% endcomment %}
 
 {% endblock %}
-{% endwith %}
