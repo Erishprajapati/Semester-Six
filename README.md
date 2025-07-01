@@ -252,4 +252,3 @@ For support and questions:
 
 ---
 
-**Built with ❤️ for Nepal's Tourism Industry**

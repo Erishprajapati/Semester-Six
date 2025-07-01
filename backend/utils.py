@@ -79,3 +79,60 @@ def get_weather_impact_on_crowd(weather_condition):
     }
     
     return weather_impacts.get(weather_condition, 0)
+
+# New optimized weather functions
+@cache_result(timeout=600)  # Cache for 10 minutes
+def get_batch_weather_data(places):
+    """
+    Get weather data for multiple places in a single optimized request
+    Uses a single API call to get weather for Kathmandu area (all places are in Kathmandu valley)
+    """
+    try:
+        # Since all places are in Kathmandu valley, use Kathmandu coordinates for weather
+        # This reduces API calls from N (number of places) to 1
+        kathmandu_lat = 27.7172
+        kathmandu_lon = 85.3240
+        
+        weather_data = get_weather(kathmandu_lat, kathmandu_lon)
+        
+        if weather_data and 'weather' in weather_data and 'main' in weather_data:
+            weather_main = weather_data['weather'][0]['main'].lower()
+            
+            # Map OpenWeatherMap conditions to our model's categories
+            if weather_main in ['clear']:
+                weather_condition = 'Sunny'
+            elif weather_main in ['clouds', 'cloudy']:
+                weather_condition = 'Cloudy'
+            elif weather_main in ['rain', 'drizzle', 'snow', 'thunderstorm']:
+                weather_condition = 'Rainy'
+            elif weather_main in ['fog', 'mist', 'haze']:
+                weather_condition = 'Foggy'
+            else:
+                weather_condition = 'Sunny'
+        else:
+            weather_condition = 'Sunny'
+        
+        # Return the same weather condition for all places
+        return {place.id: weather_condition for place in places}
+        
+    except Exception as e:
+        print(f"Error getting batch weather data: {e}")
+        # Return default weather for all places
+        return {place.id: 'Sunny' for place in places}
+
+def get_optimized_weather_for_places(places):
+    """
+    Optimized function to get weather for multiple places
+    Uses batching and caching to reduce API calls
+    """
+    if not places:
+        return {}
+    
+    # Use batch weather data (single API call for Kathmandu area)
+    return get_batch_weather_data(places)
+
+# Performance monitoring
+def log_performance(func_name, start_time, end_time, details=""):
+    """Log performance metrics for debugging"""
+    duration = end_time - start_time
+    print(f"[PERFORMANCE] {func_name}: {duration:.2f}s {details}")

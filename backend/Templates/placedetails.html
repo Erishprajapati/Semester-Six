@@ -1185,7 +1185,7 @@
 
                         if (data.success) {
                             alert("Place deleted!");
-                            window.location.href = '/'; // Redirect to home page instead of reloading
+                            window.location.href = '/api/place-list/'; // Redirect to place list page instead of home
                         } else {
                             alert(`Error: ${data.error || 'An unknown error occurred.'}`);
                         }

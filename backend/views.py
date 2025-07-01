@@ -8,7 +8,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from .models import *
 from .serializers import PlaceSerializer, CrowdDataSerializer, TagSerializer
-from .utils import get_weather, get_real_time_weather_for_place, get_weather_impact_on_crowd, cache_result
+from .utils import get_weather, get_real_time_weather_for_place, get_weather_impact_on_crowd, cache_result, get_optimized_weather_for_places, log_performance
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Max
@@ -25,6 +25,7 @@ from .ml_model import get_current_season, get_current_weather
 import logging
 from rest_framework import status
 import sys
+from django.core.cache import cache
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 
 # Create your views here.
@@ -1043,15 +1044,15 @@ def delete_place(request, place_id):
             messages.success(request, f'Place "{place_name}" has been deleted successfully.')
 
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                # For AJAX, return success and a redirect URL to home page
+                # For AJAX, return success and a redirect URL to place list page
                 return JsonResponse({
                     'success': True,
                     'message': f'Place "{place_name}" has been deleted successfully.',
-                    'redirect_url': '/'  # Redirect to home page
+                    'redirect_url': '/api/place-list/'  # Redirect to place list page
                 })
             
-            # For standard form submissions, redirect to home page
-            return redirect('/')
+            # For standard form submissions, redirect to place list page
+            return redirect('place_list')
 
         except Exception as e:
             error_message = f'An error occurred: {e}'
@@ -1742,6 +1743,13 @@ def tourism_crowd_data_for_charts(request):
         
         print(f"[DEBUG] Tourism API called with: district={district}, category={category}, time_slot={time_slot}")
         
+        # Check for cached results first
+        cache_key = f"tourism_data:{district}:{category}:{time_slot}:{limit}"
+        cached_result = cache.get(cache_key)
+        if cached_result:
+            print("[DEBUG] Returning cached tourism data")
+            return JsonResponse(cached_result)
+        
         # Save search history
         if district:
             save_search_history(request.user, district, 'district')
@@ -1790,6 +1798,11 @@ def tourism_crowd_data_for_charts(request):
             places = places.filter(is_approved=True)
             print(f"[DEBUG] After approval filter: {places.count()} places")
         
+        # Limit the number of places to process for better performance
+        # We'll process max 50 places and then select the best 7 for display
+        places = places[:50]
+        print(f"[DEBUG] Limited to {places.count()} places for processing")
+        
         if not places.exists():
             error_msg = 'No places found for the given criteria'
             print(f"[DEBUG] No places found: {error_msg}")
@@ -1797,7 +1810,7 @@ def tourism_crowd_data_for_charts(request):
                 'error': error_msg
             }, status=404)
         
-        # Use the improved tourism model
+        # Use the improved tourism model with caching
         improved_model_path = os.path.join(os.path.dirname(__file__), 'crowd_prediction_model.joblib')
         if not os.path.exists(improved_model_path):
             return JsonResponse({
@@ -1805,12 +1818,22 @@ def tourism_crowd_data_for_charts(request):
             }, status=500)
         
         try:
-            from backend.improved_ml_model import ImprovedCrowdPredictionModel
-            model = ImprovedCrowdPredictionModel()
-            if not model.load_model():
-                return JsonResponse({
-                    'error': 'Failed to load tourism model.'
-                }, status=500)
+            # Cache the model to avoid reloading
+            model_cache_key = 'tourism_ml_model'
+            model = cache.get(model_cache_key)
+            
+            if model is None:
+                from backend.improved_ml_model import ImprovedCrowdPredictionModel
+                model = ImprovedCrowdPredictionModel()
+                if not model.load_model():
+                    return JsonResponse({
+                        'error': 'Failed to load tourism model.'
+                    }, status=500)
+                # Cache the model for 1 hour
+                cache.set(model_cache_key, model, 3600)
+                print("[DEBUG] Tourism model loaded and cached")
+            else:
+                print("[DEBUG] Tourism model loaded from cache")
             
             # Get current context for tourism predictions
             now = datetime.now()
@@ -1828,13 +1851,21 @@ def tourism_crowd_data_for_charts(request):
             else:  # evening
                 hour = 19
             
+            # Get batch weather data for all places (single API call)
+            import time
+            start_time = time.time()
+            weather_data = get_optimized_weather_for_places(places)
+            weather_time = time.time()
+            log_performance("Weather API", start_time, weather_time, f"for {len(places)} places")
+            
             # Get predictions for all places
             places_data = []
+            prediction_start = time.time()
+            
             for place in places:
                 try:
-                    # Get real-time weather for this specific place
-                    weather_condition = get_real_time_weather_for_place(place)
-                    print(f"[DEBUG] Real-time weather for {place.name}: {weather_condition}")
+                    # Get weather condition from batch data
+                    weather_condition = weather_data.get(place.id, 'Sunny')
                     
                     # Construct all required features for the model
                     features = {
@@ -1850,12 +1881,7 @@ def tourism_crowd_data_for_charts(request):
                         'weather_condition': weather_condition,
                         'hour': hour
                     }
-                    # Log all features for debugging
-                    print(f"[DEBUG] Features for place {place.name} (ID {place.id}): {features}")
-                    # Check for missing/None features
-                    missing = [k for k, v in features.items() if v is None]
-                    if missing:
-                        print(f"[DEBUG] Missing features for place {place.name}: {missing}")
+                    
                     predicted_crowd = model.predict(**features)
                     
                     # Convert numpy float32 to regular Python float for JSON serialization
@@ -1898,9 +1924,42 @@ def tourism_crowd_data_for_charts(request):
                     print(f"[DEBUG] Tourism prediction error for place {place.name}: {e}")
                     continue
             
-            # Sort by crowd level (highest first) and limit results
+            prediction_time = time.time()
+            log_performance("ML Predictions", prediction_start, prediction_time, f"for {len(places_data)} places")
+            
+            # Apply 3-2-2 distribution logic for balanced chart display
+            # Sort by crowd level first
             places_data.sort(key=lambda x: x['crowdlevel'], reverse=True)
-            places_data = places_data[:limit]
+            
+            # Categorize places by crowd level
+            high_crowd = [p for p in places_data if p['crowdlevel'] > 70]
+            medium_crowd = [p for p in places_data if 30 <= p['crowdlevel'] <= 70]
+            low_crowd = [p for p in places_data if p['crowdlevel'] < 30]
+            
+            print(f"[DEBUG] Crowd distribution - High: {len(high_crowd)}, Medium: {len(medium_crowd)}, Low: {len(low_crowd)}")
+            
+            # Select places with 3-2-2 distribution
+            selected_places = []
+            
+            # Take 3 high crowd places (or all if less than 3)
+            selected_places.extend(high_crowd[:3])
+            
+            # Take 2 medium crowd places (or all if less than 2)
+            selected_places.extend(medium_crowd[:2])
+            
+            # Take 2 low crowd places (or all if less than 2)
+            selected_places.extend(low_crowd[:2])
+            
+            # If we still don't have 7 places, fill with remaining places from any category
+            if len(selected_places) < 7:
+                remaining_places = [p for p in places_data if p not in selected_places]
+                needed = 7 - len(selected_places)
+                selected_places.extend(remaining_places[:needed])
+            
+            # Ensure we don't exceed the limit
+            places_data = selected_places[:limit]
+            
+            print(f"[DEBUG] Final selection - High: {len([p for p in places_data if p['crowdlevel'] > 70])}, Medium: {len([p for p in places_data if 30 <= p['crowdlevel'] <= 70])}, Low: {len([p for p in places_data if p['crowdlevel'] < 30])}")
             
             # Prepare data specifically for bar charts
             chart_data = {
@@ -1912,7 +1971,7 @@ def tourism_crowd_data_for_charts(request):
                 'place_ids': [place['id'] for place in places_data]
             }
             
-            return JsonResponse({
+            response_data = {
                 'places': places_data,
                 'chart_data': chart_data,
                 'model_used': 'tourism_improved',
@@ -1929,7 +1988,13 @@ def tourism_crowd_data_for_charts(request):
                     'season': season,
                     'tourist_season': 'Peak' if month in [10, 11, 4, 5] else 'Shoulder' if month in [3, 9, 12] else 'Low'
                 }
-            })
+            }
+            
+            # Cache the results for 5 minutes to avoid reprocessing
+            cache_key = f"tourism_data:{district}:{category}:{time_slot}:{limit}"
+            cache.set(cache_key, response_data, 300)  # 5 minutes cache
+            
+            return JsonResponse(response_data)
             
         except Exception as e:
             return JsonResponse({
