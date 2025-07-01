@@ -325,18 +325,15 @@ def recommend_places(request, place_name):
         if recommendations:
             # Get all place IDs for bulk crowd data query
             place_ids = [rec['place'].id for rec in recommendations]
-            
             # Bulk query for latest crowd data
             latest_crowd_data = {}
             for place_id in place_ids:
                 crowd_data = CrowdData.objects.filter(place_id=place_id).order_by('-timestamp').first()
                 if crowd_data:
                     latest_crowd_data[place_id] = crowd_data
-        
         for rec in recommendations:
             place = rec['place']
             crowd_data = latest_crowd_data.get(place.id)
-            
             places_data.append({
                 'id': place.id,
                 'name': place.name,
@@ -350,10 +347,16 @@ def recommend_places(request, place_name):
                 'longitude': place.longitude,
                 'image': request.build_absolute_uri(place.image.url) if place.image else None
             })
-        
+        # Remove duplicates by place ID
+        unique_places = []
+        seen_ids = set()
+        for place in places_data:
+            if place['id'] not in seen_ids:
+                unique_places.append(place)
+                seen_ids.add(place['id'])
         return JsonResponse({
             'reference_place': place_name,
-            'recommendations': places_data
+            'recommendations': unique_places
         })
         
     except Place.DoesNotExist:

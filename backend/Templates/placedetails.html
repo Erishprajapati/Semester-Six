@@ -548,7 +548,10 @@
                     </div>
                     {% endif %}
                 </div>
-                {% if user.is_authenticated and place.added_by == user or user.is_superuser %}
+                {% if user.is_superuser or user.is_authenticated and place.added_by == user %}
+                <form id="delete-place-form" method="post" style="display:none;">
+                    {% csrf_token %}
+                </form>
                 <div class="d-flex gap-2">
                     <a href="{% url 'save_place' place.id %}" class="btn btn-warning" style="margin-right: 10px;">
                         <i class="bi bi-pencil-square"></i> Update Place
