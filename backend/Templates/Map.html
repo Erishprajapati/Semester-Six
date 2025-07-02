@@ -1520,13 +1520,8 @@ async function fetchPlacesByDistrictTourism(district) {
     showLoadingIndicator();
     updateLoadingText('Fetching tourism data and weather information...');
     
-    const now = new Date();
-    const hour = now.getHours();
-    const time_slot = getTimeSlotFromHour(hour);
-    console.log("Fetching tourism data for district:", district, "time_slot:", time_slot, "hour:", hour);
-    
-    // Use the new tourism crowd data API
-    const tourismData = await fetchTourismCrowdData(district, null, time_slot);
+    // Do NOT determine or pass time_slot here
+    const tourismData = await fetchTourismCrowdData(district, null); // Only district
     if (!tourismData) {
       hideLoadingIndicator();
       return;
@@ -1588,13 +1583,8 @@ async function fetchPlacesByCategoryTourism(category) {
     showLoadingIndicator();
     updateLoadingText('Fetching tourism data and weather information...');
     
-    const now = new Date();
-    const hour = now.getHours();
-    const time_slot = getTimeSlotFromHour(hour);
-    console.log("Fetching tourism data for category:", category, "time_slot:", time_slot, "hour:", hour);
-    
-    // Use the new tourism crowd data API
-    const tourismData = await fetchTourismCrowdData(null, category, time_slot);
+    // Do NOT determine or pass time_slot here
+    const tourismData = await fetchTourismCrowdData(null, category); // Only category
     if (!tourismData) {
       hideLoadingIndicator();
       return;
@@ -1949,18 +1939,15 @@ async function fetchPlacesByCategoryRegular(category) {
   // Function to fetch tourism-based crowd data for charts
   async function fetchTourismCrowdData(district = null, category = null, time_slot = null) {
     try {
-        const now = new Date();
-        const hour = now.getHours();
-        const current_time_slot = time_slot || getTimeSlotFromHour(hour);
-        console.log("Fetching tourism data for:", { district, category, time_slot: current_time_slot, hour });
-        
         // Build query parameters
         const params = new URLSearchParams();
         if (district) params.append('district', district);
         if (category) params.append('category', category);
-        params.append('time_slot', current_time_slot);
+        // Only append time_slot if explicitly provided (not null)
+        if (time_slot !== null && time_slot !== undefined) {
+            params.append('time_slot', time_slot);
+        }
         params.append('limit', '7'); // Show top 7 places (changed from 10 to 7)
-        
         // Use the new tourism crowd data endpoint
         const response = await fetch(`/api/tourism-crowd-charts/?${params.toString()}`);
         if (!response.ok) {

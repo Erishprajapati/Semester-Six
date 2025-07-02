@@ -1504,6 +1504,37 @@ def improved_crowd_predictions(request):
                 time_slot = 'evening'
             else:
                 time_slot = 'morning'
+            print(f"[DEBUG] Auto-selected time_slot based on server time: {time_slot}")
+        else:
+            print(f"[DEBUG] time_slot provided by user: {time_slot}")
+
+        print(f"[DEBUG] Tourism API called with: district={district}, category={category}, time_slot={time_slot}")
+        
+        # Check for cached results first
+        cache_key = f"tourism_data:{district}:{category}:{time_slot}:{limit}"
+        cached_result = cache.get(cache_key)
+        if cached_result:
+            print("[DEBUG] Returning cached tourism data")
+            return JsonResponse(cached_result)
+        
+        # Save search history
+        if district:
+            save_search_history(request.user, district, 'district')
+        elif category:
+            save_search_history(request.user, category, 'category')
+        
+        # Determine current time slot if not provided
+        if not time_slot:
+            now = datetime.now()
+            hour = now.hour
+            if 5 <= hour < 12:
+                time_slot = 'morning'
+            elif 12 <= hour < 17:
+                time_slot = 'afternoon'
+            elif 17 <= hour < 21:
+                time_slot = 'evening'
+            else:
+                time_slot = 'morning'
         
         # Filter places based on parameters
         allowed_districts = ['Kathmandu', 'Lalitpur', 'Bhaktapur']
@@ -1639,6 +1670,20 @@ def improved_crowd_predictions(request):
                 except Exception as e:
                     print(f"[DEBUG] Tourism prediction error for place {place.name}: {e}")
                     continue
+
+            # Print all high, medium, and low places before selection
+            high = [p for p in places_data if p['status'] == 'High']
+            medium = [p for p in places_data if p['status'] == 'Medium']
+            low = [p for p in places_data if p['status'] == 'Low']
+            print("[DEBUG] High crowd places:")
+            for p in high:
+                print(f"  {p['name']} ({p['crowdlevel']}%)")
+            print("[DEBUG] Medium crowd places:")
+            for p in medium:
+                print(f"  {p['name']} ({p['crowdlevel']}%)")
+            print("[DEBUG] Low crowd places:")
+            for p in low:
+                print(f"  {p['name']} ({p['crowdlevel']}%)")
             
             # Sort by crowd level (highest first) and limit results
             places_data.sort(key=lambda x: x['crowdlevel'], reverse=True)
@@ -1988,6 +2033,8 @@ def tourism_crowd_data_for_charts(request):
                 remaining = [p for p in places_data if p not in selected_places]
                 selected_places += remaining[:limit - len(selected_places)]
             places_data = selected_places[:limit]
+            # Sort the final selected places by crowd level descending
+            places_data.sort(key=lambda x: x['crowdlevel'], reverse=True)
             
             prediction_time = time.time()
             log_performance("ML Predictions", prediction_start, prediction_time, f"for {len(places_data)} places")
