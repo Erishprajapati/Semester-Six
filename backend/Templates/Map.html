@@ -1197,42 +1197,8 @@
     let selectedPlaces = [];
     const totalPlaces = places.length;
     
-    if (totalPlaces <= 7) {
-      selectedPlaces = places;
-    } else {
-      // Categorize places by crowd level
-      const highCrowd = places.filter(p => p.crowdlevel > 70);
-      const mediumCrowd = places.filter(p => p.crowdlevel >= 30 && p.crowdlevel <= 70);
-      const lowCrowd = places.filter(p => p.crowdlevel < 30);
-      
-      console.log('Categorized places:', {
-        high: highCrowd.length,
-        medium: mediumCrowd.length,
-        low: lowCrowd.length
-      });
-      
-      // Take exactly 3 high crowd places (or all if less than 3)
-      const selectedHigh = highCrowd.slice(0, 3);
-      
-      // Take exactly 2 medium crowd places (or all if less than 2)
-      const selectedMedium = mediumCrowd.slice(0, 2);
-      
-      // Take exactly 2 low crowd places (or all if less than 2)
-      const selectedLow = lowCrowd.slice(0, 2);
-      
-      // Combine all selected places
-      selectedPlaces = [...selectedHigh, ...selectedMedium, ...selectedLow];
-      
-      // If we still don't have 7 places, fill with remaining places from any category
-      if (selectedPlaces.length < 7) {
-        const remainingPlaces = places.filter(p => !selectedPlaces.includes(p));
-        const needed = 7 - selectedPlaces.length;
-        selectedPlaces = [...selectedPlaces, ...remainingPlaces.slice(0, needed)];
-      }
-      
-      // Ensure we don't exceed 7 places
-      selectedPlaces = selectedPlaces.slice(0, 7);
-    }
+    // Show all places (no artificial filtering)
+    selectedPlaces = places;
     
     console.log('Filtered Selected Places:', selectedPlaces);
     console.log('Total places available:', totalPlaces, 'Displayed:', selectedPlaces.length);
@@ -1336,7 +1302,7 @@
                     const selectedPlace = window.selectedPlaces[index];
                     console.log('Bar clicked:', selectedPlace); // Debug log
                     if (selectedPlace && selectedPlace.id) {
-                        window.location.href = `/place-details/${selectedPlace.id}/`;
+                        goToPlaceDetails(selectedPlace);
                     } else {
                         console.warn('Selected place missing id:', selectedPlace);
                     }
@@ -2160,7 +2126,7 @@ async function fetchPlacesByCategoryRegular(category) {
                     const selectedPlace = window.selectedPlaces[index];
                     console.log('Bar clicked:', selectedPlace); // Debug log
                     if (selectedPlace && selectedPlace.id) {
-                        window.location.href = `/place-details/${selectedPlace.id}/`;
+                        goToPlaceDetails(selectedPlace);
                     } else {
                         console.warn('Selected place missing id:', selectedPlace);
                     }
@@ -2192,6 +2158,19 @@ async function fetchPlacesByCategoryRegular(category) {
     });
     
     return selectedPlaces;
+  }
+
+  // Find the function that handles bar clicks or place selection for details
+  function goToPlaceDetails(place) {
+    // Always use the place's own district and category for details
+    const district = place.district || '';
+    const category = place.category || '';
+    const time_slot = place.time_slot || 'morning';
+    const weather_condition = place.weather_condition || 'Sunny';
+
+    const detailsUrl = `/place-details/${place.id}/?district=${encodeURIComponent(district)}&category=${encodeURIComponent(category)}&time_slot=${encodeURIComponent(time_slot)}&weather_condition=${encodeURIComponent(weather_condition)}`;
+    console.log('[DEBUG] Navigating to:', detailsUrl);
+    window.location.href = detailsUrl;
   }
 </script>
 {% endblock %}

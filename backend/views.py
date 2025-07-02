@@ -27,6 +27,7 @@ from rest_framework import status
 import sys
 from django.core.cache import cache
 sys.path.append(os.path.join(os.path.dirname(__file__)))
+from backend.improved_ml_model import ImprovedCrowdPredictionModel
 
 # Create your views here.
 
@@ -376,6 +377,8 @@ def generate_fake_data(request):
 
 
 def place_details(request, place_id):
+    print(f"[DEBUG] place_details called for place_id={place_id}")
+    print(f"[DEBUG] MODEL_CACHE keys at place_details: {list(MODEL_CACHE.keys())}")
     try:
         place = Place.objects.get(id=place_id)
     except Place.DoesNotExist:
@@ -397,6 +400,12 @@ def place_details(request, place_id):
     weather_impact = None
     weather_condition = None
     
+    # Get context from query parameters if present
+    district = request.GET.get('district', place.district)
+    category = request.GET.get('category', place.category)
+    time_slot = request.GET.get('time_slot', 'afternoon')
+    weather_condition = request.GET.get('weather_condition', None)
+    
     # Use cached model if available
     if 'improved_model' in MODEL_CACHE:
         try:
@@ -407,31 +416,35 @@ def place_details(request, place_id):
             season = get_current_season()
             is_weekend = 1 if day_of_week >= 5 else 0
             is_holiday = 0
-            # Use default hour for details page (e.g., 14 for afternoon)
-            hour = 14
-            
-            # Get real-time weather for this place
-            weather_condition = get_real_time_weather_for_place(place)
-            print(f"[DEBUG] Real-time weather for {place.name} in place details: {weather_condition}")
-            
-            base_crowdlevel = model.predict(
-                place_id=place.id,
-                category=place.category,
-                district=place.district,
-                time_slot='afternoon',
-                day_of_week=day_of_week,
-                month=month,
-                season=season,
-                is_weekend=is_weekend,
-                is_holiday=is_holiday,
-                weather_condition=weather_condition,
-                hour=hour
-            )
-            
-            # Apply weather impact adjustment
+            # Use hour based on time_slot
+            if time_slot == 'morning':
+                hour = 9
+            elif time_slot == 'afternoon':
+                hour = 14
+            else:
+                hour = 19
+            # Use weather from query or real-time
+            if not weather_condition:
+                weather_condition = get_real_time_weather_for_place(place)
+            features = {
+                'place_id': place.id,
+                'category': category,
+                'district': district,
+                'time_slot': time_slot,
+                'day_of_week': day_of_week,
+                'month': month,
+                'season': season,
+                'is_weekend': is_weekend,
+                'is_holiday': is_holiday,
+                'weather_condition': weather_condition,
+                'hour': hour
+            }
+            print(f"[DEBUG] place_details features: {features}")
+            base_crowdlevel = model.predict(**features)
+            print(f"[DEBUG] place_details base_crowdlevel: {base_crowdlevel}")
             weather_impact = get_weather_impact_on_crowd(weather_condition)
             crowdlevel = max(0, min(100, float(base_crowdlevel) + weather_impact))
-            
+            print(f"[DEBUG] place_details final crowdlevel: {crowdlevel}")
         except Exception as e:
             print(f"Error predicting crowd level: {e}")
             crowdlevel = None
@@ -1740,7 +1753,20 @@ def tourism_crowd_data_for_charts(request):
         category = request.GET.get('category')
         time_slot = request.GET.get('time_slot')
         limit = int(request.GET.get('limit', 7))  # Number of places to show in chart (changed from 10 to 7)
-        
+
+        # If time_slot is not provided, determine it from server time
+        if not time_slot:
+            now = datetime.now()
+            hour = now.hour
+            if 5 <= hour < 12:
+                time_slot = 'morning'
+            elif 12 <= hour < 17:
+                time_slot = 'afternoon'
+            elif 17 <= hour < 21:
+                time_slot = 'evening'
+            else:
+                time_slot = 'morning'
+
         print(f"[DEBUG] Tourism API called with: district={district}, category={category}, time_slot={time_slot}")
         
         # Check for cached results first
@@ -1927,37 +1953,9 @@ def tourism_crowd_data_for_charts(request):
             prediction_time = time.time()
             log_performance("ML Predictions", prediction_start, prediction_time, f"for {len(places_data)} places")
             
-            # Apply 3-2-2 distribution logic for balanced chart display
-            # Sort by crowd level first
+            # Sort by crowd level (highest first) and limit results
             places_data.sort(key=lambda x: x['crowdlevel'], reverse=True)
-            
-            # Categorize places by crowd level
-            high_crowd = [p for p in places_data if p['crowdlevel'] > 70]
-            medium_crowd = [p for p in places_data if 30 <= p['crowdlevel'] <= 70]
-            low_crowd = [p for p in places_data if p['crowdlevel'] < 30]
-            
-            print(f"[DEBUG] Crowd distribution - High: {len(high_crowd)}, Medium: {len(medium_crowd)}, Low: {len(low_crowd)}")
-            
-            # Select places with 3-2-2 distribution
-            selected_places = []
-            
-            # Take 3 high crowd places (or all if less than 3)
-            selected_places.extend(high_crowd[:3])
-            
-            # Take 2 medium crowd places (or all if less than 2)
-            selected_places.extend(medium_crowd[:2])
-            
-            # Take 2 low crowd places (or all if less than 2)
-            selected_places.extend(low_crowd[:2])
-            
-            # If we still don't have 7 places, fill with remaining places from any category
-            if len(selected_places) < 7:
-                remaining_places = [p for p in places_data if p not in selected_places]
-                needed = 7 - len(selected_places)
-                selected_places.extend(remaining_places[:needed])
-            
-            # Ensure we don't exceed the limit
-            places_data = selected_places[:limit]
+            places_data = places_data[:limit]
             
             print(f"[DEBUG] Final selection - High: {len([p for p in places_data if p['crowdlevel'] > 70])}, Medium: {len([p for p in places_data if 30 <= p['crowdlevel'] <= 70])}, Low: {len([p for p in places_data if p['crowdlevel'] < 30])}")
             
@@ -2005,3 +2003,60 @@ def tourism_crowd_data_for_charts(request):
         return JsonResponse({
             'error': f'Request failed: {str(e)}'
         }, status=500)
+
+@api_view(['GET'])
+def balanced_crowd_predictions(request):
+    """
+    Returns up to 3 High, 2 Medium, and 2 Low crowd places for Kathmandu using the ML model.
+    """
+    # Load the trained model
+    model = joblib.load('backend/crowd_prediction_model.joblib')
+    places = Place.objects.filter(district__icontains='Kathmandu')
+    data = []
+
+    for place in places:
+        features = {
+            'place_id': place.id,
+            'category': place.category,
+            'district': place.district,
+            'hour': datetime.now().hour,
+            'day_of_week': datetime.now().weekday(),
+            'month': datetime.now().month,
+            'season': 'Summer',  # You can improve this logic
+            'is_weekend': datetime.now().weekday() >= 5,
+            'weather_condition': 'Cloudy',  # Replace with live data if available
+            'time_slot': 'morning',
+        }
+        data.append(features)
+
+    df = pd.DataFrame(data)
+    feature_cols = [col for col in df.columns if col not in ['place_id']]
+    df['predicted_crowdlevel'] = model.predict(df[feature_cols])
+
+    # Classify
+    df['crowd_category'] = df['predicted_crowdlevel'].apply(
+        lambda x: 'High' if x > 70 else 'Medium' if x >= 30 else 'Low'
+    )
+    df['place_name'] = [Place.objects.get(id=pid).name for pid in df['place_id']]
+
+    # Select top 3 High, 2 Medium, 2 Low
+    high = df[df['crowd_category'] == 'High'].sort_values('predicted_crowdlevel', ascending=False).head(3)
+    medium = df[df['crowd_category'] == 'Medium'].sort_values('predicted_crowdlevel', ascending=False).head(2)
+    low = df[df['crowd_category'] == 'Low'].sort_values('predicted_crowdlevel', ascending=False).head(2)
+
+    final_df = pd.concat([high, medium, low])
+
+    result = final_df[['place_name', 'predicted_crowdlevel', 'crowd_category']].to_dict(orient='records')
+    return JsonResponse({'places': result}, safe=False)
+
+if 'improved_model' not in MODEL_CACHE:
+    model_path = os.path.join(os.path.dirname(__file__), 'crowd_prediction_model.joblib')
+    if os.path.exists(model_path):
+        model = ImprovedCrowdPredictionModel()
+        if model.load_model():
+            MODEL_CACHE['improved_model'] = model
+            print("[DEBUG] Improved model loaded and cached at startup")
+        else:
+            print("[DEBUG] Failed to load improved model at startup")
+    else:
+        print("[DEBUG] Model file not found at startup")

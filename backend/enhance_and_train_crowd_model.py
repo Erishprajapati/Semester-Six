@@ -7,22 +7,24 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.improved_ml_model import ImprovedCrowdPredictionModel
 
-# 1. Load ONLY the realistic enhanced crowd data
-csv_file = 'enhanced_crowd_data.csv'
+# 1. Load ONLY the new realistic crowd data
+csv_file = 'realistic_crowd_data.csv'
 df = pd.read_csv(csv_file)
 
 print(f"[INFO] Loaded {len(df)} rows from {csv_file}")
 
-# 2. Drop 'place_id' from features for training
+# 2. Drop 'place_id' and 'place_name' from features for training
 if 'place_id' in df.columns:
     df = df.drop(columns=['place_id'])
+if 'place_name' in df.columns:
+    df = df.drop(columns=['place_name'])
 
 # 3. Save (optional, just to ensure format)
-df.to_csv('enhanced_crowd_data_noid.csv', index=False)
+df.to_csv('realistic_crowd_data_noid.csv', index=False)
 
-# 4. Train model (pass the new CSV without place_id)
+# 4. Train model (pass the new CSV without place_id or place_name)
 model = ImprovedCrowdPredictionModel('crowd_prediction_model.joblib')
-model.train_model('enhanced_crowd_data_noid.csv')
+model.train_model('realistic_crowd_data_noid.csv')
 
 # 5. Log metrics
 info = model.get_model_info()
@@ -49,4 +51,4 @@ for case in test_cases:
     pred = model.predict(**case['params'])
     print(f"{case['name']}: {pred:.1f}% crowd level")
 
-print("\n✅ Model trained ONLY on your realistic enhanced_crowd_data.csv WITHOUT place_id!") 
+print("\n✅ Model trained ONLY on your realistic_crowd_data.csv WITHOUT place_id or place_name!") 
