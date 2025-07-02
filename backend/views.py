@@ -1607,16 +1607,16 @@ def improved_crowd_predictions(request):
                     weather_impact = get_weather_impact_on_crowd(weather_condition)
                     adjusted_crowd = max(0, min(100, predicted_crowd + weather_impact))
                     
-                    # Determine crowd status with updated color scheme: High-Red, Medium-Green, Low-Yellow
+                    # Determine crowd status with correct color scheme: High-Red, Medium-Orange, Low-Green
                     if adjusted_crowd > 70:
                         status = 'High'
                         color = 'red'
                     elif adjusted_crowd >= 30:
                         status = 'Medium'
-                        color = 'green'
+                        color = 'orange'
                     else:
                         status = 'Low'
-                        color = 'yellow'
+                        color = 'green'
                     
                     places_data.append({
                         'id': place.id,
@@ -1892,7 +1892,6 @@ def tourism_crowd_data_for_charts(request):
                 try:
                     # Get weather condition from batch data
                     weather_condition = weather_data.get(place.id, 'Sunny')
-                    
                     # Construct all required features for the model
                     features = {
                         'place_id': place.id,
@@ -1907,27 +1906,41 @@ def tourism_crowd_data_for_charts(request):
                         'weather_condition': weather_condition,
                         'hour': hour
                     }
-                    
-                    predicted_crowd = model.predict(**features)
-                    
-                    # Convert numpy float32 to regular Python float for JSON serialization
-                    predicted_crowd = float(predicted_crowd)
-                    
-                    # Apply weather impact adjustment
-                    weather_impact = get_weather_impact_on_crowd(weather_condition)
-                    adjusted_crowd = max(0, min(100, predicted_crowd + weather_impact))
-                    
-                    # Determine crowd status with updated color scheme: High-Red, Medium-Green, Low-Yellow
-                    if adjusted_crowd > 70:
-                        status = 'High'
-                        color = 'red'
-                    elif adjusted_crowd >= 30:
-                        status = 'Medium'
-                        color = 'green'
-                    else:
-                        status = 'Low'
-                        color = 'yellow'
-                    
+                    print(f"[DEBUG] Features for place {place.name}: {features}")
+                    try:
+                        # Prepare features as a DataFrame row
+                        feature_cols = [
+                            'place_id', 'category', 'district', 'hour', 'day_of_week', 'month',
+                            'season', 'is_weekend', 'weather_condition', 'time_slot'
+                        ]
+                        if hasattr(model, 'feature_names_in_'):
+                            # scikit-learn model
+                            row = pd.DataFrame([{k: features[k] for k in feature_cols}])
+                            row = pd.get_dummies(row)
+                            for col in model.feature_names_in_:
+                                if col not in row.columns:
+                                    row[col] = 0
+                            row = row[model.feature_names_in_]
+                            predicted_value = model.predict(row)[0]
+                        else:
+                            # custom model
+                            predicted_value = model.predict(**features)
+                        print(f"[DEBUG] Model prediction for {place.name}: {predicted_value}")
+                        # Map numeric prediction to label for color/status
+                        if predicted_value > 70:
+                            predicted_label = 'High'
+                            color = 'red'
+                        elif predicted_value >= 30:
+                            predicted_label = 'Medium'
+                            color = 'orange'
+                        else:
+                            predicted_label = 'Low'
+                            color = 'green'
+                        status = predicted_label
+                        crowdlevel = float(predicted_value)  # Use the actual predicted value for the bar height
+                    except Exception as model_exc:
+                        print(f"[ERROR] Model prediction failed for {place.name}: {model_exc}")
+                        continue
                     places_data.append({
                         'id': place.id,
                         'name': place.name,
@@ -1936,28 +1949,48 @@ def tourism_crowd_data_for_charts(request):
                         'district': place.district,
                         'latitude': place.latitude,
                         'longitude': place.longitude,
-                        'crowdlevel': adjusted_crowd,
+                        'crowdlevel': crowdlevel,
                         'status': status,
                         'color': color,
                         'time_slot': time_slot,
                         'is_weekend': is_weekend,
                         'season': season,
                         'weather_condition': weather_condition,
-                        'weather_impact': weather_impact,
-                        'base_prediction': predicted_crowd
+                        'weather_impact': 0,
+                        'base_prediction': status
                     })
                 except Exception as e:
                     print(f"[DEBUG] Tourism prediction error for place {place.name}: {e}")
                     continue
             
+            # 3-2-2 split based on predicted label
+            high = [p for p in places_data if p['status'] == 'High']
+            medium = [p for p in places_data if p['status'] == 'Medium']
+            low = [p for p in places_data if p['status'] == 'Low']
+
+            high.sort(key=lambda x: x['name'])
+            medium.sort(key=lambda x: x['name'])
+            low.sort(key=lambda x: x['name'])
+
+            selected_places = high[:3] + medium[:2]
+            needed = limit - len(selected_places)
+            if len(low) >= 2:
+                selected_places += low[:2]
+            else:
+                selected_places += low
+                remaining_needed = 2 - len(low)
+                more_medium = [p for p in medium if p not in selected_places][:remaining_needed]
+                selected_places += more_medium
+                if len(selected_places) < limit:
+                    more_high = [p for p in high if p not in selected_places][:limit - len(selected_places)]
+                    selected_places += more_high
+            if len(selected_places) < limit:
+                remaining = [p for p in places_data if p not in selected_places]
+                selected_places += remaining[:limit - len(selected_places)]
+            places_data = selected_places[:limit]
+            
             prediction_time = time.time()
             log_performance("ML Predictions", prediction_start, prediction_time, f"for {len(places_data)} places")
-            
-            # Sort by crowd level (highest first) and limit results
-            places_data.sort(key=lambda x: x['crowdlevel'], reverse=True)
-            places_data = places_data[:limit]
-            
-            print(f"[DEBUG] Final selection - High: {len([p for p in places_data if p['crowdlevel'] > 70])}, Medium: {len([p for p in places_data if 30 <= p['crowdlevel'] <= 70])}, Low: {len([p for p in places_data if p['crowdlevel'] < 30])}")
             
             # Prepare data specifically for bar charts
             chart_data = {

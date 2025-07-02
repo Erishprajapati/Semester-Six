@@ -7862,7 +7862,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 4,Historical,Kathmandu,morning,9,6,8,25,Summer,1,0,Rainy,14.1,Low,Yes
 4,Historical,Kathmandu,afternoon,14,6,8,25,Summer,1,0,Foggy,27.5,Low,Yes
 4,Historical,Kathmandu,evening,18,6,8,25,Summer,1,0,Cloudy,30.7,Low,Yes
-4,Historical,Kathmandu,morning,9,0,8,26,Summer,0,0,Foggy,93.25652803510293,Low,Yes
+4,Historical,Kathmandu,morning,9,0,8,26,Summer,0,0,Foggy,93.25652803510292,Low,Yes
 4,Historical,Kathmandu,afternoon,14,0,8,26,Summer,0,0,Rainy,12.0,Low,Yes
 4,Historical,Kathmandu,evening,18,0,8,26,Summer,0,0,Cloudy,15.6,Low,Yes
 4,Historical,Kathmandu,morning,9,1,8,27,Summer,0,0,Cloudy,85.07045801837283,Low,Yes
@@ -7910,7 +7910,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 4,Historical,Kathmandu,morning,9,1,9,10,Autumn,0,0,Cloudy,96.3891847472438,Shoulder,Yes
 4,Historical,Kathmandu,afternoon,14,1,9,10,Autumn,0,0,Sunny,95.0,Shoulder,Yes
 4,Historical,Kathmandu,evening,18,1,9,10,Autumn,0,0,Sunny,78.0,Shoulder,Yes
-4,Historical,Kathmandu,morning,9,2,9,11,Autumn,0,0,Cloudy,91.12874837420081,Shoulder,Yes
+4,Historical,Kathmandu,morning,9,2,9,11,Autumn,0,0,Cloudy,91.1287483742008,Shoulder,Yes
 4,Historical,Kathmandu,afternoon,14,2,9,11,Autumn,0,0,Sunny,95.0,Shoulder,Yes
 4,Historical,Kathmandu,evening,18,2,9,11,Autumn,0,0,Cloudy,58.8,Shoulder,Yes
 4,Historical,Kathmandu,morning,9,3,9,12,Autumn,0,0,Cloudy,100.0,Shoulder,Yes
@@ -8051,7 +8051,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 4,Historical,Kathmandu,morning,9,6,10,27,Autumn,1,0,Cloudy,79.43017217518752,Peak,Yes
 4,Historical,Kathmandu,afternoon,14,6,10,27,Autumn,1,0,Rainy,95.0,Peak,Yes
 4,Historical,Kathmandu,evening,18,6,10,27,Autumn,1,0,Sunny,95.0,Peak,Yes
-4,Historical,Kathmandu,morning,9,0,10,28,Autumn,0,0,Rainy,94.67941008082691,Peak,No
+4,Historical,Kathmandu,morning,9,0,10,28,Autumn,0,0,Rainy,94.67941008082693,Peak,No
 4,Historical,Kathmandu,afternoon,14,0,10,28,Autumn,0,0,Cloudy,95.0,Peak,No
 4,Historical,Kathmandu,evening,18,0,10,28,Autumn,0,0,Rainy,82.5,Peak,No
 4,Historical,Kathmandu,morning,9,1,10,29,Autumn,0,0,Rainy,84.82501598463644,Peak,No
@@ -8210,7 +8210,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 4,Historical,Kathmandu,morning,9,3,12,19,Winter,0,0,Sunny,80.14424773699186,Shoulder,No
 4,Historical,Kathmandu,afternoon,14,3,12,19,Winter,0,0,Sunny,69.6,Shoulder,No
 4,Historical,Kathmandu,evening,18,3,12,19,Winter,0,0,Foggy,40.7,Shoulder,No
-4,Historical,Kathmandu,morning,9,4,12,20,Winter,0,0,Foggy,95.72461335076737,Shoulder,No
+4,Historical,Kathmandu,morning,9,4,12,20,Winter,0,0,Foggy,95.72461335076736,Shoulder,No
 4,Historical,Kathmandu,afternoon,14,4,12,20,Winter,0,0,Foggy,52.1,Shoulder,No
 4,Historical,Kathmandu,evening,18,4,12,20,Winter,0,0,Foggy,37.9,Shoulder,No
 4,Historical,Kathmandu,morning,9,5,12,21,Winter,1,0,Foggy,89.0,Shoulder,No
@@ -8264,7 +8264,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 4,Historical,Kathmandu,morning,9,0,1,6,Winter,0,0,Sunny,78.0,Low,No
 4,Historical,Kathmandu,afternoon,14,0,1,6,Winter,0,0,Sunny,20.8,Low,No
 4,Historical,Kathmandu,evening,18,0,1,6,Winter,0,0,Cloudy,14.9,Low,No
-4,Historical,Kathmandu,morning,9,1,1,7,Winter,0,0,Cloudy,99.81471565407219,Low,No
+4,Historical,Kathmandu,morning,9,1,1,7,Winter,0,0,Cloudy,99.8147156540722,Low,No
 4,Historical,Kathmandu,afternoon,14,1,1,7,Winter,0,0,Sunny,21.2,Low,No
 4,Historical,Kathmandu,evening,18,1,1,7,Winter,0,0,Sunny,17.2,Low,No
 4,Historical,Kathmandu,morning,9,2,1,8,Winter,0,0,Sunny,12.2,Low,No
@@ -8321,7 +8321,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 4,Historical,Kathmandu,morning,9,5,1,25,Winter,1,0,Cloudy,21.1,Low,No
 4,Historical,Kathmandu,afternoon,14,5,1,25,Winter,1,0,Cloudy,36.8,Low,No
 4,Historical,Kathmandu,evening,18,5,1,25,Winter,1,0,Foggy,21.7,Low,No
-4,Historical,Kathmandu,morning,9,6,1,26,Winter,1,0,Sunny,93.34747494083933,Low,No
+4,Historical,Kathmandu,morning,9,6,1,26,Winter,1,0,Sunny,93.34747494083932,Low,No
 4,Historical,Kathmandu,afternoon,14,6,1,26,Winter,1,0,Sunny,35.2,Low,No
 4,Historical,Kathmandu,evening,18,6,1,26,Winter,1,0,Cloudy,23.9,Low,No
 4,Historical,Kathmandu,morning,9,0,1,27,Winter,0,0,Sunny,85.0,Low,No
@@ -8693,7 +8693,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 4,Historical,Kathmandu,morning,9,3,5,29,Spring,0,0,Sunny,84.0,Peak,No
 4,Historical,Kathmandu,afternoon,14,3,5,29,Spring,0,0,Sunny,95.0,Peak,No
 4,Historical,Kathmandu,evening,18,3,5,29,Spring,0,0,Cloudy,90.8,Peak,No
-4,Historical,Kathmandu,morning,9,4,5,30,Spring,0,0,Sunny,91.18083337990791,Peak,No
+4,Historical,Kathmandu,morning,9,4,5,30,Spring,0,0,Sunny,91.18083337990792,Peak,No
 4,Historical,Kathmandu,afternoon,14,4,5,30,Spring,0,0,Rainy,84.2,Peak,No
 4,Historical,Kathmandu,evening,18,4,5,30,Spring,0,0,Sunny,95.0,Peak,No
 4,Historical,Kathmandu,morning,9,5,5,31,Spring,1,0,Rainy,80.0,Peak,No
@@ -8723,7 +8723,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 4,Historical,Kathmandu,morning,9,6,6,8,Summer,1,0,Foggy,86.3457919831625,Low,No
 4,Historical,Kathmandu,afternoon,14,6,6,8,Summer,1,0,Foggy,19.0,Low,No
 4,Historical,Kathmandu,evening,18,6,6,8,Summer,1,0,Rainy,10.9,Low,No
-4,Historical,Kathmandu,morning,9,0,6,9,Summer,0,0,Cloudy,91.24160348644267,Low,No
+4,Historical,Kathmandu,morning,9,0,6,9,Summer,0,0,Cloudy,91.24160348644268,Low,No
 4,Historical,Kathmandu,afternoon,14,0,6,9,Summer,0,0,Cloudy,13.4,Low,No
 4,Historical,Kathmandu,evening,18,0,6,9,Summer,0,0,Rainy,6.1,Low,No
 4,Historical,Kathmandu,morning,9,1,6,10,Summer,0,0,Rainy,72.65110190197225,Low,No
@@ -8882,16 +8882,16 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 16,Historical,Lalitpur,morning,9,1,7,30,Summer,0,0,Cloudy,77.34484359997393,Low,No
 16,Historical,Lalitpur,afternoon,14,1,7,30,Summer,0,0,Rainy,5.0,Low,No
 16,Historical,Lalitpur,evening,18,1,7,30,Summer,0,0,Rainy,5.0,Low,No
-16,Historical,Lalitpur,morning,9,2,7,31,Summer,0,0,Rainy,91.44619935673033,Low,No
+16,Historical,Lalitpur,morning,9,2,7,31,Summer,0,0,Rainy,91.44619935673032,Low,No
 16,Historical,Lalitpur,afternoon,14,2,7,31,Summer,0,0,Cloudy,7.8,Low,No
 16,Historical,Lalitpur,evening,18,2,7,31,Summer,0,0,Rainy,5.0,Low,No
 16,Historical,Lalitpur,morning,9,3,8,1,Summer,0,0,Rainy,90.0,Low,No
 16,Historical,Lalitpur,afternoon,14,3,8,1,Summer,0,0,Foggy,9.0,Low,No
 16,Historical,Lalitpur,evening,18,3,8,1,Summer,0,0,Foggy,7.3,Low,No
-16,Historical,Lalitpur,morning,9,4,8,2,Summer,0,0,Foggy,99.19205125480387,Low,No
+16,Historical,Lalitpur,morning,9,4,8,2,Summer,0,0,Foggy,99.19205125480389,Low,No
 16,Historical,Lalitpur,afternoon,14,4,8,2,Summer,0,0,Rainy,7.1,Low,No
 16,Historical,Lalitpur,evening,18,4,8,2,Summer,0,0,Rainy,5.0,Low,No
-16,Historical,Lalitpur,morning,9,5,8,3,Summer,1,0,Cloudy,90.83152618976233,Low,No
+16,Historical,Lalitpur,morning,9,5,8,3,Summer,1,0,Cloudy,90.83152618976231,Low,No
 16,Historical,Lalitpur,afternoon,14,5,8,3,Summer,1,0,Cloudy,23.1,Low,No
 16,Historical,Lalitpur,evening,18,5,8,3,Summer,1,0,Rainy,8.8,Low,No
 16,Historical,Lalitpur,morning,9,6,8,4,Summer,1,0,Rainy,82.85238362358838,Low,No
@@ -9014,7 +9014,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 16,Historical,Lalitpur,morning,9,3,9,12,Autumn,0,0,Cloudy,82.0,Shoulder,Yes
 16,Historical,Lalitpur,afternoon,14,3,9,12,Autumn,0,0,Rainy,42.4,Shoulder,Yes
 16,Historical,Lalitpur,evening,18,3,9,12,Autumn,0,0,Sunny,63.6,Shoulder,Yes
-16,Historical,Lalitpur,morning,9,4,9,13,Autumn,0,0,Cloudy,94.62848844901703,Shoulder,Yes
+16,Historical,Lalitpur,morning,9,4,9,13,Autumn,0,0,Cloudy,94.62848844901704,Shoulder,Yes
 16,Historical,Lalitpur,afternoon,14,4,9,13,Autumn,0,0,Sunny,78.1,Shoulder,Yes
 16,Historical,Lalitpur,evening,18,4,9,13,Autumn,0,0,Sunny,64.3,Shoulder,Yes
 16,Historical,Lalitpur,morning,9,5,9,14,Autumn,1,0,Sunny,79.3,Shoulder,Yes
@@ -9089,7 +9089,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 16,Historical,Lalitpur,morning,9,0,10,7,Autumn,0,0,Rainy,81.0,Peak,No
 16,Historical,Lalitpur,afternoon,14,0,10,7,Autumn,0,0,Rainy,83.2,Peak,No
 16,Historical,Lalitpur,evening,18,0,10,7,Autumn,0,0,Sunny,95.0,Peak,No
-16,Historical,Lalitpur,morning,9,1,10,8,Autumn,0,0,Sunny,93.12558785832833,Peak,Yes
+16,Historical,Lalitpur,morning,9,1,10,8,Autumn,0,0,Sunny,93.12558785832832,Peak,Yes
 16,Historical,Lalitpur,afternoon,14,1,10,8,Autumn,0,0,Rainy,95.0,Peak,Yes
 16,Historical,Lalitpur,evening,18,1,10,8,Autumn,0,0,Cloudy,95.0,Peak,Yes
 16,Historical,Lalitpur,morning,9,2,10,9,Autumn,0,0,Cloudy,95.0,Peak,Yes
@@ -9215,13 +9215,13 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 16,Historical,Lalitpur,morning,9,0,11,18,Autumn,0,0,Cloudy,78.0,Peak,No
 16,Historical,Lalitpur,afternoon,14,0,11,18,Autumn,0,0,Sunny,95.0,Peak,No
 16,Historical,Lalitpur,evening,18,0,11,18,Autumn,0,0,Rainy,77.6,Peak,No
-16,Historical,Lalitpur,morning,9,1,11,19,Autumn,0,0,Sunny,97.99109623409177,Peak,No
+16,Historical,Lalitpur,morning,9,1,11,19,Autumn,0,0,Sunny,97.99109623409176,Peak,No
 16,Historical,Lalitpur,afternoon,14,1,11,19,Autumn,0,0,Cloudy,95.0,Peak,No
 16,Historical,Lalitpur,evening,18,1,11,19,Autumn,0,0,Cloudy,95.0,Peak,No
 16,Historical,Lalitpur,morning,9,2,11,20,Autumn,0,0,Cloudy,96.0532090268853,Peak,No
 16,Historical,Lalitpur,afternoon,14,2,11,20,Autumn,0,0,Cloudy,95.0,Peak,No
 16,Historical,Lalitpur,evening,18,2,11,20,Autumn,0,0,Cloudy,95.0,Peak,No
-16,Historical,Lalitpur,morning,9,3,11,21,Autumn,0,0,Cloudy,92.20777552198045,Peak,No
+16,Historical,Lalitpur,morning,9,3,11,21,Autumn,0,0,Cloudy,92.20777552198044,Peak,No
 16,Historical,Lalitpur,afternoon,14,3,11,21,Autumn,0,0,Cloudy,95.0,Peak,No
 16,Historical,Lalitpur,evening,18,3,11,21,Autumn,0,0,Cloudy,95.0,Peak,No
 16,Historical,Lalitpur,morning,9,4,11,22,Autumn,0,0,Rainy,83.13310915639738,Peak,No
@@ -9230,7 +9230,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 16,Historical,Lalitpur,morning,9,5,11,23,Autumn,1,0,Cloudy,89.15477709293845,Peak,No
 16,Historical,Lalitpur,afternoon,14,5,11,23,Autumn,1,0,Cloudy,95.0,Peak,No
 16,Historical,Lalitpur,evening,18,5,11,23,Autumn,1,0,Sunny,95.0,Peak,No
-16,Historical,Lalitpur,morning,9,6,11,24,Autumn,1,0,Sunny,92.89783301463315,Peak,No
+16,Historical,Lalitpur,morning,9,6,11,24,Autumn,1,0,Sunny,92.89783301463316,Peak,No
 16,Historical,Lalitpur,afternoon,14,6,11,24,Autumn,1,0,Sunny,95.0,Peak,No
 16,Historical,Lalitpur,evening,18,6,11,24,Autumn,1,0,Rainy,95.0,Peak,No
 16,Historical,Lalitpur,morning,9,0,11,25,Autumn,0,0,Rainy,58.9,Peak,No
@@ -9746,7 +9746,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 16,Historical,Lalitpur,morning,9,2,5,14,Spring,0,0,Rainy,75.17903184433817,Peak,Yes
 16,Historical,Lalitpur,afternoon,14,2,5,14,Spring,0,0,Rainy,91.3,Peak,Yes
 16,Historical,Lalitpur,evening,18,2,5,14,Spring,0,0,Rainy,80.6,Peak,Yes
-16,Historical,Lalitpur,morning,9,3,5,15,Spring,0,0,Cloudy,92.39128695332873,Peak,Yes
+16,Historical,Lalitpur,morning,9,3,5,15,Spring,0,0,Cloudy,92.39128695332872,Peak,Yes
 16,Historical,Lalitpur,afternoon,14,3,5,15,Spring,0,0,Cloudy,95.0,Peak,Yes
 16,Historical,Lalitpur,evening,18,3,5,15,Spring,0,0,Sunny,95.0,Peak,Yes
 16,Historical,Lalitpur,morning,9,4,5,16,Spring,0,0,Rainy,77.98458787259614,Peak,Yes
@@ -9914,7 +9914,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 11,Historical,Bhaktapur,morning,9,0,7,8,Summer,0,0,Cloudy,80.92993030830941,Low,No
 11,Historical,Bhaktapur,afternoon,14,0,7,8,Summer,0,0,Rainy,5.0,Low,No
 11,Historical,Bhaktapur,evening,18,0,7,8,Summer,0,0,Cloudy,5.1,Low,No
-11,Historical,Bhaktapur,morning,9,1,7,9,Summer,0,0,Cloudy,90.13642723838743,Low,No
+11,Historical,Bhaktapur,morning,9,1,7,9,Summer,0,0,Cloudy,90.13642723838744,Low,No
 11,Historical,Bhaktapur,afternoon,14,1,7,9,Summer,0,0,Foggy,5.9,Low,No
 11,Historical,Bhaktapur,evening,18,1,7,9,Summer,0,0,Foggy,5.0,Low,No
 11,Historical,Bhaktapur,morning,9,2,7,10,Summer,0,0,Cloudy,5.0,Low,No
@@ -9980,16 +9980,16 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 11,Historical,Bhaktapur,morning,9,1,7,30,Summer,0,0,Rainy,5.0,Low,No
 11,Historical,Bhaktapur,afternoon,14,1,7,30,Summer,0,0,Foggy,6.2,Low,No
 11,Historical,Bhaktapur,evening,18,1,7,30,Summer,0,0,Rainy,5.0,Low,No
-11,Historical,Bhaktapur,morning,9,2,7,31,Summer,0,0,Foggy,90.78645281093611,Low,No
+11,Historical,Bhaktapur,morning,9,2,7,31,Summer,0,0,Foggy,90.78645281093613,Low,No
 11,Historical,Bhaktapur,afternoon,14,2,7,31,Summer,0,0,Foggy,6.1,Low,No
 11,Historical,Bhaktapur,evening,18,2,7,31,Summer,0,0,Cloudy,5.6,Low,No
-11,Historical,Bhaktapur,morning,9,3,8,1,Summer,0,0,Cloudy,91.87126001076423,Low,No
+11,Historical,Bhaktapur,morning,9,3,8,1,Summer,0,0,Cloudy,91.87126001076425,Low,No
 11,Historical,Bhaktapur,afternoon,14,3,8,1,Summer,0,0,Foggy,9.5,Low,No
 11,Historical,Bhaktapur,evening,18,3,8,1,Summer,0,0,Cloudy,7.9,Low,No
 11,Historical,Bhaktapur,morning,9,4,8,2,Summer,0,0,Foggy,82.90557457248416,Low,No
 11,Historical,Bhaktapur,afternoon,14,4,8,2,Summer,0,0,Cloudy,11.2,Low,No
 11,Historical,Bhaktapur,evening,18,4,8,2,Summer,0,0,Cloudy,7.7,Low,No
-11,Historical,Bhaktapur,morning,9,5,8,3,Summer,1,0,Foggy,94.64522207714201,Low,No
+11,Historical,Bhaktapur,morning,9,5,8,3,Summer,1,0,Foggy,94.645222077142,Low,No
 11,Historical,Bhaktapur,afternoon,14,5,8,3,Summer,1,0,Cloudy,19.1,Low,No
 11,Historical,Bhaktapur,evening,18,5,8,3,Summer,1,0,Foggy,11.3,Low,No
 11,Historical,Bhaktapur,morning,9,6,8,4,Summer,1,0,Rainy,87.27386824736256,Low,No
@@ -10028,7 +10028,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 11,Historical,Bhaktapur,morning,9,3,8,15,Summer,0,0,Cloudy,75.08024368691315,Low,No
 11,Historical,Bhaktapur,afternoon,14,3,8,15,Summer,0,0,Foggy,8.6,Low,No
 11,Historical,Bhaktapur,evening,18,3,8,15,Summer,0,0,Rainy,5.0,Low,No
-11,Historical,Bhaktapur,morning,9,4,8,16,Summer,0,0,Foggy,95.08019795834981,Low,No
+11,Historical,Bhaktapur,morning,9,4,8,16,Summer,0,0,Foggy,95.0801979583498,Low,No
 11,Historical,Bhaktapur,afternoon,14,4,8,16,Summer,0,0,Rainy,6.7,Low,No
 11,Historical,Bhaktapur,evening,18,4,8,16,Summer,0,0,Rainy,5.0,Low,No
 11,Historical,Bhaktapur,morning,9,5,8,17,Summer,1,0,Foggy,76.0,Low,No
@@ -10076,7 +10076,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 11,Historical,Bhaktapur,morning,9,5,8,31,Summer,1,0,Foggy,75.67487758924224,Low,Yes
 11,Historical,Bhaktapur,afternoon,14,5,8,31,Summer,1,0,Rainy,17.6,Low,Yes
 11,Historical,Bhaktapur,evening,18,5,8,31,Summer,1,0,Rainy,12.0,Low,Yes
-11,Historical,Bhaktapur,morning,9,6,9,1,Autumn,1,0,Sunny,90.43673853231581,Shoulder,No
+11,Historical,Bhaktapur,morning,9,6,9,1,Autumn,1,0,Sunny,90.4367385323158,Shoulder,No
 11,Historical,Bhaktapur,afternoon,14,6,9,1,Autumn,1,0,Rainy,47.8,Shoulder,No
 11,Historical,Bhaktapur,evening,18,6,9,1,Autumn,1,0,Cloudy,59.6,Shoulder,No
 11,Historical,Bhaktapur,morning,9,0,9,2,Autumn,0,0,Rainy,14.3,Shoulder,No
@@ -10703,7 +10703,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 11,Historical,Bhaktapur,morning,9,4,3,28,Spring,0,0,Cloudy,82.48355948401498,Shoulder,No
 11,Historical,Bhaktapur,afternoon,14,4,3,28,Spring,0,0,Cloudy,56.1,Shoulder,No
 11,Historical,Bhaktapur,evening,18,4,3,28,Spring,0,0,Rainy,27.1,Shoulder,No
-11,Historical,Bhaktapur,morning,9,5,3,29,Spring,1,0,Cloudy,94.37058706628973,Shoulder,No
+11,Historical,Bhaktapur,morning,9,5,3,29,Spring,1,0,Cloudy,94.37058706628972,Shoulder,No
 11,Historical,Bhaktapur,afternoon,14,5,3,29,Spring,1,0,Sunny,95.0,Shoulder,No
 11,Historical,Bhaktapur,evening,18,5,3,29,Spring,1,0,Rainy,43.0,Shoulder,No
 11,Historical,Bhaktapur,morning,9,6,3,30,Spring,1,0,Cloudy,63.6,Shoulder,No
@@ -10766,7 +10766,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 11,Historical,Bhaktapur,morning,9,4,4,18,Spring,0,0,Cloudy,91.0,Peak,Yes
 11,Historical,Bhaktapur,afternoon,14,4,4,18,Spring,0,0,Sunny,95.0,Peak,Yes
 11,Historical,Bhaktapur,evening,18,4,4,18,Spring,0,0,Sunny,95.0,Peak,Yes
-11,Historical,Bhaktapur,morning,9,5,4,19,Spring,1,0,Rainy,95.13446663942115,Peak,Yes
+11,Historical,Bhaktapur,morning,9,5,4,19,Spring,1,0,Rainy,95.13446663942116,Peak,Yes
 11,Historical,Bhaktapur,afternoon,14,5,4,19,Spring,1,0,Rainy,95.0,Peak,Yes
 11,Historical,Bhaktapur,evening,18,5,4,19,Spring,1,0,Rainy,95.0,Peak,Yes
 11,Historical,Bhaktapur,morning,9,6,4,20,Spring,1,0,Cloudy,77.50616816925249,Peak,Yes
@@ -10892,7 +10892,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 11,Historical,Bhaktapur,morning,9,4,5,30,Spring,0,0,Rainy,36.8,Peak,No
 11,Historical,Bhaktapur,afternoon,14,4,5,30,Spring,0,0,Cloudy,95.0,Peak,No
 11,Historical,Bhaktapur,evening,18,4,5,30,Spring,0,0,Rainy,41.5,Peak,No
-11,Historical,Bhaktapur,morning,9,5,5,31,Spring,1,0,Rainy,90.81831245661475,Peak,No
+11,Historical,Bhaktapur,morning,9,5,5,31,Spring,1,0,Rainy,90.81831245661476,Peak,No
 11,Historical,Bhaktapur,afternoon,14,5,5,31,Spring,1,0,Sunny,95.0,Peak,No
 11,Historical,Bhaktapur,evening,18,5,5,31,Spring,1,0,Rainy,77.5,Peak,No
 11,Historical,Bhaktapur,morning,9,6,6,1,Summer,1,0,Cloudy,95.21506677858044,Low,No
@@ -10949,7 +10949,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 11,Historical,Bhaktapur,morning,9,2,6,18,Summer,0,0,Cloudy,5.9,Low,No
 11,Historical,Bhaktapur,afternoon,14,2,6,18,Summer,0,0,Cloudy,11.7,Low,No
 11,Historical,Bhaktapur,evening,18,2,6,18,Summer,0,0,Foggy,6.7,Low,No
-11,Historical,Bhaktapur,morning,9,3,6,19,Summer,0,0,Rainy,90.25585342889569,Low,No
+11,Historical,Bhaktapur,morning,9,3,6,19,Summer,0,0,Rainy,90.25585342889568,Low,No
 11,Historical,Bhaktapur,afternoon,14,3,6,19,Summer,0,0,Cloudy,11.1,Low,No
 11,Historical,Bhaktapur,evening,18,3,6,19,Summer,0,0,Foggy,6.5,Low,No
 11,Historical,Bhaktapur,morning,9,4,6,20,Summer,0,0,Foggy,95.66414717250169,Low,No
@@ -10961,7 +10961,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 11,Historical,Bhaktapur,morning,9,6,6,22,Summer,1,0,Foggy,89.15746851195486,Low,No
 11,Historical,Bhaktapur,afternoon,14,6,6,22,Summer,1,0,Foggy,16.0,Low,No
 11,Historical,Bhaktapur,evening,18,6,6,22,Summer,1,0,Rainy,8.5,Low,No
-11,Historical,Bhaktapur,morning,9,0,6,23,Summer,0,0,Cloudy,90.11982036725153,Low,No
+11,Historical,Bhaktapur,morning,9,0,6,23,Summer,0,0,Cloudy,90.11982036725152,Low,No
 11,Historical,Bhaktapur,afternoon,14,0,6,23,Summer,0,0,Rainy,6.5,Low,No
 11,Historical,Bhaktapur,evening,18,0,6,23,Summer,0,0,Cloudy,7.5,Low,No
 11,Historical,Bhaktapur,morning,9,1,6,24,Summer,0,0,Rainy,5.0,Low,No
@@ -14513,7 +14513,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 22,Market,Kathmandu,morning,9,6,9,15,Autumn,1,0,Sunny,85.29249003868892,Shoulder,Yes
 22,Market,Kathmandu,afternoon,14,6,9,15,Autumn,1,0,Rainy,95.0,Shoulder,Yes
 22,Market,Kathmandu,evening,18,6,9,15,Autumn,1,0,Cloudy,95.0,Shoulder,Yes
-22,Market,Kathmandu,morning,9,0,9,16,Autumn,0,0,Rainy,90.17695617085073,Shoulder,Yes
+22,Market,Kathmandu,morning,9,0,9,16,Autumn,0,0,Rainy,90.17695617085072,Shoulder,Yes
 22,Market,Kathmandu,afternoon,14,0,9,16,Autumn,0,0,Sunny,95.0,Shoulder,Yes
 22,Market,Kathmandu,evening,18,0,9,16,Autumn,0,0,Sunny,93.3,Shoulder,Yes
 22,Market,Kathmandu,morning,9,1,9,17,Autumn,0,0,Sunny,79.0,Shoulder,Yes
@@ -14597,7 +14597,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 22,Market,Kathmandu,morning,9,6,10,13,Autumn,1,0,Rainy,88.0,Peak,Yes
 22,Market,Kathmandu,afternoon,14,6,10,13,Autumn,1,0,Rainy,95.0,Peak,Yes
 22,Market,Kathmandu,evening,18,6,10,13,Autumn,1,0,Rainy,95.0,Peak,Yes
-22,Market,Kathmandu,morning,9,0,10,14,Autumn,0,0,Sunny,91.92592648080209,Peak,Yes
+22,Market,Kathmandu,morning,9,0,10,14,Autumn,0,0,Sunny,91.92592648080208,Peak,Yes
 22,Market,Kathmandu,afternoon,14,0,10,14,Autumn,0,0,Sunny,95.0,Peak,Yes
 22,Market,Kathmandu,evening,18,0,10,14,Autumn,0,0,Sunny,95.0,Peak,Yes
 22,Market,Kathmandu,morning,9,1,10,15,Autumn,0,0,Sunny,95.0,Peak,Yes
@@ -14885,7 +14885,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 22,Market,Kathmandu,morning,9,4,1,17,Winter,0,0,Sunny,88.0,Low,No
 22,Market,Kathmandu,afternoon,14,4,1,17,Winter,0,0,Cloudy,24.7,Low,No
 22,Market,Kathmandu,evening,18,4,1,17,Winter,0,0,Cloudy,19.1,Low,No
-22,Market,Kathmandu,morning,9,5,1,18,Winter,1,0,Sunny,92.31706890040327,Low,No
+22,Market,Kathmandu,morning,9,5,1,18,Winter,1,0,Sunny,92.31706890040329,Low,No
 22,Market,Kathmandu,afternoon,14,5,1,18,Winter,1,0,Sunny,47.2,Low,No
 22,Market,Kathmandu,evening,18,5,1,18,Winter,1,0,Sunny,34.3,Low,No
 22,Market,Kathmandu,morning,9,6,1,19,Winter,1,0,Foggy,18.2,Low,No
@@ -14942,7 +14942,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 22,Market,Kathmandu,morning,9,2,2,5,Winter,0,0,Cloudy,87.32694262559168,Low,No
 22,Market,Kathmandu,afternoon,14,2,2,5,Winter,0,0,Cloudy,30.1,Low,No
 22,Market,Kathmandu,evening,18,2,2,5,Winter,0,0,Foggy,19.3,Low,No
-22,Market,Kathmandu,morning,9,3,2,6,Winter,0,0,Foggy,90.15737026194967,Low,No
+22,Market,Kathmandu,morning,9,3,2,6,Winter,0,0,Foggy,90.15737026194968,Low,No
 22,Market,Kathmandu,afternoon,14,3,2,6,Winter,0,0,Sunny,34.3,Low,No
 22,Market,Kathmandu,evening,18,3,2,6,Winter,0,0,Cloudy,21.8,Low,No
 22,Market,Kathmandu,morning,9,4,2,7,Winter,0,0,Sunny,86.27488167308887,Low,No
@@ -14990,7 +14990,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 22,Market,Kathmandu,morning,9,4,2,21,Winter,0,0,Foggy,94.04638073402155,Low,Yes
 22,Market,Kathmandu,afternoon,14,4,2,21,Winter,0,0,Foggy,36.3,Low,Yes
 22,Market,Kathmandu,evening,18,4,2,21,Winter,0,0,Sunny,34.2,Low,Yes
-22,Market,Kathmandu,morning,9,5,2,22,Winter,1,0,Foggy,96.41083712767093,Low,Yes
+22,Market,Kathmandu,morning,9,5,2,22,Winter,1,0,Foggy,96.41083712767092,Low,Yes
 22,Market,Kathmandu,afternoon,14,5,2,22,Winter,1,0,Sunny,77.4,Low,Yes
 22,Market,Kathmandu,evening,18,5,2,22,Winter,1,0,Cloudy,58.5,Low,Yes
 22,Market,Kathmandu,morning,9,6,2,23,Winter,1,0,Sunny,84.0,Low,Yes
@@ -15119,7 +15119,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 22,Market,Kathmandu,morning,9,5,4,5,Spring,1,0,Rainy,93.0,Peak,No
 22,Market,Kathmandu,afternoon,14,5,4,5,Spring,1,0,Sunny,95.0,Peak,No
 22,Market,Kathmandu,evening,18,5,4,5,Spring,1,0,Rainy,95.0,Peak,No
-22,Market,Kathmandu,morning,9,6,4,6,Spring,1,0,Cloudy,90.22559629808647,Peak,No
+22,Market,Kathmandu,morning,9,6,4,6,Spring,1,0,Cloudy,90.22559629808649,Peak,No
 22,Market,Kathmandu,afternoon,14,6,4,6,Spring,1,0,Rainy,95.0,Peak,No
 22,Market,Kathmandu,evening,18,6,4,6,Spring,1,0,Sunny,95.0,Peak,No
 22,Market,Kathmandu,morning,9,0,4,7,Spring,0,0,Cloudy,88.84241512488181,Peak,No
@@ -15179,7 +15179,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 22,Market,Kathmandu,morning,9,4,4,25,Spring,0,0,Rainy,81.07391835585378,Peak,Yes
 22,Market,Kathmandu,afternoon,14,4,4,25,Spring,0,0,Rainy,95.0,Peak,Yes
 22,Market,Kathmandu,evening,18,4,4,25,Spring,0,0,Sunny,95.0,Peak,Yes
-22,Market,Kathmandu,morning,9,5,4,26,Spring,1,0,Rainy,92.46441700839641,Peak,Yes
+22,Market,Kathmandu,morning,9,5,4,26,Spring,1,0,Rainy,92.4644170083964,Peak,Yes
 22,Market,Kathmandu,afternoon,14,5,4,26,Spring,1,0,Rainy,95.0,Peak,Yes
 22,Market,Kathmandu,evening,18,5,4,26,Spring,1,0,Cloudy,95.0,Peak,Yes
 22,Market,Kathmandu,morning,9,6,4,27,Spring,1,0,Rainy,91.0,Peak,Yes
@@ -15215,13 +15215,13 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 22,Market,Kathmandu,morning,9,2,5,7,Spring,0,0,Sunny,78.49387709143288,Peak,No
 22,Market,Kathmandu,afternoon,14,2,5,7,Spring,0,0,Sunny,95.0,Peak,No
 22,Market,Kathmandu,evening,18,2,5,7,Spring,0,0,Sunny,95.0,Peak,No
-22,Market,Kathmandu,morning,9,3,5,8,Spring,0,0,Cloudy,96.27267488280259,Peak,Yes
+22,Market,Kathmandu,morning,9,3,5,8,Spring,0,0,Cloudy,96.2726748828026,Peak,Yes
 22,Market,Kathmandu,afternoon,14,3,5,8,Spring,0,0,Sunny,95.0,Peak,Yes
 22,Market,Kathmandu,evening,18,3,5,8,Spring,0,0,Sunny,95.0,Peak,Yes
 22,Market,Kathmandu,morning,9,4,5,9,Spring,0,0,Cloudy,78.50445495695607,Peak,Yes
 22,Market,Kathmandu,afternoon,14,4,5,9,Spring,0,0,Rainy,95.0,Peak,Yes
 22,Market,Kathmandu,evening,18,4,5,9,Spring,0,0,Rainy,95.0,Peak,Yes
-22,Market,Kathmandu,morning,9,5,5,10,Spring,1,0,Sunny,92.75832957820019,Peak,Yes
+22,Market,Kathmandu,morning,9,5,5,10,Spring,1,0,Sunny,92.7583295782002,Peak,Yes
 22,Market,Kathmandu,afternoon,14,5,5,10,Spring,1,0,Sunny,95.0,Peak,Yes
 22,Market,Kathmandu,evening,18,5,5,10,Spring,1,0,Cloudy,95.0,Peak,Yes
 22,Market,Kathmandu,morning,9,6,5,11,Spring,1,0,Sunny,95.0,Peak,Yes
@@ -15428,7 +15428,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 26,Historical,Kathmandu,morning,9,1,7,16,Summer,0,0,Foggy,71.17393507892434,Low,No
 26,Historical,Kathmandu,afternoon,14,1,7,16,Summer,0,0,Cloudy,9.6,Low,No
 26,Historical,Kathmandu,evening,18,1,7,16,Summer,0,0,Rainy,5.0,Low,No
-26,Historical,Kathmandu,morning,9,2,7,17,Summer,0,0,Rainy,93.96776339572119,Low,No
+26,Historical,Kathmandu,morning,9,2,7,17,Summer,0,0,Rainy,93.9677633957212,Low,No
 26,Historical,Kathmandu,afternoon,14,2,7,17,Summer,0,0,Rainy,6.2,Low,No
 26,Historical,Kathmandu,evening,18,2,7,17,Summer,0,0,Rainy,5.0,Low,No
 26,Historical,Kathmandu,morning,9,3,7,18,Summer,0,0,Rainy,74.48840194364519,Low,No
@@ -15638,7 +15638,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 26,Historical,Kathmandu,morning,9,1,9,24,Autumn,0,0,Rainy,88.67704696364241,Shoulder,No
 26,Historical,Kathmandu,afternoon,14,1,9,24,Autumn,0,0,Sunny,62.3,Shoulder,No
 26,Historical,Kathmandu,evening,18,1,9,24,Autumn,0,0,Rainy,25.2,Shoulder,No
-26,Historical,Kathmandu,morning,9,2,9,25,Autumn,0,0,Cloudy,95.02058088331407,Shoulder,No
+26,Historical,Kathmandu,morning,9,2,9,25,Autumn,0,0,Cloudy,95.02058088331408,Shoulder,No
 26,Historical,Kathmandu,afternoon,14,2,9,25,Autumn,0,0,Cloudy,55.8,Shoulder,No
 26,Historical,Kathmandu,evening,18,2,9,25,Autumn,0,0,Cloudy,42.3,Shoulder,No
 26,Historical,Kathmandu,morning,9,3,9,26,Autumn,0,0,Cloudy,31.2,Shoulder,No
@@ -15794,7 +15794,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 26,Historical,Kathmandu,morning,9,4,11,15,Autumn,0,0,Cloudy,95.0,Peak,No
 26,Historical,Kathmandu,afternoon,14,4,11,15,Autumn,0,0,Cloudy,95.0,Peak,No
 26,Historical,Kathmandu,evening,18,4,11,15,Autumn,0,0,Cloudy,95.0,Peak,No
-26,Historical,Kathmandu,morning,9,5,11,16,Autumn,1,0,Cloudy,94.01820939034535,Peak,No
+26,Historical,Kathmandu,morning,9,5,11,16,Autumn,1,0,Cloudy,94.01820939034536,Peak,No
 26,Historical,Kathmandu,afternoon,14,5,11,16,Autumn,1,0,Rainy,95.0,Peak,No
 26,Historical,Kathmandu,evening,18,5,11,16,Autumn,1,0,Rainy,95.0,Peak,No
 26,Historical,Kathmandu,morning,9,6,11,17,Autumn,1,0,Sunny,75.47199944815954,Peak,No
@@ -15872,7 +15872,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 26,Historical,Kathmandu,morning,9,2,12,11,Winter,0,0,Cloudy,81.14205376512918,Shoulder,No
 26,Historical,Kathmandu,afternoon,14,2,12,11,Winter,0,0,Cloudy,72.9,Shoulder,No
 26,Historical,Kathmandu,evening,18,2,12,11,Winter,0,0,Foggy,38.4,Shoulder,No
-26,Historical,Kathmandu,morning,9,3,12,12,Winter,0,0,Sunny,92.60307591052819,Shoulder,No
+26,Historical,Kathmandu,morning,9,3,12,12,Winter,0,0,Sunny,92.6030759105282,Shoulder,No
 26,Historical,Kathmandu,afternoon,14,3,12,12,Winter,0,0,Cloudy,66.3,Shoulder,No
 26,Historical,Kathmandu,evening,18,3,12,12,Winter,0,0,Foggy,40.9,Shoulder,No
 26,Historical,Kathmandu,morning,9,4,12,13,Winter,0,0,Sunny,84.54384623143797,Shoulder,No
@@ -15932,7 +15932,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 26,Historical,Kathmandu,morning,9,1,12,31,Winter,0,0,Sunny,88.46397868690258,Shoulder,No
 26,Historical,Kathmandu,afternoon,14,1,12,31,Winter,0,0,Sunny,79.3,Shoulder,No
 26,Historical,Kathmandu,evening,18,1,12,31,Winter,0,0,Sunny,56.2,Shoulder,No
-26,Historical,Kathmandu,morning,9,2,1,1,Winter,0,0,Sunny,93.73772647511841,Low,No
+26,Historical,Kathmandu,morning,9,2,1,1,Winter,0,0,Sunny,93.7377264751184,Low,No
 26,Historical,Kathmandu,afternoon,14,2,1,1,Winter,0,0,Sunny,19.6,Low,No
 26,Historical,Kathmandu,evening,18,2,1,1,Winter,0,0,Cloudy,14.9,Low,No
 26,Historical,Kathmandu,morning,9,3,1,2,Winter,0,0,Sunny,78.0201368001351,Low,No
@@ -16403,7 +16403,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 26,Historical,Kathmandu,morning,9,4,6,6,Summer,0,0,Rainy,93.0,Low,No
 26,Historical,Kathmandu,afternoon,14,4,6,6,Summer,0,0,Cloudy,14.8,Low,No
 26,Historical,Kathmandu,evening,18,4,6,6,Summer,0,0,Foggy,9.5,Low,No
-26,Historical,Kathmandu,morning,9,5,6,7,Summer,1,0,Foggy,92.68560105938533,Low,No
+26,Historical,Kathmandu,morning,9,5,6,7,Summer,1,0,Foggy,92.68560105938532,Low,No
 26,Historical,Kathmandu,afternoon,14,5,6,7,Summer,1,0,Cloudy,24.0,Low,No
 26,Historical,Kathmandu,evening,18,5,6,7,Summer,1,0,Rainy,11.6,Low,No
 26,Historical,Kathmandu,morning,9,6,6,8,Summer,1,0,Rainy,89.73685306996896,Low,No
@@ -16493,7 +16493,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 28,Historical,Kathmandu,morning,9,4,7,5,Summer,0,0,Foggy,86.56975814995599,Low,No
 28,Historical,Kathmandu,afternoon,14,4,7,5,Summer,0,0,Cloudy,9.1,Low,No
 28,Historical,Kathmandu,evening,18,4,7,5,Summer,0,0,Rainy,5.0,Low,No
-28,Historical,Kathmandu,morning,9,5,7,6,Summer,1,0,Rainy,91.97743151424395,Low,No
+28,Historical,Kathmandu,morning,9,5,7,6,Summer,1,0,Rainy,91.97743151424396,Low,No
 28,Historical,Kathmandu,afternoon,14,5,7,6,Summer,1,0,Cloudy,16.9,Low,No
 28,Historical,Kathmandu,evening,18,5,7,6,Summer,1,0,Rainy,7.5,Low,No
 28,Historical,Kathmandu,morning,9,6,7,7,Summer,1,0,Rainy,86.10489013244087,Low,No
@@ -16526,7 +16526,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 28,Historical,Kathmandu,morning,9,1,7,16,Summer,0,0,Cloudy,78.0,Low,No
 28,Historical,Kathmandu,afternoon,14,1,7,16,Summer,0,0,Rainy,5.6,Low,No
 28,Historical,Kathmandu,evening,18,1,7,16,Summer,0,0,Cloudy,7.0,Low,No
-28,Historical,Kathmandu,morning,9,2,7,17,Summer,0,0,Foggy,91.07187981729743,Low,No
+28,Historical,Kathmandu,morning,9,2,7,17,Summer,0,0,Foggy,91.07187981729744,Low,No
 28,Historical,Kathmandu,afternoon,14,2,7,17,Summer,0,0,Rainy,5.8,Low,No
 28,Historical,Kathmandu,evening,18,2,7,17,Summer,0,0,Cloudy,7.4,Low,No
 28,Historical,Kathmandu,morning,9,3,7,18,Summer,0,0,Cloudy,86.0,Low,No
@@ -16613,7 +16613,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 28,Historical,Kathmandu,morning,9,2,8,14,Summer,0,0,Foggy,77.0,Low,No
 28,Historical,Kathmandu,afternoon,14,2,8,14,Summer,0,0,Foggy,11.2,Low,No
 28,Historical,Kathmandu,evening,18,2,8,14,Summer,0,0,Cloudy,11.3,Low,No
-28,Historical,Kathmandu,morning,9,3,8,15,Summer,0,0,Foggy,92.48250455827981,Low,No
+28,Historical,Kathmandu,morning,9,3,8,15,Summer,0,0,Foggy,92.4825045582798,Low,No
 28,Historical,Kathmandu,afternoon,14,3,8,15,Summer,0,0,Cloudy,14.7,Low,No
 28,Historical,Kathmandu,evening,18,3,8,15,Summer,0,0,Cloudy,10.6,Low,No
 28,Historical,Kathmandu,morning,9,4,8,16,Summer,0,0,Rainy,89.5417029795776,Low,No
@@ -16865,7 +16865,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 28,Historical,Kathmandu,morning,9,2,11,6,Autumn,0,0,Cloudy,76.0,Peak,Yes
 28,Historical,Kathmandu,afternoon,14,2,11,6,Autumn,0,0,Sunny,95.0,Peak,Yes
 28,Historical,Kathmandu,evening,18,2,11,6,Autumn,0,0,Cloudy,95.0,Peak,Yes
-28,Historical,Kathmandu,morning,9,3,11,7,Autumn,0,0,Cloudy,90.23348355286329,Peak,Yes
+28,Historical,Kathmandu,morning,9,3,11,7,Autumn,0,0,Cloudy,90.23348355286328,Peak,Yes
 28,Historical,Kathmandu,afternoon,14,3,11,7,Autumn,0,0,Rainy,95.0,Peak,Yes
 28,Historical,Kathmandu,evening,18,3,11,7,Autumn,0,0,Rainy,95.0,Peak,Yes
 28,Historical,Kathmandu,morning,9,4,11,8,Autumn,0,0,Rainy,90.0,Peak,Yes
@@ -16970,7 +16970,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 28,Historical,Kathmandu,morning,9,2,12,11,Winter,0,0,Cloudy,85.0,Shoulder,No
 28,Historical,Kathmandu,afternoon,14,2,12,11,Winter,0,0,Sunny,71.9,Shoulder,No
 28,Historical,Kathmandu,evening,18,2,12,11,Winter,0,0,Sunny,60.6,Shoulder,No
-28,Historical,Kathmandu,morning,9,3,12,12,Winter,0,0,Sunny,91.91060632998023,Shoulder,No
+28,Historical,Kathmandu,morning,9,3,12,12,Winter,0,0,Sunny,91.91060632998024,Shoulder,No
 28,Historical,Kathmandu,afternoon,14,3,12,12,Winter,0,0,Cloudy,67.9,Shoulder,No
 28,Historical,Kathmandu,evening,18,3,12,12,Winter,0,0,Cloudy,51.2,Shoulder,No
 28,Historical,Kathmandu,morning,9,4,12,13,Winter,0,0,Sunny,77.46729121718305,Shoulder,No
@@ -17174,7 +17174,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 28,Historical,Kathmandu,morning,9,0,2,17,Winter,0,0,Foggy,77.78618519685833,Low,Yes
 28,Historical,Kathmandu,afternoon,14,0,2,17,Winter,0,0,Cloudy,39.8,Low,Yes
 28,Historical,Kathmandu,evening,18,0,2,17,Winter,0,0,Cloudy,27.9,Low,Yes
-28,Historical,Kathmandu,morning,9,1,2,18,Winter,0,0,Foggy,98.83616451926689,Low,Yes
+28,Historical,Kathmandu,morning,9,1,2,18,Winter,0,0,Foggy,98.83616451926687,Low,Yes
 28,Historical,Kathmandu,afternoon,14,1,2,18,Winter,0,0,Cloudy,38.2,Low,Yes
 28,Historical,Kathmandu,evening,18,1,2,18,Winter,0,0,Sunny,32.6,Low,Yes
 28,Historical,Kathmandu,morning,9,2,2,19,Winter,0,0,Foggy,76.40344016279364,Low,Yes
@@ -17240,7 +17240,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 28,Historical,Kathmandu,morning,9,1,3,11,Spring,0,0,Cloudy,98.05386643545576,Shoulder,Yes
 28,Historical,Kathmandu,afternoon,14,1,3,11,Spring,0,0,Rainy,73.4,Shoulder,Yes
 28,Historical,Kathmandu,evening,18,1,3,11,Spring,0,0,Rainy,54.9,Shoulder,Yes
-28,Historical,Kathmandu,morning,9,2,3,12,Spring,0,0,Rainy,90.15318543514947,Shoulder,Yes
+28,Historical,Kathmandu,morning,9,2,3,12,Spring,0,0,Rainy,90.15318543514948,Shoulder,Yes
 28,Historical,Kathmandu,afternoon,14,2,3,12,Spring,0,0,Cloudy,95.0,Shoulder,Yes
 28,Historical,Kathmandu,evening,18,2,3,12,Spring,0,0,Sunny,95.0,Shoulder,Yes
 28,Historical,Kathmandu,morning,9,3,3,13,Spring,0,0,Rainy,79.0,Shoulder,Yes
@@ -17309,7 +17309,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 28,Historical,Kathmandu,morning,9,3,4,3,Spring,0,0,Sunny,95.70995564043054,Peak,No
 28,Historical,Kathmandu,afternoon,14,3,4,3,Spring,0,0,Cloudy,95.0,Peak,No
 28,Historical,Kathmandu,evening,18,3,4,3,Spring,0,0,Sunny,95.0,Peak,No
-28,Historical,Kathmandu,morning,9,4,4,4,Spring,0,0,Cloudy,96.44308264414357,Peak,No
+28,Historical,Kathmandu,morning,9,4,4,4,Spring,0,0,Cloudy,96.44308264414356,Peak,No
 28,Historical,Kathmandu,afternoon,14,4,4,4,Spring,0,0,Rainy,83.8,Peak,No
 28,Historical,Kathmandu,evening,18,4,4,4,Spring,0,0,Cloudy,95.0,Peak,No
 28,Historical,Kathmandu,morning,9,5,4,5,Spring,1,0,Cloudy,95.0,Peak,No
@@ -17414,7 +17414,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 28,Historical,Kathmandu,morning,9,3,5,8,Spring,0,0,Cloudy,95.0,Peak,Yes
 28,Historical,Kathmandu,afternoon,14,3,5,8,Spring,0,0,Cloudy,95.0,Peak,Yes
 28,Historical,Kathmandu,evening,18,3,5,8,Spring,0,0,Rainy,93.0,Peak,Yes
-28,Historical,Kathmandu,morning,9,4,5,9,Spring,0,0,Sunny,90.49981295483275,Peak,Yes
+28,Historical,Kathmandu,morning,9,4,5,9,Spring,0,0,Sunny,90.49981295483276,Peak,Yes
 28,Historical,Kathmandu,afternoon,14,4,5,9,Spring,0,0,Cloudy,95.0,Peak,Yes
 28,Historical,Kathmandu,evening,18,4,5,9,Spring,0,0,Cloudy,95.0,Peak,Yes
 28,Historical,Kathmandu,morning,9,5,5,10,Spring,1,0,Cloudy,95.0,Peak,Yes
@@ -17453,7 +17453,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 28,Historical,Kathmandu,morning,9,2,5,21,Spring,0,0,Cloudy,95.0,Peak,Yes
 28,Historical,Kathmandu,afternoon,14,2,5,21,Spring,0,0,Sunny,95.0,Peak,Yes
 28,Historical,Kathmandu,evening,18,2,5,21,Spring,0,0,Cloudy,95.0,Peak,Yes
-28,Historical,Kathmandu,morning,9,3,5,22,Spring,0,0,Sunny,92.94012897549061,Peak,Yes
+28,Historical,Kathmandu,morning,9,3,5,22,Spring,0,0,Sunny,92.9401289754906,Peak,Yes
 28,Historical,Kathmandu,afternoon,14,3,5,22,Spring,0,0,Sunny,95.0,Peak,Yes
 28,Historical,Kathmandu,evening,18,3,5,22,Spring,0,0,Sunny,95.0,Peak,Yes
 28,Historical,Kathmandu,morning,9,4,5,23,Spring,0,0,Cloudy,85.3147286140413,Peak,No
@@ -17495,7 +17495,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 28,Historical,Kathmandu,morning,9,2,6,4,Summer,0,0,Cloudy,85.87818613416387,Low,No
 28,Historical,Kathmandu,afternoon,14,2,6,4,Summer,0,0,Foggy,11.0,Low,No
 28,Historical,Kathmandu,evening,18,2,6,4,Summer,0,0,Foggy,8.7,Low,No
-28,Historical,Kathmandu,morning,9,3,6,5,Summer,0,0,Rainy,90.41416949843679,Low,No
+28,Historical,Kathmandu,morning,9,3,6,5,Summer,0,0,Rainy,90.4141694984368,Low,No
 28,Historical,Kathmandu,afternoon,14,3,6,5,Summer,0,0,Cloudy,14.2,Low,No
 28,Historical,Kathmandu,evening,18,3,6,5,Summer,0,0,Foggy,8.1,Low,No
 28,Historical,Kathmandu,morning,9,4,6,6,Summer,0,0,Rainy,91.18804163612673,Low,No
@@ -17552,7 +17552,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 28,Historical,Kathmandu,morning,9,0,6,23,Summer,0,0,Cloudy,92.0,Low,No
 28,Historical,Kathmandu,afternoon,14,0,6,23,Summer,0,0,Cloudy,13.1,Low,No
 28,Historical,Kathmandu,evening,18,0,6,23,Summer,0,0,Cloudy,11.2,Low,No
-28,Historical,Kathmandu,morning,9,1,6,24,Summer,0,0,Cloudy,92.94760826437461,Low,No
+28,Historical,Kathmandu,morning,9,1,6,24,Summer,0,0,Cloudy,92.9476082643746,Low,No
 28,Historical,Kathmandu,afternoon,14,1,6,24,Summer,0,0,Rainy,9.1,Low,No
 28,Historical,Kathmandu,evening,18,1,6,24,Summer,0,0,Rainy,6.4,Low,No
 28,Historical,Kathmandu,morning,9,2,6,25,Summer,0,0,Foggy,81.84120196657463,Low,No
@@ -34232,13 +34232,13 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 23,Market,Kathmandu,morning,9,5,8,31,Summer,1,0,Foggy,92.93934266936812,Low,Yes
 23,Market,Kathmandu,afternoon,14,5,8,31,Summer,1,0,Cloudy,42.5,Low,Yes
 23,Market,Kathmandu,evening,18,5,8,31,Summer,1,0,Cloudy,36.8,Low,Yes
-23,Market,Kathmandu,morning,9,6,9,1,Autumn,1,0,Rainy,90.10146045630661,Shoulder,No
+23,Market,Kathmandu,morning,9,6,9,1,Autumn,1,0,Rainy,90.1014604563066,Shoulder,No
 23,Market,Kathmandu,afternoon,14,6,9,1,Autumn,1,0,Cloudy,95.0,Shoulder,No
 23,Market,Kathmandu,evening,18,6,9,1,Autumn,1,0,Rainy,50.3,Shoulder,No
 23,Market,Kathmandu,morning,9,0,9,2,Autumn,0,0,Rainy,87.4475766820054,Shoulder,No
 23,Market,Kathmandu,afternoon,14,0,9,2,Autumn,0,0,Sunny,70.1,Shoulder,No
 23,Market,Kathmandu,evening,18,0,9,2,Autumn,0,0,Cloudy,54.9,Shoulder,No
-23,Market,Kathmandu,morning,9,1,9,3,Autumn,0,0,Rainy,91.11651291121663,Shoulder,Yes
+23,Market,Kathmandu,morning,9,1,9,3,Autumn,0,0,Rainy,91.11651291121665,Shoulder,Yes
 23,Market,Kathmandu,afternoon,14,1,9,3,Autumn,0,0,Sunny,95.0,Shoulder,Yes
 23,Market,Kathmandu,evening,18,1,9,3,Autumn,0,0,Sunny,86.9,Shoulder,Yes
 23,Market,Kathmandu,morning,9,2,9,4,Autumn,0,0,Cloudy,88.22122524054879,Shoulder,Yes
@@ -34262,7 +34262,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 23,Market,Kathmandu,morning,9,1,9,10,Autumn,0,0,Cloudy,88.91787234628738,Shoulder,Yes
 23,Market,Kathmandu,afternoon,14,1,9,10,Autumn,0,0,Rainy,59.5,Shoulder,Yes
 23,Market,Kathmandu,evening,18,1,9,10,Autumn,0,0,Rainy,51.8,Shoulder,Yes
-23,Market,Kathmandu,morning,9,2,9,11,Autumn,0,0,Cloudy,94.53535061858747,Shoulder,Yes
+23,Market,Kathmandu,morning,9,2,9,11,Autumn,0,0,Cloudy,94.53535061858749,Shoulder,Yes
 23,Market,Kathmandu,afternoon,14,2,9,11,Autumn,0,0,Rainy,61.0,Shoulder,Yes
 23,Market,Kathmandu,evening,18,2,9,11,Autumn,0,0,Cloudy,76.9,Shoulder,Yes
 23,Market,Kathmandu,morning,9,3,9,12,Autumn,0,0,Cloudy,83.0,Shoulder,Yes
@@ -34565,7 +34565,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 23,Market,Kathmandu,morning,9,4,12,20,Winter,0,0,Cloudy,47.6,Shoulder,No
 23,Market,Kathmandu,afternoon,14,4,12,20,Winter,0,0,Cloudy,85.7,Shoulder,No
 23,Market,Kathmandu,evening,18,4,12,20,Winter,0,0,Foggy,51.8,Shoulder,No
-23,Market,Kathmandu,morning,9,5,12,21,Winter,1,0,Sunny,96.04966707776525,Shoulder,No
+23,Market,Kathmandu,morning,9,5,12,21,Winter,1,0,Sunny,96.04966707776524,Shoulder,No
 23,Market,Kathmandu,afternoon,14,5,12,21,Winter,1,0,Foggy,95.0,Shoulder,No
 23,Market,Kathmandu,evening,18,5,12,21,Winter,1,0,Cloudy,95.0,Shoulder,No
 23,Market,Kathmandu,morning,9,6,12,22,Winter,1,0,Sunny,95.0,Shoulder,No
@@ -34718,7 +34718,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 23,Market,Kathmandu,morning,9,6,2,9,Winter,1,0,Cloudy,78.59975549479033,Low,No
 23,Market,Kathmandu,afternoon,14,6,2,9,Winter,1,0,Foggy,39.0,Low,No
 23,Market,Kathmandu,evening,18,6,2,9,Winter,1,0,Cloudy,38.8,Low,No
-23,Market,Kathmandu,morning,9,0,2,10,Winter,0,0,Sunny,95.35775657789733,Low,No
+23,Market,Kathmandu,morning,9,0,2,10,Winter,0,0,Sunny,95.35775657789732,Low,No
 23,Market,Kathmandu,afternoon,14,0,2,10,Winter,0,0,Cloudy,30.4,Low,No
 23,Market,Kathmandu,evening,18,0,2,10,Winter,0,0,Sunny,23.1,Low,No
 23,Market,Kathmandu,morning,9,1,2,11,Winter,0,0,Cloudy,84.53627669525281,Low,No
@@ -35078,7 +35078,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 23,Market,Kathmandu,morning,9,0,6,9,Summer,0,0,Foggy,8.8,Low,No
 23,Market,Kathmandu,afternoon,14,0,6,9,Summer,0,0,Foggy,12.8,Low,No
 23,Market,Kathmandu,evening,18,0,6,9,Summer,0,0,Rainy,7.6,Low,No
-23,Market,Kathmandu,morning,9,1,6,10,Summer,0,0,Cloudy,96.69812636320489,Low,No
+23,Market,Kathmandu,morning,9,1,6,10,Summer,0,0,Cloudy,96.69812636320488,Low,No
 23,Market,Kathmandu,afternoon,14,1,6,10,Summer,0,0,Foggy,12.9,Low,No
 23,Market,Kathmandu,evening,18,1,6,10,Summer,0,0,Rainy,8.4,Low,No
 23,Market,Kathmandu,morning,9,2,6,11,Summer,0,0,Cloudy,84.0,Low,No
@@ -35087,7 +35087,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 23,Market,Kathmandu,morning,9,3,6,12,Summer,0,0,Cloudy,94.6052375831031,Low,No
 23,Market,Kathmandu,afternoon,14,3,6,12,Summer,0,0,Rainy,11.3,Low,No
 23,Market,Kathmandu,evening,18,3,6,12,Summer,0,0,Rainy,8.5,Low,No
-23,Market,Kathmandu,morning,9,4,6,13,Summer,0,0,Foggy,98.49443541489039,Low,No
+23,Market,Kathmandu,morning,9,4,6,13,Summer,0,0,Foggy,98.4944354148904,Low,No
 23,Market,Kathmandu,afternoon,14,4,6,13,Summer,0,0,Cloudy,18.3,Low,No
 23,Market,Kathmandu,evening,18,4,6,13,Summer,0,0,Cloudy,12.7,Low,No
 23,Market,Kathmandu,morning,9,5,6,14,Summer,1,0,Cloudy,72.01776364548608,Low,No
@@ -39539,7 +39539,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 70,Market,Kathmandu,morning,9,3,4,9,Spring,1,0,Sunny,53.00947734874431,Peak,No
 70,Market,Kathmandu,morning,9,6,3,18,Spring,1,0,Sunny,94.1432243373434,Peak,No
 70,Market,Kathmandu,morning,9,1,4,13,Spring,1,0,Sunny,90.73713250613586,Peak,No
-70,Market,Kathmandu,morning,9,1,5,19,Spring,1,0,Sunny,94.29709803635699,Peak,No
+70,Market,Kathmandu,morning,9,1,5,19,Spring,1,0,Sunny,94.297098036357,Peak,No
 70,Market,Kathmandu,morning,9,5,3,10,Spring,1,0,Sunny,75.0,Peak,No
 70,Market,Kathmandu,morning,9,0,3,8,Spring,1,0,Sunny,88.90653747481736,Peak,No
 70,Market,Kathmandu,morning,9,1,5,5,Spring,1,0,Sunny,77.0,Peak,No
@@ -39548,7 +39548,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 70,Market,Kathmandu,morning,9,0,3,28,Spring,1,0,Sunny,81.52728881642139,Peak,No
 70,Market,Kathmandu,morning,9,1,3,16,Spring,1,0,Sunny,84.73498325398198,Peak,No
 70,Market,Kathmandu,morning,9,2,3,15,Spring,1,0,Sunny,89.68326460608803,Peak,No
-70,Market,Kathmandu,morning,9,6,3,7,Spring,1,0,Sunny,91.09051745702493,Peak,No
+70,Market,Kathmandu,morning,9,6,3,7,Spring,1,0,Sunny,91.09051745702492,Peak,No
 70,Market,Kathmandu,morning,9,3,4,22,Spring,1,0,Sunny,92.0,Peak,No
 70,Market,Kathmandu,morning,9,1,3,17,Spring,1,0,Sunny,82.26545053208106,Peak,No
 70,Market,Kathmandu,morning,9,6,5,26,Spring,1,0,Sunny,80.0,Peak,No
@@ -39560,7 +39560,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 70,Market,Kathmandu,morning,9,4,4,10,Spring,0,0,Rainy,75.0,Peak,No
 70,Market,Kathmandu,morning,9,6,5,3,Spring,0,0,Rainy,76.0,Peak,No
 70,Market,Kathmandu,morning,9,5,5,28,Spring,0,0,Rainy,84.0,Peak,No
-70,Market,Kathmandu,morning,9,0,4,19,Spring,0,0,Rainy,93.56290515100503,Peak,No
+70,Market,Kathmandu,morning,9,0,4,19,Spring,0,0,Rainy,93.56290515100504,Peak,No
 70,Market,Kathmandu,morning,9,1,5,7,Spring,0,0,Rainy,71.78632904178983,Peak,No
 68,Temple,Kathmandu,morning,9,5,5,28,Spring,1,0,Sunny,86.0,Peak,No
 68,Temple,Kathmandu,morning,9,6,3,1,Spring,1,0,Sunny,94.54709373768668,Peak,No
@@ -39613,7 +39613,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 130,Historical,Kathmandu,morning,9,3,3,11,Spring,0,0,Rainy,85.0,Peak,No
 130,Historical,Kathmandu,morning,9,5,3,12,Spring,0,0,Rainy,100.0,Peak,No
 130,Historical,Kathmandu,morning,9,3,3,11,Spring,0,0,Rainy,83.80973022187948,Peak,No
-130,Historical,Kathmandu,morning,9,2,5,22,Spring,0,0,Rainy,95.39525438813993,Peak,No
+130,Historical,Kathmandu,morning,9,2,5,22,Spring,0,0,Rainy,95.39525438813992,Peak,No
 130,Historical,Kathmandu,morning,9,2,4,7,Spring,0,0,Rainy,78.0,Peak,No
 130,Historical,Kathmandu,morning,9,2,3,13,Spring,0,0,Rainy,84.0,Peak,No
 130,Historical,Kathmandu,morning,9,5,3,17,Spring,0,0,Rainy,87.93552535232536,Peak,No
@@ -39639,7 +39639,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 67,Temple,Kathmandu,morning,9,5,5,20,Spring,1,0,Sunny,81.46151054868352,Peak,No
 67,Temple,Kathmandu,morning,9,2,4,21,Spring,1,0,Sunny,90.45967514814298,Peak,No
 67,Temple,Kathmandu,morning,9,5,5,18,Spring,1,0,Sunny,95.0,Peak,No
-67,Temple,Kathmandu,morning,9,2,5,1,Spring,1,0,Sunny,92.33165480016501,Peak,No
+67,Temple,Kathmandu,morning,9,2,5,1,Spring,1,0,Sunny,92.331654800165,Peak,No
 67,Temple,Kathmandu,morning,9,0,5,28,Spring,1,0,Sunny,86.88602886150291,Peak,No
 67,Temple,Kathmandu,morning,9,4,4,9,Spring,1,0,Sunny,79.08569466591955,Peak,No
 67,Temple,Kathmandu,morning,9,5,3,9,Spring,1,0,Sunny,81.13065059786082,Peak,No
@@ -39649,7 +39649,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 67,Temple,Kathmandu,morning,9,0,5,8,Spring,0,0,Sunny,75.79544051137346,Peak,No
 67,Temple,Kathmandu,morning,9,4,5,2,Spring,0,0,Sunny,47.16238962854729,Peak,No
 67,Temple,Kathmandu,morning,9,0,5,25,Spring,0,0,Sunny,44.56512746827261,Peak,No
-67,Temple,Kathmandu,morning,9,5,5,10,Spring,0,0,Sunny,95.10036344498769,Peak,No
+67,Temple,Kathmandu,morning,9,5,5,10,Spring,0,0,Sunny,95.10036344498768,Peak,No
 67,Temple,Kathmandu,morning,9,4,4,8,Spring,0,0,Sunny,83.60186610226206,Peak,No
 67,Temple,Kathmandu,morning,9,0,4,1,Spring,0,0,Sunny,77.67276020168336,Peak,No
 67,Temple,Kathmandu,morning,9,6,4,15,Spring,0,0,Sunny,88.12902329322924,Peak,No
@@ -40091,7 +40091,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,88.0,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,83.91402049628505,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,79.0,Peak,No
-3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,93.94105746484999,Peak,No
+3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,93.94105746485,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,71.55200207321704,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,76.0,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,96.01434767463552,Peak,No
@@ -40111,7 +40111,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,81.0,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,82.71375367555672,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,89.84479284120587,Peak,No
-3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,91.55635738151757,Peak,No
+3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,91.55635738151756,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,81.11968648525708,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,85.90257937445601,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,81.93721808513355,Peak,No
@@ -40120,7 +40120,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,80.90884894034471,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,73.46478416624524,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,87.0,Peak,No
-3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,91.17218308015603,Peak,No
+3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,91.17218308015605,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,94.6602444864113,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,87.30049954459771,Peak,No
 3,Market,Kathmandu,morning,9,2,6,15,Summer,1,0,Sunny,88.2131571688424,Peak,No
@@ -42828,7 +42828,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 14813,Market,Kathmandu,morning,9,1,6,6,Summer,0,0,Cloudy,91.0,Low,No
 11123,Market,Kathmandu,evening,19,5,5,26,Winter,1,0,Cloudy,90.2,Peak,No
 14222,Religious,Kathmandu,afternoon,14,0,1,27,Winter,0,0,Sunny,48.4,Low,No
-16256,Tourist,Bhaktapur,morning,9,3,3,14,Summer,0,0,Sunny,92.64597982240701,Shoulder,No
+16256,Tourist,Bhaktapur,morning,9,3,3,14,Summer,0,0,Sunny,92.645979822407,Shoulder,No
 18308,Market,Kathmandu,afternoon,14,6,9,12,Spring,1,0,Rainy,44.1,Shoulder,No
 12676,Religious,Kathmandu,morning,9,5,3,27,Winter,1,0,Rainy,59.2,Shoulder,No
 15702,Park,Lalitpur,morning,9,6,11,12,Summer,1,0,Cloudy,51.9,Peak,No
@@ -43232,7 +43232,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 10536,Market,Kathmandu,morning,9,4,7,19,Summer,0,0,Sunny,37.6,Low,No
 10205,Museum,Kathmandu,morning,9,3,5,13,Spring,0,1,Sunny,36.1,Peak,No
 15191,Tourist,Bhaktapur,evening,19,3,6,21,Summer,0,0,Sunny,34.0,Low,No
-11242,Tourist,Bhaktapur,morning,9,3,3,7,Spring,0,0,Sunny,94.70085432686997,Shoulder,No
+11242,Tourist,Bhaktapur,morning,9,3,3,7,Spring,0,0,Sunny,94.70085432686996,Shoulder,No
 19574,Museum,Kathmandu,evening,19,1,6,4,Winter,0,0,Cloudy,28.5,Low,No
 11716,Market,Kathmandu,morning,9,5,1,15,Spring,1,0,Cloudy,89.61675955343495,Low,No
 12832,Tourist,Bhaktapur,afternoon,14,3,4,20,Spring,0,0,Rainy,66.0,Peak,No
@@ -43455,7 +43455,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 15277,Religious,Kathmandu,morning,9,5,1,1,Spring,1,0,Rainy,67.3,Low,No
 11881,Museum,Kathmandu,morning,9,6,12,24,Winter,1,1,Rainy,32.3,Shoulder,No
 14681,Museum,Kathmandu,morning,9,1,1,17,Spring,0,0,Rainy,28.0,Low,No
-13725,Market,Kathmandu,morning,9,5,5,22,Autumn,1,0,Cloudy,96.14767445935755,Peak,No
+13725,Market,Kathmandu,morning,9,5,5,22,Autumn,1,0,Cloudy,96.14767445935756,Peak,No
 16805,Market,Kathmandu,morning,9,1,10,14,Spring,0,0,Rainy,80.0,Peak,No
 13687,Market,Kathmandu,morning,9,4,3,21,Spring,0,0,Cloudy,84.0,Shoulder,No
 19523,Museum,Kathmandu,evening,19,1,11,1,Summer,0,0,Sunny,27.7,Peak,No
@@ -43684,7 +43684,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 14185,Museum,Kathmandu,evening,19,0,2,12,Spring,0,0,Rainy,37.3,Low,No
 15563,Tourist,Bhaktapur,morning,9,5,8,16,Spring,1,0,Cloudy,22.6,Low,No
 16054,Market,Kathmandu,evening,19,5,6,12,Winter,1,0,Sunny,71.8,Low,No
-13716,Tourist,Bhaktapur,morning,9,5,6,14,Summer,1,0,Sunny,93.56719277500609,Low,No
+13716,Tourist,Bhaktapur,morning,9,5,6,14,Summer,1,0,Sunny,93.56719277500608,Low,No
 16782,Market,Kathmandu,afternoon,14,0,3,1,Spring,0,0,Sunny,48.2,Shoulder,No
 11974,Tourist,Bhaktapur,evening,19,4,3,17,Winter,0,0,Rainy,27.8,Shoulder,No
 15744,Tourist,Bhaktapur,afternoon,14,4,9,18,Spring,0,1,Cloudy,64.9,Shoulder,No
@@ -44032,7 +44032,7 @@ place_id,category,district,time_slot,hour,day_of_week,month,day,season,is_weeken
 15571,Museum,Kathmandu,evening,19,1,3,25,Summer,0,0,Sunny,40.8,Shoulder,No
 10684,Tourist,Bhaktapur,morning,9,5,12,2,Summer,1,0,Rainy,88.0,Shoulder,No
 15170,Museum,Kathmandu,morning,9,1,3,24,Summer,0,0,Cloudy,23.5,Shoulder,No
-13911,Market,Kathmandu,morning,9,0,11,17,Summer,0,0,Rainy,94.41189626486255,Peak,No
+13911,Market,Kathmandu,morning,9,0,11,17,Summer,0,0,Rainy,94.41189626486256,Peak,No
 12781,Park,Lalitpur,evening,19,4,4,9,Winter,0,0,Sunny,64.8,Peak,No
 14727,Religious,Kathmandu,morning,9,6,9,10,Winter,1,1,Rainy,76.7,Shoulder,No
 13585,Religious,Kathmandu,morning,9,2,1,19,Spring,0,0,Sunny,87.2,Low,No

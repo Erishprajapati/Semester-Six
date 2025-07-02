@@ -1,0 +1,64 @@
+place_id,place_name,category,district,time_slot,hour,day_of_week,month,season,is_weekend,weather_condition,crowdlevel,crowd_category
+1,Kasthamandap,Temple,Kathmandu,morning,9,4,6,Summer,0,Cloudy,82.9,High
+2,Freak Street,Market,Kathmandu,morning,9,4,6,Summer,0,Cloudy,79.02,High
+3,Kumari Ghar,Temple,Kathmandu,morning,9,4,6,Summer,0,Rainy,84.46,High
+4,Kaal Bhairav,Temple,Kathmandu,morning,9,4,6,Summer,0,Rainy,54.24,Medium
+5,Pashupatinath Temple,Temple,Kathmandu,morning,9,4,6,Summer,0,Sunny,47.83,Medium
+6,Gaddi Baithak,Palace,Kathmandu,morning,9,4,6,Summer,0,Sunny,23.36,Low
+7,Hanuman Dhoka Museum,Museum,Kathmandu,morning,9,4,6,Summer,0,Rainy,13.46,Low
+8,Asan Market,Market,Kathmandu,afternoon,14,5,6,Summer,1,Rainy,75.56,High
+9,Boudhanath Stupa,Stupa,Kathmandu,afternoon,14,5,6,Summer,1,Foggy,97.73,High
+10,Kathmandu Durbar Square,Durbar Square,Kathmandu,afternoon,14,5,6,Summer,1,Cloudy,95.34,High
+11,Shiva Parvati Temple,Temple,Kathmandu,afternoon,14,5,6,Summer,1,Sunny,40.52,Medium
+12,Jagannath Temple,Temple,Kathmandu,afternoon,14,5,6,Summer,1,Foggy,61.71,Medium
+13,Basantapur Tower,Tower,Kathmandu,afternoon,14,5,6,Summer,1,Foggy,7.63,Low
+14,Taleju Temple,Temple,Kathmandu,afternoon,14,5,6,Summer,1,Foggy,18.31,Low
+15,Akash Bhairav Temple,Temple,Kathmandu,evening,19,6,6,Summer,1,Sunny,79.43,High
+16,Hanuman Dhoka Palace,Palace,Kathmandu,evening,19,6,6,Summer,1,Foggy,79.24,High
+17,Swayambhunath,Stupa,Kathmandu,evening,19,6,6,Summer,1,Rainy,82.33,High
+18,Sweta Bhairav,Temple,Kathmandu,evening,19,6,6,Summer,1,Cloudy,55.96,Medium
+19,Nasal Chowk,Palace,Kathmandu,evening,19,6,6,Summer,1,Rainy,41.93,Medium
+20,Akash Bhairav Temple,Temple,Kathmandu,evening,19,6,6,Summer,1,Sunny,19.43,Low
+21,Kaal Bhairav,Temple,Kathmandu,evening,19,6,6,Summer,1,Foggy,20.41,Low
+22,Changu Narayan Temple,Temple,Bhaktapur,morning,9,4,6,Summer,0,Foggy,91.69,High
+23,Siddha Pokhari,Lake,Bhaktapur,morning,9,4,6,Summer,0,Sunny,82.09,High
+24,Vatsala Temple,Temple,Bhaktapur,morning,9,4,6,Summer,0,Rainy,85.2,High
+25,Dattatreya Temple,Temple,Bhaktapur,morning,9,4,6,Summer,0,Foggy,59.54,Medium
+26,Nyatapola Temple,Temple,Bhaktapur,morning,9,4,6,Summer,0,Rainy,53.96,Medium
+27,Bhairavnath Temple,Temple,Bhaktapur,morning,9,4,6,Summer,0,Rainy,14.87,Low
+28,Bhaktapur Durbar Square,Durbar Square,Bhaktapur,morning,9,4,6,Summer,0,Sunny,16.43,Low
+29,55 Window Palace,Palace,Bhaktapur,afternoon,14,5,6,Summer,1,Sunny,79.07,High
+30,Pottery Square,Market,Bhaktapur,afternoon,14,5,6,Summer,1,Foggy,95.44,High
+31,Taumadhi Square,Square,Bhaktapur,afternoon,14,5,6,Summer,1,Rainy,91.59,High
+32,Dattatreya Temple,Temple,Bhaktapur,afternoon,14,5,6,Summer,1,Rainy,51.15,Medium
+33,55 Window Palace,Palace,Bhaktapur,afternoon,14,5,6,Summer,1,Foggy,50.82,Medium
+34,Dattatreya Temple,Temple,Bhaktapur,afternoon,14,5,6,Summer,1,Foggy,10.77,Low
+35,55 Window Palace,Palace,Bhaktapur,afternoon,14,5,6,Summer,1,Cloudy,20.86,Low
+36,Bhaktapur Durbar Square,Durbar Square,Bhaktapur,evening,19,6,6,Summer,1,Foggy,87.4,High
+37,Changu Narayan Temple,Temple,Bhaktapur,evening,19,6,6,Summer,1,Rainy,82.37,High
+38,55 Window Palace,Palace,Bhaktapur,evening,19,6,6,Summer,1,Rainy,82.2,High
+39,Bhaktapur Durbar Square,Durbar Square,Bhaktapur,evening,19,6,6,Summer,1,Sunny,44.14,Medium
+40,Changu Narayan Temple,Temple,Bhaktapur,evening,19,6,6,Summer,1,Cloudy,48.81,Medium
+41,Bhaktapur Durbar Square,Durbar Square,Bhaktapur,evening,19,6,6,Summer,1,Sunny,23.46,Low
+42,Changu Narayan Temple,Temple,Bhaktapur,evening,19,6,6,Summer,1,Rainy,23.73,Low
+43,Patan Durbar Square,Durbar Square,Lalitpur,morning,9,4,6,Summer,0,Foggy,77.84,High
+44,Rudra Varna Mahavihar,Monastery,Lalitpur,morning,9,4,6,Summer,0,Rainy,86.51,High
+45,Ashok Stupa,Stupa,Lalitpur,morning,9,4,6,Summer,0,Foggy,98.81,High
+46,Kumbeshwar Temple,Temple,Lalitpur,morning,9,4,6,Summer,0,Sunny,44.69,Medium
+47,Krishna Mandir,Temple,Lalitpur,morning,9,4,6,Summer,0,Rainy,58.85,Medium
+48,Hiranya Varna Mahavihar,Monastery,Lalitpur,morning,9,4,6,Summer,0,Cloudy,6.56,Low
+49,Patan Museum,Museum,Lalitpur,morning,9,4,6,Summer,0,Sunny,20.4,Low
+50,Rato Machhindranath Temple,Temple,Lalitpur,afternoon,14,5,6,Summer,1,Rainy,76.67,High
+51,Sundari Chowk,Palace,Lalitpur,afternoon,14,5,6,Summer,1,Sunny,94.08,High
+52,Mahabouddha Temple,Temple,Lalitpur,afternoon,14,5,6,Summer,1,Foggy,75.69,High
+53,Rato Machhindranath Temple,Temple,Lalitpur,afternoon,14,5,6,Summer,1,Rainy,59.43,Medium
+54,Patan Durbar Square,Durbar Square,Lalitpur,afternoon,14,5,6,Summer,1,Sunny,52.73,Medium
+55,Rato Machhindranath Temple,Temple,Lalitpur,afternoon,14,5,6,Summer,1,Rainy,12.9,Low
+56,Patan Durbar Square,Durbar Square,Lalitpur,afternoon,14,5,6,Summer,1,Foggy,21.23,Low
+57,Ashok Stupa,Stupa,Lalitpur,evening,19,6,6,Summer,1,Rainy,89.2,High
+58,Hiranya Varna Mahavihar,Monastery,Lalitpur,evening,19,6,6,Summer,1,Cloudy,85.86,High
+59,Rato Machhindranath Temple,Temple,Lalitpur,evening,19,6,6,Summer,1,Cloudy,85.81,High
+60,Ashok Stupa,Stupa,Lalitpur,evening,19,6,6,Summer,1,Sunny,60.53,Medium
+61,Hiranya Varna Mahavihar,Monastery,Lalitpur,evening,19,6,6,Summer,1,Cloudy,58.05,Medium
+62,Ashok Stupa,Stupa,Lalitpur,evening,19,6,6,Summer,1,Foggy,13.79,Low
+63,Hiranya Varna Mahavihar,Monastery,Lalitpur,evening,19,6,6,Summer,1,Foggy,25.29,Low
