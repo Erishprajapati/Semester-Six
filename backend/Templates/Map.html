@@ -2152,10 +2152,8 @@ async function fetchPlacesByCategoryRegular(category) {
     // Always use the place's own district and category for details
     const district = place.district || '';
     const category = place.category || '';
-    const time_slot = place.time_slot || 'morning';
-    const weather_condition = place.weather_condition || 'Sunny';
-
-    const detailsUrl = `/place-details/${place.id}/?district=${encodeURIComponent(district)}&category=${encodeURIComponent(category)}&time_slot=${encodeURIComponent(time_slot)}&weather_condition=${encodeURIComponent(weather_condition)}`;
+    // Do NOT include time_slot or weather_condition unless explicitly set by user
+    const detailsUrl = `/place-details/${place.id}/?district=${encodeURIComponent(district)}&category=${encodeURIComponent(category)}`;
     console.log('[DEBUG] Navigating to:', detailsUrl);
     window.location.href = detailsUrl;
   }
