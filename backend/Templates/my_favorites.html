@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.place-list-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  justify-content: center;
+  margin-top: 32px;
+}
+.place-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+  padding: 24px 20px 18px 20px;
+  width: 340px;
+  margin-bottom: 16px;
+  transition: box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.place-card:hover {
+  box-shadow: 0 6px 32px rgba(0,0,0,0.18);
+}
+.place-card img {
+  border-radius: 10px;
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  margin-bottom: 16px;
+}
+.place-card h5 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+.place-card .btn {
+  margin-top: auto;
+}
+</style>
+<div class="container mt-5">
+    <h2 class="mb-4">My Favorite Places</h2>
+    <div class="place-list-container">
+        {% for place in places %}
+        <div class="place-card">
+            {% if place.image %}
+            <img src="{{ place.image.url }}" alt="{{ place.name }}">
+            {% endif %}
+            <h5>{{ place.name }}</h5>
+            <p class="text-muted mb-1">{{ place.category }}</p>
+            <p>{{ place.description|truncatewords:30 }}</p>
+            <p class="mb-2"><small class="text-muted">Location: {{ place.location }}, {{ place.district }}</small></p>
+            <a href="{% url 'place_details' place.id %}" class="btn btn-primary">View Details</a>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                You have not favorited any places yet.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

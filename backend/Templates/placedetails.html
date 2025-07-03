@@ -547,6 +547,16 @@
                         <i class="bi bi-clock"></i> <strong>Pending Approval:</strong> This place is awaiting admin verification and is not yet visible to the public.
                     </div>
                     {% endif %}
+                    {% if user.is_authenticated %}
+                        <form method="post" action="{% if is_favorite %}{% url 'remove_favorite' place.id %}{% else %}{% url 'add_favorite' place.id %}{% endif %}" style="display:inline;">
+                            {% csrf_token %}
+                            {% if is_favorite %}
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Remove from Favorites</button>
+                            {% else %}
+                                <button type="submit" class="btn btn-outline-primary btn-sm">Add to Favorites</button>
+                            {% endif %}
+                        </form>
+                    {% endif %}
                 </div>
                 {% if user.is_superuser or user.is_authenticated and place.added_by == user %}
                 <form id="delete-place-form" method="post" style="display:none;">

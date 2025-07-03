@@ -491,6 +491,10 @@ def place_details(request, place_id):
         else:
             review_form = ReviewForm()
 
+    is_favorite = False
+    if request.user.is_authenticated:
+        is_favorite = place.favorited_by.filter(user=request.user).exists()
+
     return render(request, 'placedetails.html', {
         'place': place,
         'crowdlevel': crowdlevel,
@@ -502,6 +506,7 @@ def place_details(request, place_id):
         'average_rating': average_rating,
         'review_form': review_form,
         'review_submitted': review_submitted,
+        'is_favorite': is_favorite,
     })
 
 def place_list(request):
@@ -2264,3 +2269,21 @@ def ml_hourly_predictions(request):
             crowdlevel = 0
         hourly_predictions.append({'hour': hour, 'crowdlevel': crowdlevel})
     return JsonResponse({'hourly_predictions': hourly_predictions})
+
+@login_required
+def add_favorite(request, place_id):
+    place = get_object_or_404(Place, id=place_id)
+    UserFavorite.objects.get_or_create(user=request.user, place=place)
+    return redirect('place_details', place_id=place.id)
+
+@login_required
+def remove_favorite(request, place_id):
+    place = get_object_or_404(Place, id=place_id)
+    UserFavorite.objects.filter(user=request.user, place=place).delete()
+    return redirect('place_details', place_id=place.id)
+
+@login_required
+def my_favorites(request):
+    favorites = request.user.favorite_places.select_related('place').order_by('-created_at')
+    places = [fav.place for fav in favorites]
+    return render(request, 'my_favorites.html', {'places': places})
