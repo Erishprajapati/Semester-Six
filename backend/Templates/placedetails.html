@@ -618,6 +618,51 @@
             <p><strong>Entry Fees:</strong> Free Entry</p>
             {% endif %}
             <p><strong>Crowd Level:</strong> {{ crowdlevel }}%</p>
+            <div id="distance-info" class="mt-3"></div>
+            <div class="mt-4">
+                {% if average_rating %}
+                <p><strong>Average Rating:</strong> <span style="color: #fdcb6e; font-size: 1.2em;">{{ average_rating }} ★</span></p>
+                {% endif %}
+                <h4>User Reviews</h4>
+                {% if reviews %}
+                    <ul class="list-group mb-3">
+                        {% for review in reviews %}
+                        <li class="list-group-item">
+                            <strong>{{ review.user.username }}</strong> <span style="color: #fdcb6e;">{{ review.rating }} ★</span>
+                            <br>
+                            <span class="text-muted" style="font-size: 0.9em;">{{ review.created_at|date:"M d, Y H:i" }}</span>
+                            <p>{{ review.comment }}</p>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted">No reviews yet. Be the first to review this place!</p>
+                {% endif %}
+                {% if user.is_authenticated %}
+                    <div class="card mb-4" style="max-width: 500px;">
+                        <div class="card-body">
+                            <h5 class="card-title">Leave a Review</h5>
+                            {% if review_submitted %}
+                                <div class="alert alert-success">Thank you for your review!</div>
+                            {% endif %}
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    {{ review_form.rating.label_tag }}
+                                    {{ review_form.rating }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ review_form.comment.label_tag }}
+                                    {{ review_form.comment }}
+                                </div>
+                                <button type="submit" class="btn btn-primary">Submit Review</button>
+                            </form>
+                        </div>
+                    </div>
+                {% else %}
+                    <p><a href="{% url 'login' %}">Log in</a> to leave a review.</p>
+                {% endif %}
+            </div>
             {% if weather_impact %}
             <p><strong>Weather Impact:</strong> 
                 {% if weather_impact > 0 %}

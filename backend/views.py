@@ -29,6 +29,9 @@ from django.core.cache import cache
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 from backend.improved_ml_model import ImprovedCrowdPredictionModel
 from .utils import get_weather_impact_on_crowd
+from .forms import ReviewForm
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 
 # Create your views here.
 
@@ -467,6 +470,27 @@ def place_details(request, place_id):
     if crowdlevel is not None:
         crowdlevel = f"{crowdlevel:.2f}"
     
+    # Get all reviews for this place
+    reviews = place.reviews.select_related('user').order_by('-created_at')
+    avg_rating = reviews.aggregate(models.Avg('rating'))['rating__avg']
+    average_rating = f"{avg_rating:.2f}" if avg_rating else None
+
+    # Handle review form
+    review_form = None
+    review_submitted = False
+    if request.user.is_authenticated:
+        if request.method == 'POST':
+            review_form = ReviewForm(request.POST)
+            if review_form.is_valid():
+                review = review_form.save(commit=False)
+                review.user = request.user
+                review.place = place
+                review.save()
+                review_submitted = True
+                return redirect('place_details', place_id=place.id)
+        else:
+            review_form = ReviewForm()
+
     return render(request, 'placedetails.html', {
         'place': place,
         'crowdlevel': crowdlevel,
@@ -474,6 +498,10 @@ def place_details(request, place_id):
         'closed_list': closed_list,
         'weather_impact': weather_impact,
         'weather_condition': weather_condition,
+        'reviews': reviews,
+        'average_rating': average_rating,
+        'review_form': review_form,
+        'review_submitted': review_submitted,
     })
 
 def place_list(request):
