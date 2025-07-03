@@ -1801,7 +1801,8 @@ async function fetchPlacesByCategoryRegular(category) {
 
     // Render the full-day bar graph for this place if available, otherwise keep the previous one
     if (place.crowd_pattern && Array.isArray(place.crowd_pattern) && place.crowd_pattern.length > 0) {
-      renderFullDayBarGraph(place);
+      // renderFullDayBarGraph(place); // REMOVE THIS LINE
+      fetchHourlyMLPredictions(place); // ADD THIS LINE
     }
   }  
 
@@ -1906,34 +1907,45 @@ async function fetchPlacesByCategoryRegular(category) {
     }
   }
 
-  function renderFullDayBarGraph(place) {
-    const chartWrapper = document.getElementById('chart-wrapper');
-    if (!place.crowd_pattern || !Array.isArray(place.crowd_pattern) || place.crowd_pattern.length === 0) {
-      // Do NOT hide the bar graph, just keep the previous one
-      return;
-    }
-    const labels = place.crowd_pattern.map(item => `${item.hour}:00`);
-    const data = place.crowd_pattern.map(item => item.crowdlevel);
-    const ctx = document.getElementById('bar-chart').getContext('2d');
-    if (window.barChart) window.barChart.destroy();
-    window.barChart = new Chart(ctx, {
+  // Add this function to fetch hourly ML predictions for a place and render as a bar chart
+  async function fetchHourlyMLPredictions(place) {
+    try {
+      const response = await fetch(`/api/ml-hourly-predictions/?place_id=${place.id}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      if (!data.hourly_predictions || data.hourly_predictions.length === 0) {
+        alert('No hourly ML predictions found for this place.');
+        return;
+      }
+      // Render the hourly ML predictions as a bar chart
+      const labels = data.hourly_predictions.map(item => `${item.hour}:00`);
+      const values = data.hourly_predictions.map(item => item.crowdlevel);
+      const ctx = document.getElementById('bar-chart').getContext('2d');
+      if (window.barChart) window.barChart.destroy();
+      window.barChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
-            datasets: [{
-                label: 'Crowd Level',
-                data: data,
-                backgroundColor: data.map(val => val > 70 ? '#FF0000' : val > 30 ? '#FFEB3B' : '#4CAF50')
-            }]
+          labels: labels,
+          datasets: [{
+            label: 'Crowd Level (ML Predicted)',
+            data: values,
+            backgroundColor: values.map(val => val > 70 ? '#FF0000' : val > 30 ? '#FFEB3B' : '#4CAF50')
+          }]
         },
         options: {
-            responsive: true,
-            scales: {
-                y: { beginAtZero: true, max: 100 }
-            }
+          responsive: true,
+          scales: {
+            y: { beginAtZero: true, max: 100 }
+          }
         }
-    });
-    chartWrapper.style.display = 'block';
+      });
+      document.getElementById('chart-wrapper').style.display = 'block';
+    } catch (error) {
+      alert('Failed to fetch hourly ML predictions.');
+      console.error(error);
+    }
   }
 
   // Function to fetch tourism-based crowd data for charts

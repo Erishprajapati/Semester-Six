@@ -28,6 +28,7 @@ import sys
 from django.core.cache import cache
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 from backend.improved_ml_model import ImprovedCrowdPredictionModel
+from .utils import get_weather_impact_on_crowd
 
 # Create your views here.
 
@@ -395,18 +396,26 @@ def place_details(request, place_id):
         messages.warning(request, 'This place is pending admin approval and is not yet visible to the public.')
         return redirect('home')  # Redirect to home page
     
-    # Initialize variables to prevent UnboundLocalError
-    crowdlevel = None
-    weather_impact = None
-    weather_condition = None
-    
     # Get context from query parameters if present
     district = request.GET.get('district', place.district)
     category = request.GET.get('category', place.category)
-    time_slot = request.GET.get('time_slot', 'afternoon')
+    time_slot = request.GET.get('time_slot')
+    if not time_slot:
+        now = datetime.now()
+        hour = now.hour
+        if 5 <= hour < 12:
+            time_slot = 'morning'
+        elif 12 <= hour < 17:
+            time_slot = 'afternoon'
+        elif 17 <= hour < 21:
+            time_slot = 'evening'
+        else:
+            time_slot = 'morning'
     weather_condition = request.GET.get('weather_condition', None)
     
     # Use cached model if available
+    crowdlevel = None
+    weather_impact = None
     if 'improved_model' in MODEL_CACHE:
         try:
             model = MODEL_CACHE['improved_model']
@@ -448,15 +457,6 @@ def place_details(request, place_id):
         except Exception as e:
             print(f"Error predicting crowd level: {e}")
             crowdlevel = None
-    
-    # Fallback: use latest crowd data if improved model not available
-    if crowdlevel is None:
-        try:
-            crowd_data = CrowdData.objects.filter(place=place).order_by('-timestamp').first()
-            crowdlevel = crowd_data.crowdlevel if crowd_data else 'N/A'
-        except Exception as e:
-            print(f"Error fetching crowd data: {e}")
-            crowdlevel = 'N/A'
     
     today = timezone.now().date().isoformat()  # e.g., '2025-06-27'
     closed_list = []
@@ -1636,7 +1636,14 @@ def improved_crowd_predictions(request):
                     
                     # Apply weather impact adjustment
                     weather_impact = get_weather_impact_on_crowd(weather_condition)
-                    adjusted_crowd = max(0, min(100, predicted_crowd + weather_impact))
+                    print(f"[DEBUG] weather_impact for {place.name}: {weather_impact} (type: {type(weather_impact)})")
+                    if weather_impact is None:
+                        weather_impact = 0
+                    try:
+                        adjusted_crowd = max(0, min(100, predicted_crowd + float(weather_impact)))
+                    except Exception as e:
+                        print(f"[ERROR] Failed to compute crowdlevel for {place.name}: {e}")
+                        adjusted_crowd = predicted_crowd
                     
                     # Determine crowd status with correct color scheme: High-Red, Medium-Orange, Low-Green
                     if adjusted_crowd > 70:
@@ -1959,7 +1966,7 @@ def tourism_crowd_data_for_charts(request):
                             'season', 'is_weekend', 'weather_condition', 'time_slot'
                         ]
                         if hasattr(model, 'feature_names_in_'):
-                            # scikit-learn model
+                            import pandas as pd
                             row = pd.DataFrame([{k: features[k] for k in feature_cols}])
                             row = pd.get_dummies(row)
                             for col in model.feature_names_in_:
@@ -1968,21 +1975,25 @@ def tourism_crowd_data_for_charts(request):
                             row = row[model.feature_names_in_]
                             predicted_value = model.predict(row)[0]
                         else:
-                            # custom model
                             predicted_value = model.predict(**features)
                         print(f"[DEBUG] Model prediction for {place.name}: {predicted_value}")
                         # Map numeric prediction to label for color/status
-                        if predicted_value > 70:
-                            predicted_label = 'High'
-                            color = 'red'
-                        elif predicted_value >= 30:
-                            predicted_label = 'Medium'
-                            color = 'orange'
+                        weather_impact = get_weather_impact_on_crowd(weather_condition)
+                        print(f"[DEBUG] weather_impact for {place.name}: {weather_impact} (type: {type(weather_impact)})")
+                        if weather_impact is None:
+                            weather_impact = 0
+                        try:
+                            crowdlevel = max(0, min(100, float(predicted_value) + float(weather_impact)))
+                        except Exception as e:
+                            print(f"[ERROR] Failed to compute crowdlevel for {place.name}: {e}")
+                            crowdlevel = float(predicted_value)
+                        if crowdlevel > 70:
+                            predicted_label = 'High'; color = 'red'
+                        elif crowdlevel >= 30:
+                            predicted_label = 'Medium'; color = 'orange'
                         else:
-                            predicted_label = 'Low'
-                            color = 'green'
+                            predicted_label = 'Low'; color = 'green'
                         status = predicted_label
-                        crowdlevel = float(predicted_value)  # Use the actual predicted value for the bar height
                     except Exception as model_exc:
                         print(f"[ERROR] Model prediction failed for {place.name}: {model_exc}")
                         continue
@@ -2001,8 +2012,8 @@ def tourism_crowd_data_for_charts(request):
                         'is_weekend': is_weekend,
                         'season': season,
                         'weather_condition': weather_condition,
-                        'weather_impact': 0,
-                        'base_prediction': status
+                        'weather_impact': weather_impact,
+                        'base_prediction': predicted_value
                     })
                 except Exception as e:
                     print(f"[DEBUG] Tourism prediction error for place {place.name}: {e}")
@@ -2035,7 +2046,7 @@ def tourism_crowd_data_for_charts(request):
             places_data = selected_places[:limit]
             # Sort the final selected places by crowd level descending
             places_data.sort(key=lambda x: x['crowdlevel'], reverse=True)
-            
+            print("[DEBUG] Final places_data:", places_data)
             prediction_time = time.time()
             log_performance("ML Predictions", prediction_start, prediction_time, f"for {len(places_data)} places")
             
@@ -2071,6 +2082,16 @@ def tourism_crowd_data_for_charts(request):
             # Cache the results for 5 minutes to avoid reprocessing
             cache_key = f"tourism_data:{district}:{category}:{time_slot}:{limit}"
             cache.set(cache_key, response_data, 300)  # 5 minutes cache
+            
+            # Convert all NumPy types to native Python types for JSON serialization
+            for place in places_data:
+                if 'base_prediction' in place:
+                    place['base_prediction'] = float(place['base_prediction'])
+                if 'crowdlevel' in place:
+                    place['crowdlevel'] = float(place['crowdlevel'])
+                if 'weather_impact' in place:
+                    place['weather_impact'] = float(place['weather_impact'])
+            print("[DEBUG] Final places_data:", places_data)
             
             return JsonResponse(response_data)
             
@@ -2140,3 +2161,74 @@ if 'improved_model' not in MODEL_CACHE:
             print("[DEBUG] Failed to load improved model at startup")
     else:
         print("[DEBUG] Model file not found at startup")
+
+@api_view(['GET'])
+def ml_hourly_predictions(request):
+    """
+    Returns ML model predictions for each hour (0-23) for a given place_id.
+    """
+    place_id = request.GET.get('place_id')
+    if not place_id:
+        return JsonResponse({'error': 'place_id is required'}, status=400)
+    try:
+        place = Place.objects.get(id=place_id)
+    except Place.DoesNotExist:
+        return JsonResponse({'error': 'Place not found'}, status=404)
+
+    # Load or get cached model
+    model_cache_key = 'tourism_ml_model'
+    model = cache.get(model_cache_key)
+    if model is None:
+        from backend.improved_ml_model import ImprovedCrowdPredictionModel
+        model = ImprovedCrowdPredictionModel()
+        if not model.load_model():
+            return JsonResponse({'error': 'Failed to load tourism model.'}, status=500)
+        cache.set(model_cache_key, model, 3600)
+
+    # Get context features
+    now = datetime.now()
+    day_of_week = now.weekday()
+    month = now.month
+    season = get_current_season()
+    is_weekend = 1 if day_of_week >= 5 else 0
+    is_holiday = 0
+    time_slot = 'morning'  # Not used for hourly, but required by model
+    # Get weather for this place
+    weather_condition = get_real_time_weather_for_place(place)
+
+    hourly_predictions = []
+    for hour in range(0, 24):
+        features = {
+            'place_id': place.id,
+            'category': place.category or 'Unknown',
+            'district': place.district or 'Unknown',
+            'time_slot': time_slot,
+            'day_of_week': day_of_week,
+            'month': month,
+            'season': season or 'Unknown',
+            'is_weekend': is_weekend,
+            'is_holiday': is_holiday,
+            'weather_condition': weather_condition or 'Sunny',
+            'hour': hour
+        }
+        try:
+            feature_cols = [
+                'place_id', 'category', 'district', 'hour', 'day_of_week', 'month',
+                'season', 'is_weekend', 'weather_condition', 'time_slot'
+            ]
+            if hasattr(model, 'feature_names_in_'):
+                import pandas as pd
+                row = pd.DataFrame([{k: features[k] for k in feature_cols}])
+                row = pd.get_dummies(row)
+                for col in model.feature_names_in_:
+                    if col not in row.columns:
+                        row[col] = 0
+                row = row[model.feature_names_in_]
+                predicted_value = model.predict(row)[0]
+            else:
+                predicted_value = model.predict(**features)
+            crowdlevel = float(predicted_value)
+        except Exception as e:
+            crowdlevel = 0
+        hourly_predictions.append({'hour': hour, 'crowdlevel': crowdlevel})
+    return JsonResponse({'hourly_predictions': hourly_predictions})
