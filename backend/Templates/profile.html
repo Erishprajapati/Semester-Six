@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Profile{% endblock %}
 
+{% load custom_filters %}
+
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
@@ -190,4 +192,72 @@
         });
     });
 </script>
+
+<!-- Add Most Favorited Places Section -->
+{% block content %}
+{{ block.super }}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card mt-4">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <span>
+                        <h5 class="mb-0 d-inline"><i class="fas fa-star"></i> Most Favorited Places</h5>
+                        <span class="ms-2" data-bs-toggle="tooltip" data-bs-placement="right" title="These are the places with the highest number of users who have added them to their favorites.">
+                            <i class="fas fa-info-circle text-info"></i>
+                        </span>
+                    </span>
+                </div>
+                <div class="card-body">
+                    {% if most_favorited_places %}
+                        <ul class="list-group">
+                            {% for place in most_favorited_places %}
+                            <li class="list-group-item d-flex align-items-center">
+                                {% if place.image %}
+                                    <img src="{{ place.image.url }}" alt="{{ place.name }}" class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-secondary rounded me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.5em;">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <strong>{{ place.name }}</strong>
+                                    <span class="text-muted">({{ place.category }})</span><br>
+                                    <span class="text-muted" style="font-size:0.95em;">{{ place.district }}</span>
+                                    <p class="mb-1" style="font-size:0.95em;">{{ place.description|truncatewords:15 }}</p>
+                                </div>
+                                <span class="badge bg-warning text-dark ms-2" style="font-size:1em; cursor:pointer;" tabindex="0" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-placement="left" title="Favorited by" data-bs-content="{% for user in favorited_users_map|get_item:place.id %}{{ user }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+                                    <i class="fas fa-star"></i> {{ place.fav_count }}
+                                </span>
+                                <a href="{% url 'place_details' place.id %}" class="btn btn-outline-primary btn-sm ms-3">View</a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="alert alert-info mb-0">No favorites yet.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Enable Bootstrap tooltips and popovers
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+        popoverTriggerList.forEach(function (popoverTriggerEl) {
+            new bootstrap.Popover(popoverTriggerEl);
+        });
+    });
+</script>
+
+{% comment %} Helper filter to get item from dict {% endcomment %}
+{% if False %}
+{% load custom_filters %}
+{% endif %}
 {% endblock %}

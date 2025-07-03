@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.core.management.base import BaseCommand
 
 class Tag(models.Model):
     name = models.CharField(max_length=255, db_index=True)
@@ -154,5 +155,11 @@ class UserFavorite(models.Model):
 
     def __str__(self):
         return f"{self.user.username} favorited {self.place.name}"
-    
+
+# Remove management command from models.py. It will be placed in backend/management/commands/add_famous_libraries.py
+
+# Management command to add famous libraries in Kathmandu, Bhaktapur
+# Run: python manage.py add_famous_libraries
+
+# Remove everything from 'class Command(BaseCommand):' to the end of the file
     

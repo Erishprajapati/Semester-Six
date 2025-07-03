@@ -107,7 +107,7 @@ def profile_view(request):
     # Get user's search history
     search_history = SearchHistory.objects.filter(user=user)[:10]  # Get last 10 searches
     # Get all tags
-    from .models import UserPreference, Tag, Place
+    from .models import UserPreference, Tag, Place, UserFavorite
     all_tags = Tag.objects.filter(place__isnull=False).distinct()
     user_pref, created = UserPreference.objects.get_or_create(user=user)
     preferred_tags = user_pref.tags.all()
@@ -117,11 +117,26 @@ def profile_view(request):
     else:
         recommended_places = Place.objects.filter(tags__in=preferred_tags, is_approved=True).distinct()
 
+    # --- Add most favorited places logic ---
+    from django.db.models import Count, Prefetch
+    most_favorited_places = (
+        Place.objects.filter(is_approved=True)
+        .annotate(fav_count=Count('favorited_by'))
+        .order_by('-fav_count', 'name')[:10]
+    )
+    # Build a mapping of place.id to usernames who favorited it
+    favorited_users_map = {}
+    for place in most_favorited_places:
+        users = place.favorited_by.select_related('user').all()
+        favorited_users_map[place.id] = [fav.user.username for fav in users]
+
     return render(request, "profile.html", {
         'search_history': search_history,
         'all_tags': all_tags,
         'preferred_tags': preferred_tags,
         'recommended_places': recommended_places,
+        'most_favorited_places': most_favorited_places,
+        'favorited_users_map': favorited_users_map,
     })
 
 # def places_by_category(request, category):
