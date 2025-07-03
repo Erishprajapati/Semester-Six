@@ -463,6 +463,10 @@ def place_details(request, place_id):
     if place.closed_dates:
         closed_list = [d.strip() for d in place.closed_dates.split(',') if d.strip()]
     
+    # Format crowdlevel to two decimal places for display
+    if crowdlevel is not None:
+        crowdlevel = f"{crowdlevel:.2f}"
+    
     return render(request, 'placedetails.html', {
         'place': place,
         'crowdlevel': crowdlevel,
