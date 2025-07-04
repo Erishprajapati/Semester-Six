@@ -2289,12 +2289,16 @@ def ml_hourly_predictions(request):
 def add_favorite(request, place_id):
     place = get_object_or_404(Place, id=place_id)
     UserFavorite.objects.get_or_create(user=request.user, place=place)
+    from django.contrib import messages
+    messages.success(request, f'"{place.name}" has been added to your favorites!')
     return redirect('place_details', place_id=place.id)
 
 @login_required
 def remove_favorite(request, place_id):
     place = get_object_or_404(Place, id=place_id)
     UserFavorite.objects.filter(user=request.user, place=place).delete()
+    from django.contrib import messages
+    messages.success(request, f'"{place.name}" has been removed from your favorites.')
     return redirect('place_details', place_id=place.id)
 
 @login_required
